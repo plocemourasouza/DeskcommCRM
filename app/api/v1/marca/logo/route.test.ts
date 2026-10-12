@@ -393,3 +393,92 @@ describe("peca=icone — o ícone da aba grava favicon_path, e só na instalaç�
     expect(espiao.upsertChamadas).toHaveLength(0);
   });
 });
+
+/**
+ * SVG como logo (F4): o SVG é rasterizado no servidor e só o PNG chega ao bucket.
+ * O espião de upload registra o que foi gravado — a asserção central é que NUNCA
+ * há SVG (nem bytes de SVG) no storage.
+ */
+describe("POST /api/v1/marca/logo — SVG é rasterizado, nunca gravado", () => {
+  const SVG_LIMPO =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="60"><rect width="120" height="60" fill="#09f"/></svg>';
+
+  function espiaoComUpload() {
+    const base = criarAdminEspiao();
+    const uploads: Array<{ caminho: string; bytes: Uint8Array; contentType: string | undefined }> = [];
+    base.client.storage.from = () => ({
+      upload: async (caminho: string, bytes: Uint8Array, opts?: { contentType?: string }) => {
+        uploads.push({ caminho, bytes, contentType: opts?.contentType });
+        return { error: null };
+      },
+      remove: async (paths: string[]) => {
+        base.removeChamadas.push(...paths);
+        return { error: null };
+      },
+    }) as never;
+    return { ...base, uploads };
+  }
+
+  async function subir(svg: string | Uint8Array, nome = "logo.svg", tipo = "image/svg+xml") {
+    vi.mocked(loadAuthUser).mockResolvedValue(usuarioAdminDeOrganizacao());
+    const espiao = espiaoComUpload();
+    vi.mocked(createAdminClient).mockReturnValue(espiao.client as never);
+    const form = new FormData();
+    form.set("escopo", "organizacao");
+    form.set("file", new File([svg as BlobPart], nome, { type: tipo }));
+    const { POST } = await import("./route");
+    const res = await POST(new NextRequest("http://localhost/api/v1/marca/logo", { method: "POST", body: form }));
+    return { res, espiao };
+  }
+
+  it("SVG limpo: 200, grava UM objeto .png com bytes de PNG e content-type image/png", async () => {
+    const { res, espiao } = await subir(SVG_LIMPO);
+    expect(res.status, await res.clone().text()).toBe(200);
+    expect(espiao.uploads).toHaveLength(1);
+    const up = espiao.uploads[0]!;
+    expect(up.caminho).toMatch(/\.png$/);
+    expect(up.contentType).toBe("image/png");
+    expect(Array.from(up.bytes.subarray(0, 8))).toEqual([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+    expect(up.bytes.byteLength).toBeLessThanOrEqual(512 * 1024);
+    expect(Buffer.from(up.bytes).includes("<svg")).toBe(false);
+  });
+
+  it("SVG renomeado para .png e declarado image/png também é rasterizado (os bytes decidem)", async () => {
+    const { res, espiao } = await subir(SVG_LIMPO, "logo.png", "image/png");
+    expect(res.status, await res.clone().text()).toBe(200);
+    expect(espiao.uploads[0]?.contentType).toBe("image/png");
+  });
+
+  it.each([
+    ["<script>", SVG_LIMPO.replace("<rect", "<script>1</script><rect")],
+    ["<foreignObject>", SVG_LIMPO.replace("<rect", "<foreignObject/><rect")],
+    ["href externo http", SVG_LIMPO.replace("<rect", '<image href="http://evil.test/x.png"/><rect')],
+    ["xlink:href file:", SVG_LIMPO.replace("<rect", '<image xlink:href="file:///etc/passwd"/><rect')],
+    ["href protocolo relativo", SVG_LIMPO.replace("<rect", '<image href="//evil.test/x"/><rect')],
+    [
+      "<!ENTITY (XXE)",
+      '<!DOCTYPE svg [<!ENTITY x SYSTEM "file:///etc/passwd">]><svg xmlns="http://www.w3.org/2000/svg"><text>&x;</text></svg>',
+    ],
+    [
+      "bomba de pixels",
+      '<svg xmlns="http://www.w3.org/2000/svg" width="1000000" height="1000000"><rect width="1" height="1"/></svg>',
+    ],
+    ["não parseável", "<svg xmlns='http://www.w3.org/2000/svg'><rect></svg"],
+  ])("%s: 415 logo_svg_invalido, nada gravado, nada no storage", async (_nome, svg) => {
+    const { res, espiao } = await subir(svg);
+    expect(res.status).toBe(415);
+    const corpo = (await res.json()) as { error: { code: string; message: string } };
+    expect(corpo.error.code).toBe("logo_svg_invalido");
+    expect(corpo.error.message).not.toMatch(/sharp|libvips|rsvg|passwd/i);
+    expect(espiao.uploads).toHaveLength(0);
+    expect(espiao.rpcChamadas).toHaveLength(0);
+    expect(espiao.fromChamadas.filter((t) => t !== "organizations")).toHaveLength(0);
+  });
+
+  it("SVG acima de 512 KB cru continua sendo 413 (o teto do upload não muda)", async () => {
+    const grande = SVG_LIMPO.replace("</svg>", `<!--${"x".repeat(513 * 1024)}--></svg>`);
+    const { res, espiao } = await subir(grande);
+    expect(res.status).toBe(413);
+    expect(espiao.uploads).toHaveLength(0);
+  });
+});

@@ -149,6 +149,21 @@ describe("o campo de logo ajusta a imagem antes de subir", () => {
     expect(enviado.type).toBe("image/png");
   });
 
+  it("SVG pula o ajuste de canvas: sobe INTACTO, mesmo acima do teto (quem decide é o servidor)", async () => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"/>${" ".repeat(LIMITE + 10)}`;
+    const escolhido = new File([svg], "logo.svg", { type: "image/svg+xml" });
+
+    renderizar();
+    expect(inputDoLogo().accept).toContain("image/svg+xml");
+    fireEvent.change(inputDoLogo(), { target: { files: [escolhido] } });
+
+    const enviado = await arquivoEnviado();
+    expect(enviado.name).toBe("logo.svg");
+    expect(enviado.type).toBe("image/svg+xml");
+    expect(enviado.size).toBe(escolhido.size);
+    expect(vi.mocked(toast.error)).not.toHaveBeenCalled();
+  });
+
   it("nem reduzido até o piso cabe → recusa na tela e ZERO requisição", async () => {
     // Ruído incompressível em PNG: nem a largura no piso (512) tira os bytes
     // necessários — medido: 640×640 → 1.402.013 bytes, 512×512 → 897.393.
