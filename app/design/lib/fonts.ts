@@ -42,11 +42,11 @@ export const manrope = localFont({
   variable: "--font-manrope",
 });
 
+// Hyperlegible Next, variável 200–800: 500 e 600 resolvem para faces reais.
 export const atkinson = localFont({
-  src: [
-    { path: "../../fonts/atkinson-hyperlegible-400-latin-latin-ext.woff2", weight: "400", style: "normal" },
-    { path: "../../fonts/atkinson-hyperlegible-700-latin-latin-ext.woff2", weight: "700", style: "normal" },
-  ],
+  src: "../../fonts/atkinson-hyperlegible-next-200-800-latin-latin-ext.woff2",
+  weight: "200 800",
+  style: "normal",
   display: "swap",
   variable: "--font-atkinson",
 });

@@ -794,8 +794,11 @@
       sans-serif;
     font-feature-settings:
       "rlig" 1,
-      "calt" 1,
-      "ss01" 1;
+      "calt" 1;
+    /* Nunca fabrica negrito (a fonte é variável 200–800, peso falso só engordaria
+       glifo). O oblíquo sintético fica: a família não tem face itálica e o
+       produto usa itálico semântico (citação, placeholder). */
+    font-synthesis: style;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;

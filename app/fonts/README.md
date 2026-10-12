@@ -7,12 +7,12 @@ que essa busca falhava (`Can't resolve '@vercel/turbopack-next/internal/font/goo
 Com os arquivos aqui, o build não depende de rede para fonte.
 
 Os arquivos são os **servidos pelo próprio Google Fonts**, sem nenhuma
-alteração nossa. Família, pesos, eixos e cobertura de caracteres são os mesmos
+alteração nossa — **exceto** o da Atkinson Hyperlegible Next, que é um subset feito por nós (abaixo). Família, pesos, eixos e cobertura de caracteres são os mesmos
 que o `next/font/google` baixava.
 
 | Arquivo | Família | Pesos | Cobertura | Origem (fonts.gstatic.com) |
 |---|---|---|---|---|
-| `atkinson-hyperlegible-{400,700}-latin-latin-ext.woff2` | Atkinson Hyperlegible | 400, 700 | latin + latin-ext | `atkinsonhyperlegible/v12` |
+| `atkinson-hyperlegible-next-200-800-latin-latin-ext.woff2` | Atkinson Hyperlegible Next | variável 200–800 (`wght`) | latin + latin-ext | fonte do projeto `googlefonts/atkinson-hyperlegible-next`, subset nosso (ver abaixo) |
 | `ibm-plex-mono-{400,500}-latin-latin-ext.woff2` | IBM Plex Mono | 400, 500 | latin + latin-ext | `ibmplexmono/v20` |
 | `bricolage-grotesque-200-800-latin.woff2` | Bricolage Grotesque | variável 200–800 | latin | `bricolagegrotesque/v9` |
 | `plus-jakarta-sans-200-800-latin.woff2` | Plus Jakarta Sans | variável 200–800 | latin | `plusjakartasans/v12` |
@@ -41,6 +41,26 @@ subsets juntos (e sem hinting, como o do Chrome):
 UA='Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:40.0) Gecko/20100101 Firefox/40.0'
 curl -sA "$UA" 'https://fonts.googleapis.com/css?family=Atkinson+Hyperlegible:400,700|IBM+Plex+Mono:400,500&subset=latin,latin-ext&display=swap'
 ```
+
+## Atkinson Hyperlegible Next (fonte sans do produto)
+
+Variável de verdade (eixo `wght` 200–800), para que `font-medium` (500) e
+`font-semibold` (600) sejam faces reais — com os antigos 400/700 estáticos o
+navegador arredondava 500 para 400 e 600 para 700. O Google só serve latin e
+latin-ext em arquivos separados, e o `next/font/local` não aceita
+`unicode-range`; por isso o arquivo é o TTF variável do repositório do projeto
+(`fonts/variable/AtkinsonHyperlegibleNext[wght].ttf`) reduzido a latin + latin-ext
+com `fonttools`, mantendo todas as features OpenType da fonte:
+
+```bash
+pip install fonttools brotli
+pyftsubset 'AtkinsonHyperlegibleNext[wght].ttf' --layout-features='*' --flavor=woff2 \
+  --unicodes='U+0000-024F,U+0259,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0300-0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1EFF,U+2000-206F,U+20A0-20C4,U+20AC,U+2113,U+2122,U+2191,U+2193,U+2212,U+2215,U+2C60-2C7F,U+A720-A7FF,U+FEFF,U+FFFD' \
+  --output-file=atkinson-hyperlegible-next-200-800-latin-latin-ext.woff2
+```
+
+A fonte não tem `ss01` (só `tnum`, `pnum`, `frac`, `ccmp`, `locl`); o `body`
+não o pede mais. Sem face itálica: `font-synthesis: style` mantém o oblíquo sintético (itálico semântico) e proíbe negrito falso.
 
 ## Licença
 
