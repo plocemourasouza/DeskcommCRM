@@ -248,6 +248,13 @@ test("suporte mantém identidade, opera B e encerra sem misturar A; readonly/exp
      blockedBeforeSend.add(request);pendingMutations.delete(request);await route.abort("aborted");
     }else await route.continue();
    })));
+   // Documento vivo segue emitindo (a batida de presença sai em toda montagem), e
+   // a aba fechada com o pedido ainda retido na rota o SOLTA para o servidor sem
+   // desfecho observável: no main 8d86fac38 a sameTab hidratou 21 ms depois do
+   // close() e o POST ficou -1. Medido numa página que posta a cada 5 ms: fechar
+   // direto deixou pedido sem desfecho em 3/10 e POST chegando ao servidor depois
+   // do close em 10/10; passando por about:blank antes, 0/10 e 0.
+   await Promise.all(contexts.flatMap(context=>context.pages()).map(ownedPage=>ownedPage.goto("about:blank")));
    await expect.poll(()=>pendingMutations.size,{timeout:20000,
     message:"Mutações enviadas devem concluir antes de fechar contextos ou apagar fixtures"}).toBe(0);
    // Abandonada não tem evento que prove o fim no servidor; a prova é o prazo.
