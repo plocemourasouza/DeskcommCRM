@@ -72,7 +72,6 @@ describe("AudioRecorder", () => {
     });
     expect(trackStopMock).toHaveBeenCalledOnce();
     expect(FakeRecorder.instances).toHaveLength(0);
-    expect(uploadMock).not.toHaveBeenCalled();
     expect(sendMock).not.toHaveBeenCalled();
   });
 
@@ -90,15 +89,13 @@ describe("AudioRecorder", () => {
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: /enviar áudio/i }));
     });
-    await waitFor(() => expect(uploadMock).toHaveBeenCalled());
-    const arg = uploadMock.mock.calls[0]![0] as { file: Blob };
+    await waitFor(() => expect(sendMock).toHaveBeenCalled());
+    // o upload é do hook de envio (otimista): aqui só entrega o blob com mime real
+    const arg = sendMock.mock.calls[0]![0] as { type: string; file: Blob; filename: string };
+    expect(arg.type).toBe("audio");
     expect(arg.file.type).toContain("audio/");
-    await waitFor(() =>
-      expect(sendMock).toHaveBeenCalledWith(
-        expect.objectContaining({ type: "audio", media_storage_path: "org/conv/out-a.ogg" }),
-        expect.anything(),
-      ),
-    );
+    expect(arg.filename).toMatch(/^ptt\./);
+    expect(uploadMock).not.toHaveBeenCalled();
   });
 
   it("cancelar descarta sem upload", async () => {
@@ -128,6 +125,6 @@ describe("AudioRecorder", () => {
         fireEvent.click(sendBtn);
       }).not.toThrow();
     });
-    await waitFor(() => expect(uploadMock).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(sendMock).toHaveBeenCalledTimes(1));
   });
 });

@@ -5,7 +5,6 @@ import { useT } from "@/hooks/i18n/useT";
 import { Button } from "@/components/ui/button";
 import { Microphone, PaperPlaneTilt, Trash } from "@/lib/ui/icons";
 import { useSendMessage } from "@/hooks/inbox/useSendMessage";
-import { useUploadMedia } from "@/hooks/inbox/useUploadMedia";
 
 const PREFERRED_MIMES = ["audio/ogg;codecs=opus", "audio/webm;codecs=opus"];
 
@@ -30,7 +29,6 @@ export function AudioRecorder({ conversationId, disabled }: Props) {
   const discardRef = useRef(false);
   const startingRef = useRef(false);
   const captureGeneration = useRef(0);
-  const upload = useUploadMedia();
   const send = useSendMessage();
 
   useEffect(() => {
@@ -80,27 +78,14 @@ export function AudioRecorder({ conversationId, disabled }: Props) {
         if (discardRef.current || chunksRef.current.length === 0) return;
         const type = rec.mimeType || "audio/webm";
         const blob = new Blob(chunksRef.current, { type });
-        void upload
-          .mutateAsync({
-            conversationId,
-            file: blob,
-            filename: `ptt.${type.includes("ogg") ? "ogg" : "webm"}`,
-          })
-          .then((uploaded) =>
-            send.mutate(
-              {
-                conversation_id: conversationId,
-                type: "audio",
-                media_storage_path: uploaded.storage_path,
-                media_mime: uploaded.media_mime,
-                media_size_bytes: uploaded.media_size_bytes,
-              },
-              {},
-            ),
-          )
-          .catch(() => {
-            // toast já disparado pelo onError de useUploadMedia
-          });
+        // Otimista: a bolha de áudio entra no fio agora; upload + envio seguem no
+        // hook, e a falha vira "Tentar de novo" com o áudio ainda em memória.
+        send.mutate({
+          conversation_id: conversationId,
+          type: "audio",
+          file: blob,
+          filename: `ptt.${type.includes("ogg") ? "ogg" : "webm"}`,
+        });
       };
       recorderRef.current = rec;
       rec.start();

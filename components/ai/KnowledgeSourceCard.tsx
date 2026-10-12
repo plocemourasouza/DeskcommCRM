@@ -157,14 +157,12 @@ export function KnowledgeSourceCard({
         <Button
           variant="secondary"
           size="sm"
-          disabled={arquivado || isReindexing}
+          loading={isReindexing}
+          disabled={arquivado}
           onClick={onReindex}
           data-testid={`material-reindexar-${source.id}`}
         >
-          <RefreshCw
-            className={`mr-2 h-3.5 w-3.5 ${isReindexing ? "animate-spin" : ""}`}
-            aria-hidden
-          />
+          {!isReindexing && <RefreshCw className="mr-2 h-3.5 w-3.5" aria-hidden />}
           {isReindexing ? t("Preparando…") : t("Preparar de novo")}
         </Button>
 

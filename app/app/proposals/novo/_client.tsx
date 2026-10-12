@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Loader2, Search } from "lucide-react";
+import { ArrowLeft, Search } from "lucide-react";
 
 import { showApiError } from "@/components/feedback/ApiErrorToast";
 import { Button } from "@/components/ui/button";
@@ -274,16 +274,10 @@ export function NewProposalClient({
 
             <Button
               type="submit"
-              disabled={criando || !leadId || !titulo.trim() || initialLeads.length === 0}
+              loading={criando}
+              disabled={!leadId || !titulo.trim() || initialLeads.length === 0}
             >
-              {criando ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {t("Criando proposta…")}
-                </>
-              ) : (
-                t("Criar e abrir editor")
-              )}
+              {criando ? t("Criando proposta…") : t("Criar e abrir editor")}
             </Button>
           </CardFooter>
         </form>

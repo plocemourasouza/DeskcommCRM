@@ -1,10 +1,11 @@
 "use client";
 
+import { Spinner } from "@/components/ui/spinner";
 import { useTagDeIdioma } from "@/hooks/i18n/useLocaleDeData";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTenantAgent } from "@/hooks/useTenantAgent";
-import { ArrowsClockwise } from "@/lib/ui/icons";
+import { } from "@/lib/ui/icons";
 import { useT } from "@/hooks/i18n/useT";
 
 // ---------------------------------------------------------------------------
@@ -57,7 +58,7 @@ export function TenantAgentClient({ id }: TenantAgentClientProps) {
           {t("Agente")}
         </h2>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          {isFetching && <ArrowsClockwise size={13} className="animate-spin" aria-hidden />}
+          {isFetching && <Spinner className="size-3" />}
           {atualizadoEm && (
             <span>
               {t("Atualizado às")} {atualizadoEm}

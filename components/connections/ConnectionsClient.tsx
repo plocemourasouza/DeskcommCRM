@@ -33,6 +33,7 @@ import { ChannelAiAccess } from "./ChannelAiAccess";
 import { ParaIntegrar } from "./ParaIntegrar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import { Card } from "@/components/ui/card";
 import {
   Dialog,
@@ -44,7 +45,6 @@ import {
 import {
   ArrowsClockwise,
   CheckCircle,
-  CircleNotch,
   Pause,
   Phone,
   Play,
@@ -398,14 +398,11 @@ export function ConnectionsClient({ wahaConfigured }: { wahaConfigured: boolean 
             <Button
               variant="outline"
               size="sm"
-              disabled={checking || !wahaConfigured}
+              loading={checking}
+              disabled={!wahaConfigured}
               onClick={() => void runHealthCheck(list)}
             >
-              <ArrowsClockwise
-                size={14}
-                className={checking ? "animate-spin" : undefined}
-                aria-hidden
-              />
+              {!checking && <ArrowsClockwise size={14} aria-hidden />}
               {t("Atualizar saúde")}
             </Button>
           )}
@@ -421,14 +418,10 @@ export function ConnectionsClient({ wahaConfigured }: { wahaConfigured: boolean 
             <Button
               variant="outline"
               size="sm"
-              disabled={loteOcupado}
+              loading={loteOcupado}
               onClick={() => void handleLote(true)}
             >
-              {loteOcupado ? (
-                <CircleNotch size={14} className="animate-spin" aria-hidden />
-              ) : (
-                <Pause size={14} aria-hidden />
-              )}
+              {!loteOcupado && <Pause size={14} aria-hidden />}
               {t("Pausar todas")} ({paraPausar.length})
             </Button>
           )}
@@ -436,14 +429,10 @@ export function ConnectionsClient({ wahaConfigured }: { wahaConfigured: boolean 
             <Button
               variant="outline"
               size="sm"
-              disabled={loteOcupado}
+              loading={loteOcupado}
               onClick={() => void handleLote(false)}
             >
-              {loteOcupado ? (
-                <CircleNotch size={14} className="animate-spin" aria-hidden />
-              ) : (
-                <Play size={14} aria-hidden />
-              )}
+              {!loteOcupado && <Play size={14} aria-hidden />}
               {t("Retomar todas")} ({paraRetomar.length})
             </Button>
           )}
@@ -452,12 +441,8 @@ export function ConnectionsClient({ wahaConfigured }: { wahaConfigured: boolean 
               os três são a mesma escrita (`metadata.disabled`), e a diferença é
               quando — agora, ou quando o operador escolher. */}
           <AgendaDePausa canais={list} />
-          <Button size="sm" disabled={creating || !wahaConfigured} onClick={handleConnectNew}>
-            {creating ? (
-              <CircleNotch size={14} className="animate-spin" aria-hidden />
-            ) : (
-              <Plus size={14} aria-hidden />
-            )}
+          <Button size="sm" loading={creating} disabled={!wahaConfigured} onClick={handleConnectNew}>
+            {!creating && <Plus size={14} aria-hidden />}
             {t("Conectar novo WhatsApp")}
           </Button>
         </div>
@@ -606,14 +591,11 @@ export function ConnectionsClient({ wahaConfigured }: { wahaConfigured: boolean 
                     <Button
                       variant="outline"
                       size="sm"
-                      disabled={busyId === c.id || !wahaConfigured}
+                      loading={busyId === c.id}
+                      disabled={!wahaConfigured}
                       onClick={() => handleReconnect(c)}
                     >
-                      {busyId === c.id ? (
-                        <CircleNotch size={14} className="animate-spin" aria-hidden />
-                      ) : (
-                        <ArrowsClockwise size={14} aria-hidden />
-                      )}
+                      {busyId !== c.id && <ArrowsClockwise size={14} aria-hidden />}
                       {t("Reconectar")}
                     </Button>
                   )}
@@ -624,7 +606,7 @@ export function ConnectionsClient({ wahaConfigured }: { wahaConfigured: boolean 
                   <Button
                     variant="outline"
                     size="sm"
-                    disabled={busyId === c.id}
+                    loading={busyId === c.id}
                     aria-label={
                       pausado
                         ? `${t("Retomar")} ${channelLabel(c, t)}`
@@ -632,9 +614,7 @@ export function ConnectionsClient({ wahaConfigured }: { wahaConfigured: boolean 
                     }
                     onClick={() => void handleToggleDisabled(c)}
                   >
-                    {busyId === c.id ? (
-                      <CircleNotch size={14} className="animate-spin" aria-hidden />
-                    ) : pausado ? (
+                    {busyId === c.id ? null : pausado ? (
                       <Play size={14} aria-hidden />
                     ) : (
                       <Pause size={14} aria-hidden />
@@ -862,12 +842,8 @@ function ExcluirCanalDialog({
           {/* Enquanto o preflight não volta, confirmar seria confirmar no escuro:
               o diálogo ainda não sabe o que vai acontecer, então não pode pedir
               a decisão. */}
-          <Button variant="destructive" disabled={excluindo || isPending} onClick={excluir}>
-            {excluindo ? (
-              <CircleNotch size={14} className="animate-spin" aria-hidden />
-            ) : (
-              <Trash size={14} aria-hidden />
-            )}
+          <Button variant="destructive" loading={excluindo} disabled={isPending} onClick={excluir}>
+            {!excluindo && <Trash size={14} aria-hidden />}
             {t("Excluir")}
           </Button>
         </div>
@@ -994,17 +970,13 @@ function QrDialog({
                   }
                 }}
               >
-                {pairing ? (
-                  <CircleNotch size={14} className="animate-spin" aria-hidden />
-                ) : (
-                  <ArrowsClockwise size={14} aria-hidden />
-                )}
+                {!pairing && <ArrowsClockwise size={14} aria-hidden />}
                 {t("Gerar novo QR")}
               </Button>
             </div>
           ) : (
             <div className="flex flex-col items-center gap-2 text-sm text-muted-foreground">
-              <CircleNotch size={28} className="animate-spin" aria-hidden />
+              <Spinner className="size-7" />
               {t("Preparando o código…")}
             </div>
           )}

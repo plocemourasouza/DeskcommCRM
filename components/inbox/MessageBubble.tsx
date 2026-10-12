@@ -6,6 +6,7 @@ import { useT } from "@/hooks/i18n/useT";
 import { ArrowBendUpLeft, CaretDown, Check, Checks, PencilSimple, Robot, Trash, WarningOctagon } from "@/lib/ui/icons";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import {
   AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
@@ -50,6 +51,8 @@ interface Props {
   onApagar?: () => Promise<void>;
   onOcultar?: () => Promise<void>;
   onRestaurar?: () => Promise<void>;
+  /** Reenviar uma mensagem que falhou ANTES de chegar ao servidor (bolha otimista). */
+  onTentarDeNovo?: (m: Message) => void;
 }
 
 function AckIndicator({ status, t }: { status: string; t: (texto: string) => string }) {
@@ -61,6 +64,14 @@ function AckIndicator({ status, t }: { status: string; t: (texto: string) => str
   }
   if (status === "sent") {
     return <Check size={12} weight="bold" className="text-current/70" aria-label={t("Enviada")} />;
+  }
+  if (status === "queued" || status === "sending") {
+    // Decorativo por contrato (Spinner é aria-hidden): o nome acessível é do embrulho.
+    return (
+      <span role="img" aria-label={t("Enviando")} className="inline-flex">
+        <Spinner className="size-3" />
+      </span>
+    );
   }
   return null;
 }
@@ -76,6 +87,7 @@ export function MessageBubble({
   onApagar,
   onOcultar,
   onRestaurar,
+  onTentarDeNovo,
 }: Props) {
   const [editando, setEditando] = useState(false);
   const [texto, setTexto] = useState(message.body ?? "");
@@ -453,6 +465,17 @@ export function MessageBubble({
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
+          )}
+          {isFailed && onTentarDeNovo && (
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="h-5 px-1 text-[10px] font-semibold"
+              onClick={() => onTentarDeNovo(message)}
+            >
+              {t("Tentar de novo")}
+            </Button>
           )}
         </div>
       </div>

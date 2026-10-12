@@ -8,7 +8,8 @@ import { rotuloDoContato } from "@/lib/contacts/rotulo-do-contato";
 import { phoneForDisplay } from "@/lib/channels/phone-variants";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { CircleNotch, Microphone, MicrophoneSlash, PhoneX, Warning } from "@/lib/ui/icons";
+import { Spinner } from "@/components/ui/spinner";
+import { Microphone, MicrophoneSlash, PhoneX, Warning } from "@/lib/ui/icons";
 import { useT } from "@/hooks/i18n/useT";
 
 function formatarDuracao(segundos: number): string {
@@ -164,7 +165,7 @@ export function ActiveCallPanel() {
         <p className="truncate text-sm font-semibold">{nome}</p>
         <p className="flex items-center gap-1 text-xs text-muted-foreground tabular-nums">
           {(call.status !== "connected" || connectingMedia) && (
-            <CircleNotch size={12} weight="bold" className="animate-spin" aria-hidden />
+            <Spinner className="size-3" />
           )}
           {rotuloEstado}
         </p>
@@ -178,7 +179,7 @@ export function ActiveCallPanel() {
             {avisoDeMidia.grave ? (
               <Warning size={11} weight="fill" className="shrink-0" aria-hidden />
             ) : (
-              <CircleNotch size={11} weight="bold" className="shrink-0 animate-spin" aria-hidden />
+              <Spinner className="size-3 shrink-0" />
             )}
             <span className="truncate">{avisoDeMidia.texto}</span>
             {avisoDeMidia.ouvirAqui ? (
@@ -214,15 +215,10 @@ export function ActiveCallPanel() {
           variant="destructive"
           className="rounded-full"
           onClick={() => void hangUp()}
-          disabled={encerrando}
-          aria-busy={encerrando}
+          loading={encerrando}
           aria-label={t("Encerrar chamada")}
         >
-          {encerrando ? (
-            <CircleNotch size={16} weight="bold" className="animate-spin" aria-hidden />
-          ) : (
-            <PhoneX size={16} weight="bold" aria-hidden />
-          )}
+          {!encerrando && <PhoneX size={16} weight="bold" aria-hidden />}
         </Button>
       </div>
     </div>

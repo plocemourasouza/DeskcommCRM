@@ -70,7 +70,7 @@ describe("envio no inbox", () => {
     ).toEqual(["recent", "server-id", "old"]);
   });
 
-  it("remove somente o provisório quando a API falha e preserva o histórico", async () => {
+  it("quando a API falha, o provisório vira `failed` (não some) e o histórico fica intacto", async () => {
     let fail!: (error: Error) => void;
     post.mockReturnValue(
       new Promise((_resolve, reject) => {
@@ -83,10 +83,9 @@ describe("envio no inbox", () => {
     await waitFor(() => expect(pages()[0]!.data).toHaveLength(2));
     await act(async () => fail(new Error("Falha de rede")));
     await waitFor(() => expect(hook.result.current.isError).toBe(true));
-    expect(
-      pages()
-        .flatMap((p) => p.data)
-        .map((m) => m.id),
-    ).toEqual(["recent", "old"]);
+    const todas = pages().flatMap((p) => p.data);
+    expect(todas.map((m) => m.id.replace(/^temp-.*/, "temp"))).toEqual(["recent", "temp", "old"]);
+    expect(todas[1]!.status).toBe("failed");
+    expect(todas[1]!.body).toBe("Resposta");
   });
 });

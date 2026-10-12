@@ -42,7 +42,7 @@ describe("Composer + anexos", () => {
     expect(screen.getByText("Documento")).toBeInTheDocument();
   });
 
-  it("selecionar arquivo abre preview e enviar dispara upload + send com caption", async () => {
+  it("selecionar arquivo abre preview e enviar enfileira o envio otimista com o arquivo e a legenda", async () => {
     renderComposer();
     fireEvent.click(screen.getByRole("button", { name: /anexar/i }));
     const input = document.querySelector('input[accept^="image"]') as HTMLInputElement;
@@ -53,24 +53,16 @@ describe("Composer + anexos", () => {
     fireEvent.change(screen.getByLabelText(/legenda/i), { target: { value: "olha isso" } });
     fireEvent.click(screen.getByRole("button", { name: /^enviar$/i }));
 
-    await waitFor(() => expect(uploadMock).toHaveBeenCalled());
     await waitFor(() =>
       expect(sendMock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          conversation_id: "conv-1",
-          type: "image",
-          body: "olha isso",
-          media_storage_path: "org/conv/out-1.jpg",
-          media_mime: "image/jpeg",
-          media_size_bytes: 3,
-        }),
-        expect.anything(),
+        expect.objectContaining({ conversation_id: "conv-1", body: "olha isso", file }),
       ),
     );
+    // o upload agora acontece DENTRO do envio (hook), não mais no composer
+    expect(uploadMock).not.toHaveBeenCalled();
   });
 
-  it("upload falho mantém o dialog aberto (sem disparar send)", async () => {
-    uploadMock.mockRejectedValueOnce(new Error("upload_failed"));
+  it("o diálogo fecha assim que o envio é enfileirado (a bolha assume o feedback)", async () => {
     renderComposer();
     fireEvent.click(screen.getByRole("button", { name: /anexar/i }));
     const input = document.querySelector('input[accept^="image"]') as HTMLInputElement;
@@ -80,9 +72,8 @@ describe("Composer + anexos", () => {
     expect(await screen.findByRole("dialog")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /^enviar$/i }));
 
-    await waitFor(() => expect(uploadMock).toHaveBeenCalled());
-    expect(screen.getByRole("dialog")).toBeInTheDocument();
-    expect(sendMock).not.toHaveBeenCalled();
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(sendMock).toHaveBeenCalledTimes(1);
   });
 });
 

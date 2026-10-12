@@ -17,7 +17,7 @@ import type {
   ExtensionOperationView,
   InstalledExtensionView,
 } from "@/lib/extensions/view";
-import { ArrowsClockwise, CircleNotch, Info, PuzzlePiece, Warning } from "@/lib/ui/icons";
+import { ArrowsClockwise, Info, PuzzlePiece, Warning } from "@/lib/ui/icons";
 import { requestExtensionApi, type ExtensionApiResult } from "./api-client";
 import {
   CatalogAdmission,
@@ -981,14 +981,10 @@ export function ExtensionsManager({
                       variant="outline"
                       size="sm"
                       data-testid={`extension-local-receipt-verify-${receipt.id}`}
-                      disabled={ocupado(`receipt:${receipt.id}`)}
+                      loading={ocupado(`receipt:${receipt.id}`)}
                       onClick={() => void verifyLocalReceipt(receipt)}
                     >
-                      {ocupado(`receipt:${receipt.id}`) ? (
-                        <CircleNotch className="animate-spin" aria-hidden />
-                      ) : (
-                        <ArrowsClockwise aria-hidden />
-                      )}
+                      {ocupado(`receipt:${receipt.id}`) ? null : <ArrowsClockwise aria-hidden />}
                       {t("Verificar recibo")}
                     </Button>
                   </div>

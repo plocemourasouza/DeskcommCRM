@@ -16,6 +16,7 @@ import { useConversationNotes } from "@/hooks/inbox/useConversationNotes";
 import { usePassagensDaConversa } from "@/hooks/inbox/usePassagensDaConversa";
 import { useClaimConversation } from "@/hooks/inbox/useClaimConversation";
 import { useDeleteNote } from "@/hooks/inbox/useDeleteNote";
+import { useSendMessage } from "@/hooks/inbox/useSendMessage";
 import { useAlterarMensagem } from "@/hooks/inbox/useAlterarMensagem";
 import { useDebugToggle } from "@/hooks/ai/useDebugToggle";
 import { useActiveOrg, useUser } from "@/hooks/auth/AuthProvider";
@@ -110,6 +111,7 @@ export function ChatThread({
   const currentUser = useUser();
   const deleteNote = useDeleteNote(conversationId ?? "");
   const { editar, apagar, ocultar, restaurar } = useAlterarMensagem(conversationId);
+  const enviar = useSendMessage();
   const canManage = activeOrg != null && ROLE_RANK[activeOrg.role] >= ROLE_RANK.manager;
   const canalAlteraEnviada = transportaMensagem(provider)
     && capabilitiesOf(provider as ChannelProvider).alteraMensagemEnviada;
@@ -415,6 +417,9 @@ export function ChatThread({
                     : undefined}
                   onApagar={canalAlteraEnviada && item.data.sent_by_user_id === currentUser.id
                     ? () => apagar.mutateAsync(item.data.id).then(() => undefined)
+                    : undefined}
+                  onTentarDeNovo={item.data.metadata?._optimistic === true
+                    ? (m) => enviar.retry(m.id)
                     : undefined}
                   onOcultar={canManage && item.data.direction === "inbound"
                     ? () => ocultar.mutateAsync(item.data.id).then(() => undefined)

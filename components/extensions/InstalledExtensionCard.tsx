@@ -34,7 +34,7 @@ import {
 } from "@/lib/extensions/manifest";
 import { portasLegiveis } from "@/lib/extensions/portas-legiveis";
 import type { InstalledExtensionView } from "@/lib/extensions/view";
-import { BookOpen, CircleNotch, Lightbulb, ListChecks } from "@/lib/ui/icons";
+import { BookOpen, Lightbulb, ListChecks } from "@/lib/ui/icons";
 
 import { deixamDeVer, organizacoesAtivas } from "./frases-de-versao";
 
@@ -311,10 +311,10 @@ export function InstalledExtensionCard({
             )}
             <Button
               data-testid={`extension-save-${extension.id}`}
-              disabled={!changed || busy || actionsDisabled}
+              loading={busy}
+              disabled={!changed || actionsDisabled}
               onClick={() => void save()}
             >
-              {busy ? <CircleNotch className="animate-spin" aria-hidden /> : null}
               {busy ? t("Salvando…") : t("Salvar configuração")}
             </Button>
           </div>
@@ -410,10 +410,10 @@ function PlatformBlock({
             variant="outline"
             size="sm"
             data-testid={`extension-revert-${extension.id}`}
+            loading={busyAction === "revert"}
             disabled={!previous.compatible || blocked}
             onClick={() => setDialog("revert")}
           >
-            {busyAction === "revert" ? <CircleNotch className="animate-spin" aria-hidden /> : null}
             {t("Desfazer a última troca (volta para {versao})").replace("{versao}", previous.version)}
           </Button>
         ) : null}
@@ -422,10 +422,10 @@ function PlatformBlock({
           size="sm"
           className="text-error-fg"
           data-testid={`extension-remove-${extension.id}`}
+          loading={busyAction === "remove"}
           disabled={blocked}
           onClick={() => setDialog("remove")}
         >
-          {busyAction === "remove" ? <CircleNotch className="animate-spin" aria-hidden /> : null}
           {t("Remover da instalação")}
         </Button>
       </div>
