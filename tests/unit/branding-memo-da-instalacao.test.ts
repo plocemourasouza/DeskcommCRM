@@ -62,31 +62,59 @@ const banco = vi.hoisted(() => ({
    * ela que o caso da falha pós-escrita mede.
    */
   erro: null as { code: string; message: string } | null,
+  /**
+   * A deduplicação que o Next põe no `fetch` DURANTE UM RENDER
+   * (`next/dist/server/lib/dedupe-fetch.js`, 16.4.0). `null` = fora de render,
+   * sem deduplicação (todos os casos que já existiam aqui). Com um objeto, ele é
+   * a requisição: o primeiro GET sem `signal` guarda a resposta, e todo GET
+   * idêntico seguinte NA MESMA requisição recebe essa resposta sem ir ao banco.
+   * Com `signal`, a chamada passa direto e não lê nem grava a entrada — é a
+   * saída que a fonte do Next declara ("opts out of caching").
+   */
+  requisicao: null as { resposta?: Record<string, unknown> | null } | null,
 }));
 
 vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: () => ({
     from: () => ({
       select: () => ({
-        eq: () => ({
-          maybeSingle: async () => {
-            banco.leituras += 1;
-            // A linha é capturada AGORA, antes de esperar o portão — é o que um
-            // banco real faz: a consulta sai antes da escrita, e a resposta que
-            // volta é a de antes dela. Ler `banco.linha` depois do `await` faria
-            // a leitura "em voo" enxergar o valor NOVO e o caso não reproduziria
-            // corrida nenhuma (foi o primeiro jeito que escrevi, e a asserção de
-            // controle o pegou).
-            const capturada = banco.linha;
-            if (banco.portao) await banco.portao.esperar;
-            if (banco.erro) return { data: null, error: banco.erro };
-            return { data: capturada, error: null };
-          },
-        }),
+        eq: () => consulta(false),
       }),
     }),
   }),
 }));
+
+function consulta(comSinal: boolean) {
+  return {
+    abortSignal: () => consulta(true),
+    maybeSingle: async () => {
+      const deduplicada = banco.requisicao && !comSinal ? banco.requisicao : null;
+      if (deduplicada && "resposta" in deduplicada) {
+        return { data: deduplicada.resposta ?? null, error: null };
+      }
+      const lida = await lerDoBanco();
+      if (deduplicada && !lida.error) deduplicada.resposta = lida.data;
+      return lida;
+    },
+  };
+}
+
+async function lerDoBanco(): Promise<{
+  data: Record<string, unknown> | null;
+  error: { code: string; message: string } | null;
+}> {
+  banco.leituras += 1;
+  // A linha é capturada AGORA, antes de esperar o portão — é o que um
+  // banco real faz: a consulta sai antes da escrita, e a resposta que
+  // volta é a de antes dela. Ler `banco.linha` depois do `await` faria
+  // a leitura "em voo" enxergar o valor NOVO e o caso não reproduziria
+  // corrida nenhuma (foi o primeiro jeito que escrevi, e a asserção de
+  // controle o pegou).
+  const capturada = banco.linha;
+  if (banco.portao) await banco.portao.esperar;
+  if (banco.erro) return { data: null, error: banco.erro };
+  return { data: capturada, error: null };
+}
 
 /**
  * `seeded_from_env: false` não é detalhe: é o que faz `precisaSemear` devolver
@@ -126,10 +154,9 @@ describe("o memo da marca da instalação atravessa instâncias do módulo", () 
   it("a invalidação feita pela instância da ROTA alcança a instância da TELA", async () => {
     const tela = await instancia();
     const rota = await instancia();
-    expect(
-      tela,
-      "controle: sem duas instâncias distintas este teste não reproduz nada",
-    ).not.toBe(rota);
+    expect(tela, "controle: sem duas instâncias distintas este teste não reproduz nada").not.toBe(
+      rota,
+    );
 
     // 1. A tela renderizou uma vez — o memo guardou a linha SEM logo.
     expect((await tela.marcaDaInstalacao())?.logo_path).toBeNull();
@@ -298,10 +325,7 @@ describe("a leitura que FALHOU depois da escrita não vira fato memoizado", () =
     //    fica vermelha sem o conserto.
     banco.erro = null;
     const linha = await tela.marcaDaInstalacao();
-    expect(
-      banco.leituras,
-      "a falha não pode ser servida do memo como se fosse leitura",
-    ).toBe(2);
+    expect(banco.leituras, "a falha não pode ser servida do memo como se fosse leitura").toBe(2);
     expect(linha?.logo_path, "o logo recém-subido tem de aparecer no render seguinte").toBe(
       CAMINHO_SUBIDO,
     );
@@ -314,5 +338,80 @@ describe("a leitura que FALHOU depois da escrita não vira fato memoizado", () =
     expect((await tela.marcaDaInstalacao())?.logo_path).toBe(CAMINHO_SUBIDO);
     await tela.marcaDaInstalacao();
     expect(banco.leituras, "uma ida ao banco por TTL continua sendo o contrato").toBe(1);
+  });
+});
+
+/**
+ * ═══ A DEDUPLICAÇÃO DO `fetch` NUM RENDER DEVOLVE A RESPOSTA DE ANTES DA ESCRITA ═══
+ *
+ * Durante um render, o Next embrulha o `fetch` global numa deduplicação por
+ * requisição (`next/dist/server/lib/dedupe-fetch.js`, 16.4.0): o primeiro GET
+ * guarda a resposta, e todo GET idêntico seguinte NA MESMA requisição recebe
+ * essa resposta sem sair para a rede. O layout raiz chama `marcaDaInstalacao()`
+ * três vezes por render (`generateMetadata`, `EstiloDaMarca`, `MarcaNoNavegador`).
+ *
+ * A guarda de geração supõe que toda leitura vai ao banco DEPOIS de capturar a
+ * geração. Com a deduplicação isso é falso: a 2ª chamada do mesmo render, feita
+ * depois da escrita, captura a geração NOVA e recebe a linha VELHA da 1ª — e a
+ * memoiza por 30s. Toda requisição seguinte, de qualquer pessoa, nega a escrita.
+ *
+ * MEDIDO no CI: `marca-logo.spec.ts:790` (run 38121746030 — "Marca salva.", e o
+ * /login de um visitante, 150 ms depois, ainda com o nome padrão; 5,4 s depois a
+ * própria /admin/marca, num GET novo, ainda vazia) e `icone-da-aba.spec.ts:89`
+ * (run 38105790384 — upload 200, /login sem o ícone). Nas duas, uma rajada de
+ * prefetch RSC estava em voo durante a escrita.
+ */
+describe("a deduplicação do fetch dentro de um render não reinstala a linha velha", () => {
+  beforeEach(async () => {
+    banco.linha = SEM_LOGO;
+    banco.leituras = 0;
+    banco.portao = null;
+    banco.erro = null;
+    banco.requisicao = null;
+    (await instancia()).invalidarMarcaDaInstalacao();
+  });
+
+  it("CONTROLE: o dublê deduplica como o Next — sem `signal`, o 2º GET recebe o 1º", async () => {
+    // Sem este caso, o de baixo passaria verde com um dublê que não deduplica, e
+    // o conserto pareceria provado sem que o defeito tivesse sido reproduzido.
+    const { createAdminClient } = await import("@/lib/supabase/admin");
+    const ler = () =>
+      (
+        createAdminClient().from("platform_branding").select("*").eq("id", 1) as unknown as {
+          maybeSingle: () => Promise<{ data: Record<string, unknown> | null }>;
+        }
+      ).maybeSingle();
+    banco.requisicao = {};
+    expect((await ler()).data?.logo_path).toBeNull();
+    banco.linha = COM_LOGO;
+    expect((await ler()).data?.logo_path, "o 2º GET da requisição veio do banco").toBeNull();
+    expect(banco.leituras).toBe(1);
+  });
+
+  it("a 2ª leitura do MESMO render, depois da escrita, não memoiza a resposta de antes", async () => {
+    const tela = await instancia();
+    const rota = await instancia();
+
+    // 1. Um render começa (prefetch RSC da barra lateral) e lê a marca: memo vazio,
+    //    vai ao banco, guarda SEM_LOGO.
+    banco.requisicao = {};
+    expect((await tela.marcaDaInstalacao())?.logo_path).toBeNull();
+
+    // 2. No meio desse render, a escrita termina e invalida — a ordem real de
+    //    `updateBranding` e de `gravarCaminho`.
+    banco.linha = COM_LOGO;
+    rota.invalidarMarcaDaInstalacao();
+
+    // 3. O mesmo render chama de novo (o layout chama três vezes). O que esta
+    //    chamada devolve não importa: a requisição dela começou antes da escrita.
+    await tela.marcaDaInstalacao();
+    banco.requisicao = null;
+
+    // 4. Uma requisição NOVA — o /login do visitante — tem de ver a escrita. Sem o
+    //    conserto, ela recebe do memo a linha velha que o passo 3 reinstalou.
+    expect(
+      (await tela.marcaDaInstalacao())?.logo_path,
+      "uma requisição nova, depois de a escrita voltar 200, ainda nega a escrita",
+    ).toBe(CAMINHO_SUBIDO);
   });
 });

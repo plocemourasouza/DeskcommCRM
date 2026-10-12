@@ -402,6 +402,17 @@ async function lerLinha(): Promise<LinhaDaMarca | null | "erro"> {
       .from("platform_branding")
       .select(COLUNAS)
       .eq("id", 1)
+      // ⚠️ O sinal NÃO é para abortar nada: é a única saída da deduplicação que o
+      // Next põe no `fetch` durante um render (`next/dist/server/lib/dedupe-fetch.js`,
+      // 16.4.0: "If we're passed a signal [...] opts out of caching"). Sem ele, todo
+      // GET idêntico NA MESMA requisição devolve a resposta do PRIMEIRO — inclusive
+      // um que saiu antes da escrita. A guarda de geração de `marcaDaInstalacao`
+      // supõe que cada leitura vai ao banco DEPOIS de capturar a geração; com a
+      // deduplicação, a 2ª chamada do mesmo render (o layout chama três vezes)
+      // captura a geração NOVA, recebe a linha VELHA e a memoiza por 30s. Medido no
+      // CI: marca-logo.spec.ts:790 (run 38121746030) e icone-da-aba.spec.ts:89
+      // (run 38105790384) — escrita com 200, e telas de requisições novas negando-a.
+      .abortSignal(new AbortController().signal)
       .maybeSingle();
     if (error) {
       avisarUmaVez(
