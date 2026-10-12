@@ -90,6 +90,7 @@ export default async function MarcaDaOrganizacaoPage() {
           // a URL pronta do servidor faria a tela ter uma segunda regra de
           // montagem, e a que divergisse seria a que ninguém abre.
           logo_path: gravada?.logo_path ?? null,
+          neutros: gravada?.neutros ?? null,
         }}
         // As DUAS camadas de baixo descem para o formulário, e não uma resolução
         // já pronta: a prévia ao vivo remonta a pilha inteira a cada tecla, pelo
@@ -102,6 +103,7 @@ export default async function MarcaDaOrganizacaoPage() {
           logo_path: linha?.logo_path ?? null,
           accent_hex: linha?.accent_hex ?? null,
           accent_dark_hex: linha?.accent_dark_hex ?? null,
+          neutros: linha?.neutros ?? null,
         }}
         // Só os três campos de marca do ambiente, nunca o objeto `env` inteiro:
         // isto atravessa a fronteira para o navegador, e o que atravessa é o que

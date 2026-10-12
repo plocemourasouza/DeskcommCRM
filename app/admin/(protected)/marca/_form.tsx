@@ -11,11 +11,13 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SeletorDeNeutros } from "@/components/branding/SeletorDeNeutros";
 import { cssDaMarca } from "@/lib/branding/css";
 import { ehHexValido, K, normalizarHex } from "@/lib/branding/rampa";
 import { REGUA_DO_PRODUTO } from "@/lib/branding/regua-do-produto";
 import { resolverMarca } from "@/lib/branding/resolve";
-import { envelopeDeSemente } from "@/lib/branding/schema";
+import { aprovarContrasteNosNeutros } from "@/lib/branding/neutros";
+import { envelopeDeSemente, type NeutrosDaMarca } from "@/lib/branding/schema";
 import { platformBrandingSchema, type PlatformBrandingInput } from "@/lib/schemas/settings";
 
 import { EstadoDaMarca } from "./_estado";
@@ -36,6 +38,8 @@ export interface MarcaGravada {
   readonly accent_hex: string | null;
   /** A cor do TEMA ESCURO (#2482) — o par; `null` = só a cor acima pinta. */
   readonly accent_dark_hex: string | null;
+  /** A paleta de neutros gravada (`quente` quando a coluna ainda não existe ou é desconhecida). */
+  readonly neutros: NeutrosDaMarca;
   readonly show_powered_by: boolean;
 }
 
@@ -67,6 +71,8 @@ const ERRO_EM_PORTUGUES: Record<string, string> = {
   validation_failed: "Algum campo não está no formato esperado.",
   unauthenticated: "Sua sessão expirou. Entre de novo para salvar.",
   forbidden_role: "Só quem administra a instalação pode mudar a marca.",
+  contraste_insuficiente:
+    "A cor da marca não tem contraste suficiente sobre os neutros escolhidos. Escolha outra paleta de neutros ou ajuste a cor.",
 };
 
 /** Cinza médio para o seletor visual quando o campo ainda não tem cor válida. */
@@ -89,6 +95,7 @@ export function FormularioDaMarca({
   const [nome, setNome] = useState(gravada.app_name ?? "");
   const [hex, setHex] = useState(gravada.accent_hex ?? "");
   const [hexEscuro, setHexEscuro] = useState(gravada.accent_dark_hex ?? "");
+  const [neutros, setNeutros] = useState<NeutrosDaMarca>(gravada.neutros);
   const [erroTecnico, setErroTecnico] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -115,6 +122,7 @@ export function FormularioDaMarca({
         [
           {
             origem: "tela",
+            neutros,
             cor: hexLimpo.length > 0 ? envelopeDeSemente(hexLimpo) : undefined,
             // O par (#2482): a segunda semente entra pelo MESMO envelope e a
             // mesma validação — o preview mostra o que o servidor vai emitir.
@@ -124,13 +132,25 @@ export function FormularioDaMarca({
         ],
         REGUA_DO_PRODUTO,
       ),
-    [hexLimpo, hexEscuroLimpo],
+    [hexLimpo, hexEscuroLimpo, neutros],
   );
 
   // A mesma serialização que decide se a cor chega ao `<style>` da página —
   // rodada aqui para a tela poder dizer "esta cor não seria aplicada" ANTES de
   // salvar, em vez de o operador descobrir pelo alarme de fallback depois.
   const serializacao = useMemo(() => cssDaMarca(resolvida.cor), [resolvida.cor]);
+
+  // A mesma regra que a Server Action aplica ao salvar: a cor tem de ler sobre os
+  // neutros escolhidos. Aqui ela só AVISA cedo; quem recusa é o servidor.
+  const contraste = useMemo(
+    () =>
+      aprovarContrasteNosNeutros({
+        accent: hexValido ? hexLimpo : null,
+        accentEscuro: hexEscuroValido ? hexEscuroLimpo : null,
+        neutros,
+      }),
+    [hexValido, hexLimpo, hexEscuroValido, hexEscuroLimpo, neutros],
+  );
 
   const derivada = resolvida.cor?.derivada ?? null;
   /**
@@ -220,6 +240,7 @@ export function FormularioDaMarca({
       // medido, zero ocorrências fora do schema e da tabela. Um interruptor que
       // não muda nada em tela nenhuma é pior que a ausência dele.
       show_powered_by: gravada.show_powered_by,
+      neutros,
     };
 
     const lido = platformBrandingSchema.safeParse(candidato);
@@ -415,6 +436,17 @@ export function FormularioDaMarca({
         )}
       </Card>
 
+      <Card className="space-y-3 p-6">
+        <SeletorDeNeutros id="neutros" valor={neutros} onChange={(v) => setNeutros(v ?? "quente")} />
+        {contraste.ok ? null : (
+          <p role="alert" className="text-sm text-error-fg">
+            {t(
+              "A cor da marca não tem contraste suficiente sobre estes neutros. Escolha outra paleta ou ajuste a cor.",
+            )}
+          </p>
+        )}
+      </Card>
+
       {/*
         O logo em cartão PRÓPRIO, e não junto do nome: ele não passa pelo botão
         Salvar. Misturá-lo aos campos que passam ensinaria que o arquivo só vale
@@ -453,7 +485,7 @@ export function FormularioDaMarca({
         {erroTecnico ? (
           <span className="font-mono text-xs text-text-muted">{erroTecnico}</span>
         ) : null}
-        <Button type="submit" disabled={isPending || !hexValido || !hexEscuroValido}>
+        <Button type="submit" disabled={isPending || !hexValido || !hexEscuroValido || !contraste.ok}>
           {isPending ? t("Salvando…") : t("Salvar")}
         </Button>
       </div>

@@ -111,3 +111,37 @@ describe("indicador de foco no modo de alto contraste", () => {
     expect(bloco).not.toContain("var(--");
   });
 });
+
+describe("presets de neutros (data-neutros) — o escopo claro também recebe", () => {
+  const NEUTROS = ["cinza", "frio"] as const;
+  const SELETOR_CLARO = (n: string) =>
+    `:root[data-neutros="${n}"]:not([data-theme="dark"]), [data-neutros="${n}"][data-theme="light"], [data-neutros="${n}"] [data-theme="light"]`;
+
+  it.each(NEUTROS)("%s: o claro cobre o escopo claro dentro de página escura", (n) => {
+    // Sem o seletor por descendência, `<div data-theme="light">` sob um <html> escuro
+    // com preset herdaria o greige do bloco `[data-theme="light"]` (0,1,0).
+    const claro = blocoDe(SELETOR_CLARO(n));
+    expect(claro.size).toBeGreaterThan(0);
+    expect(claro.has("--color-bg")).toBe(true);
+    expect(claro.has("--color-neutral-950")).toBe(true);
+  });
+
+  it.each(NEUTROS)(
+    "%s: claro e escuro redefinem as mesmas superfícies, textos, bordas e neutros",
+    (n) => {
+      const claro = blocoDe(SELETOR_CLARO(n));
+      const escuro = blocoDe(`[data-theme="dark"][data-neutros="${n}"]`);
+      const comum = (m: Map<string, string>) =>
+        [...m.keys()].filter((k) => !/overlay|shadow/.test(k)).sort();
+      expect(comum(claro)).toEqual(comum(escuro));
+      // Preset nenhum toca a rampa nem os estados: só o que é neutro.
+      for (const k of [...claro.keys(), ...escuro.keys()]) {
+        expect(k, k).not.toMatch(/accent|success|warning|error|info|agenda/);
+      }
+    },
+  );
+
+  it.each(NEUTROS)("%s: nenhum seletor do preset é `:root` puro (o default segue sozinho)", (n) => {
+    expect(CSS).not.toMatch(new RegExp(`\\n:root\\s*,\\s*\\[data-neutros="${n}"`));
+  });
+});

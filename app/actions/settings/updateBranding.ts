@@ -4,7 +4,9 @@ import { headers } from "next/headers";
 
 import { audit } from "@/lib/audit";
 import { escritaDeAdminOuRecusa } from "@/lib/auth/escritaDeAdminOuRecusa";
-import { invalidarMarcaDaInstalacao } from "@/lib/branding/instalacao";
+import { invalidarMarcaDaInstalacao, marcaDaInstalacao } from "@/lib/branding/instalacao";
+import { aprovarContrasteNosNeutros } from "@/lib/branding/neutros";
+import { neutrosDeTexto } from "@/lib/branding/schema";
 import { normalizarHex } from "@/lib/branding/rampa";
 import { platformBrandingSchema, type PlatformBrandingInput } from "@/lib/schemas/settings";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -83,6 +85,20 @@ export async function updateBranding(
   if (!escrita.ok) return escrita;
   const { user: authUser } = escrita.ctx;
 
+  // A regua de contraste, NO SERVIDOR: o formulario avisa, mas o cliente nao e
+  // fronteira. Os neutros medidos sao os que vao valer depois do salvar — o
+  // escolhido agora, ou (sem escolha) o que ja esta gravado.
+  const neutrosEmVigor =
+    parsed.data.neutros ?? neutrosDeTexto((await marcaDaInstalacao())?.neutros);
+  const contraste = aprovarContrasteNosNeutros({
+    accent: parsed.data.accent_hex,
+    accentEscuro: parsed.data.accent_dark_hex,
+    neutros: neutrosEmVigor,
+  });
+  if (!contraste.ok) {
+    return { ok: false, error: "contraste_insuficiente", details: contraste.temas };
+  }
+
   const hdrs = await headers();
   const requestId = hdrs.get("x-request-id");
   const ip = hdrs.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
@@ -102,6 +118,9 @@ export async function updateBranding(
     accent_dark_hex:
       parsed.data.accent_dark_hex === null ? null : normalizarHex(parsed.data.accent_dark_hex),
     show_powered_by: parsed.data.show_powered_by,
+    // Ausente = "nao mexa": a coluna e `not null default 'quente'`, entao omitir
+    // preserva a escolha gravada (e a linha nova nasce `quente`).
+    ...(parsed.data.neutros ? { neutros: parsed.data.neutros } : {}),
     // A linha passa a ser HUMANA. É o que impede a semeadura do `.env` de
     // reescrever a escolha no render seguinte — inclusive quando a escolha foi
     // apagar tudo para voltar ao padrão do produto. Ver `precisaSemear`.
@@ -157,6 +176,7 @@ export async function updateBranding(
       fields_changed: Object.keys(parsed.data),
       accent_definido: parsed.data.accent_hex !== null,
       logo_definido: parsed.data.logo_url !== null,
+      ...(parsed.data.neutros ? { neutros: parsed.data.neutros } : {}),
     },
   });
 

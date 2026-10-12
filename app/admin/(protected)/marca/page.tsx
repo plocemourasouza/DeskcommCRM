@@ -10,6 +10,7 @@ import { marcaDaInstalacao } from "@/lib/branding/instalacao";
 import { logoDaCamada } from "@/lib/branding/logo";
 import { REGUA_DO_PRODUTO } from "@/lib/branding/regua-do-produto";
 import { camadaDaInstalacao, camadaDoAmbiente, resolverMarca } from "@/lib/branding/resolve";
+import { neutrosDeTexto } from "@/lib/branding/schema";
 import { env } from "@/lib/env";
 import { tagDeIdioma } from "@/lib/i18n/datas";
 import { normalizarIdioma } from "@/lib/i18n/idiomas";
@@ -104,6 +105,7 @@ export default async function Page() {
           logo_path: linha?.logo_path ?? null,
           accent_hex: linha?.accent_hex ?? null,
           accent_dark_hex: linha?.accent_dark_hex ?? null,
+          neutros: neutrosDeTexto(linha?.neutros),
           // `true` é o default da coluna: sem linha ainda, é o valor que o
           // `upsert` gravaria de qualquer forma.
           show_powered_by: linha?.show_powered_by ?? true,

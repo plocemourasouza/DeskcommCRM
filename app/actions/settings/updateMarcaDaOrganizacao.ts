@@ -7,7 +7,10 @@ import { revalidatePath } from "next/cache";
 import { audit } from "@/lib/audit";
 import { loadAuthUser, mfaEmDivida, resolveActiveOrg } from "@/lib/auth/server";
 import { podeAdministrarEmpresa } from "@/lib/auth/pode-administrar-empresa";
+import { marcaDaInstalacao } from "@/lib/branding/instalacao";
+import { aprovarContrasteNosNeutros } from "@/lib/branding/neutros";
 import { normalizarHex } from "@/lib/branding/rampa";
+import { neutrosDeTexto } from "@/lib/branding/schema";
 import {
   marcaDaOrganizacaoSchema,
   type MarcaDaOrganizacaoInput,
@@ -25,6 +28,7 @@ export type UpdateMarcaDaOrganizacaoResult =
         | "forbidden_role"
         | "mfa_required"
         | "nao_gravou"
+        | "contraste_insuficiente"
         | "db_error";
       details?: unknown;
     };
@@ -114,6 +118,19 @@ export async function updateMarcaDaOrganizacao(
     return { ok: false, error: "mfa_required" };
   }
 
+  // A regua de contraste, NO SERVIDOR (o formulario so avisa). Organizacao que
+  // nao escolhe neutros herda os da instalacao, e a cor e medida contra eles.
+  const neutrosEmVigor =
+    parsed.data.neutros ?? neutrosDeTexto((await marcaDaInstalacao())?.neutros);
+  const contraste = aprovarContrasteNosNeutros({
+    accent: parsed.data.accent_hex,
+    accentEscuro: parsed.data.accent_dark_hex,
+    neutros: neutrosEmVigor,
+  });
+  if (!contraste.ok) {
+    return { ok: false, error: "contraste_insuficiente", details: contraste.temas };
+  }
+
   const hdrs = await headers();
   const requestId = hdrs.get("x-request-id");
   const ip = hdrs.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
@@ -125,7 +142,8 @@ export async function updateMarcaDaOrganizacao(
   const limpar =
     parsed.data.app_name === null &&
     parsed.data.accent_hex === null &&
-    parsed.data.accent_dark_hex === null;
+    parsed.data.accent_dark_hex === null &&
+    parsed.data.neutros === null;
   const marca = limpar
     ? null
     : {
@@ -141,6 +159,9 @@ export async function updateMarcaDaOrganizacao(
           parsed.data.accent_dark_hex === null
             ? null
             : normalizarHex(parsed.data.accent_dark_hex),
+        // `null` = herdar: a chave NAO vai. A RPC recusa `neutros` que nao seja
+        // string do vocabulario, entao um `null` explicito estouraria 22023.
+        ...(parsed.data.neutros ? { neutros: parsed.data.neutros } : {}),
         updated_by: authUser.id,
         updated_at: new Date().toISOString(),
       };
@@ -195,6 +216,7 @@ export async function updateMarcaDaOrganizacao(
       fields_changed: Object.keys(parsed.data),
       accent_definido: parsed.data.accent_hex !== null,
       nome_definido: parsed.data.app_name !== null,
+      neutros_definido: parsed.data.neutros !== null,
     },
   });
 

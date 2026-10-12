@@ -36,8 +36,11 @@ import {
   envelopeDeSemente,
   esquemaDaCorDaMarca,
   FORMATO_ATUAL,
+  neutrosEscolhidos,
+  type NeutrosDaMarca,
   type PapelDaSemente,
 } from "./schema";
+import { REGUA_DO_PRODUTO, reguaDoProduto } from "./regua-do-produto";
 
 /** Códigos que nascem da RESOLUÇÃO (os da derivação vêm de `contraste.ts`). */
 export type CodigoDaResolucao =
@@ -91,6 +94,12 @@ export type CamadaDeMarca = {
    * que a chave Some do objeto resolvido quando ninguém a definiu.
    */
   readonly corEscura?: unknown;
+  /**
+   * A paleta de neutros desta camada. Valor FORA do vocabulario nao e guardado
+   * por quem monta a camada (`neutrosEscolhidos`), entao ausente = "nao escolhi,
+   * herde" — a mesma precedencia por campo de nome e logo.
+   */
+  readonly neutros?: NeutrosDaMarca | null;
 };
 
 export type CorResolvida = {
@@ -111,12 +120,15 @@ export type CorResolvida = {
 
 export type MarcaResolvida = Branding & {
   readonly cor: CorResolvida | null;
+  /** A paleta de neutros em vigor (`quente` quando nenhuma camada escolheu). */
+  readonly neutros: NeutrosDaMarca;
   /** De qual camada veio cada campo — o que torna a precedência auditável. */
   readonly origens: {
     readonly nome: string;
     readonly logoUrl: string;
     readonly logoDarkUrl?: string;
     readonly cor: string;
+    readonly neutros: string;
     /** Só existe quando a MESMA camada que venceu a cor definiu a do escuro. */
     readonly corEscura?: string;
   };
@@ -468,13 +480,28 @@ export function resolverMarca(camadas: readonly CamadaDeMarca[], regua: Regua): 
     if (camada.logoUrl?.trim()) break;
   }
 
+  let neutros: NeutrosDaMarca = "quente";
+  let origemDosNeutros = PADRAO;
+  for (const camada of camadas) {
+    const escolhido = neutrosEscolhidos(camada.neutros);
+    if (escolhido) {
+      neutros = escolhido;
+      origemDosNeutros = camada.origem;
+      break;
+    }
+  }
+  // A cor e medida CONTRA os neutros que vao aparecer: o contraste do accent sobre
+  // o fundo `frio` nao e o do `quente`. So a regua do PRODUTO ganha o preset — uma
+  // regua injetada (teste, previa de outra regua) e do chamador e fica como veio.
+  const reguaEfetiva = regua === REGUA_DO_PRODUTO ? reguaDoProduto(neutros) : regua;
+
   const motivos: MotivoDaMarca[] = [];
   let cor: CorResolvida | null = null;
   let origemDaCor = PADRAO;
 
   for (const camada of camadas) {
     if (!("cor" in camada)) continue;
-    const tentativa = resolverCor(camada.cor, camada.origem, regua, camada.corEscura);
+    const tentativa = resolverCor(camada.cor, camada.origem, reguaEfetiva, camada.corEscura);
     motivos.push(...tentativa.motivos);
     if (tentativa.cor) {
       cor = tentativa.cor;
@@ -487,11 +514,13 @@ export function resolverMarca(camadas: readonly CamadaDeMarca[], regua: Regua): 
     ...base,
     ...(logoEscuro ? { logoDarkUrl: logoEscuro.valor } : {}),
     cor,
+    neutros,
     origens: {
       nome: nome?.origem ?? PADRAO,
       logoUrl: logo?.origem ?? PADRAO,
       ...(logoEscuro ? { logoDarkUrl: logoEscuro.origem } : {}),
       cor: origemDaCor,
+      neutros: origemDosNeutros,
       ...(cor?.corEscura ? { corEscura: origemDaCor } : {}),
     },
     motivos,
@@ -539,6 +568,8 @@ export type LinhaDaInstalacao = {
    * caso de TODA linha gravada antes desta coluna.
    */
   readonly accent_dark_hex?: string | null;
+  /** A paleta de neutros (migration 0650). Linha anterior a coluna: ausente = `quente`. */
+  readonly neutros?: string | null;
 };
 
 /**
@@ -564,6 +595,7 @@ export function camadaDaInstalacao(linha: LinhaDaInstalacao | null): CamadaDeMar
   // O arquivo subido vence a URL colada, DENTRO desta camada — ver `logoDaCamada`.
   const logoUrl = logoDaCamada(linha.logo_path, linha.logo_url);
   const logoDarkUrl = logoDaCamada(linha.logo_dark_path, null);
+  const neutros = neutrosEscolhidos(linha.neutros);
   // Mesma regra do `.env`: campo vazio é ausência de configuração, não cor com
   // defeito. Sem isto, uma linha semeada de um `.env` sem cor emitiria
   // `cor_ausente` em toda instalação de fábrica — e aviso no caso normal ensina
@@ -574,6 +606,7 @@ export function camadaDaInstalacao(linha: LinhaDaInstalacao | null): CamadaDeMar
       nome: linha.app_name,
       logoUrl,
       ...(logoDarkUrl ? { logoDarkUrl } : {}),
+      ...(neutros ? { neutros } : {}),
     };
   }
   return {
@@ -583,6 +616,7 @@ export function camadaDaInstalacao(linha: LinhaDaInstalacao | null): CamadaDeMar
     ...(logoDarkUrl ? { logoDarkUrl } : {}),
     cor: envelopeDeSemente(hex),
     ...(hexEscuro.length > 0 ? { corEscura: envelopeDeSemente(hexEscuro) } : {}),
+    ...(neutros ? { neutros } : {}),
   };
 }
 
@@ -644,6 +678,8 @@ export type MarcaDaOrganizacao = {
    * motivo de `logo_dark_path` (kit self-host com código velho sobre dado novo).
    */
   readonly accent_dark_hex?: string | null;
+  /** A paleta de neutros desta organizacao; ausente = herda da instalacao. */
+  readonly neutros?: string | null;
 };
 
 /**
@@ -678,12 +714,14 @@ export function camadaDaOrganizacao(marca: MarcaDaOrganizacao | null): CamadaDeM
   const hexEscuro = (marca.accent_dark_hex ?? "").trim();
   const logoUrl = logoDaCamada(marca.logo_path, null);
   const logoDarkUrl = logoDaCamada(marca.logo_dark_path, null);
+  const neutros = neutrosEscolhidos(marca.neutros);
   if (hex.length === 0)
     return {
       origem: "organizacao",
       nome: marca.app_name,
       logoUrl,
       ...(logoDarkUrl ? { logoDarkUrl } : {}),
+      ...(neutros ? { neutros } : {}),
     };
   return {
     origem: "organizacao",
@@ -692,5 +730,6 @@ export function camadaDaOrganizacao(marca: MarcaDaOrganizacao | null): CamadaDeM
     ...(logoDarkUrl ? { logoDarkUrl } : {}),
     cor: envelopeDeSemente(hex),
     ...(hexEscuro.length > 0 ? { corEscura: envelopeDeSemente(hexEscuro) } : {}),
+    ...(neutros ? { neutros } : {}),
   };
 }

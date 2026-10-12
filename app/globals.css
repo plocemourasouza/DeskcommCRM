@@ -440,6 +440,126 @@
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
+   Neutros — presets `cinza` e `frio` (o `quente` é o :root acima, e o default).
+
+   ESTÁTICOS DE PROPÓSITO. Nada daqui é emitido pelo CSS da marca em runtime:
+   `branding-pares-pintados` proíbe o CSS de marca de declarar `--color-bg`, e o
+   preset é escolha de produto, não derivação a partir de uma semente. O que
+   liga o preset é o atributo `data-neutros` no <html> (app/layout.tsx).
+
+   Quatro coisas que não são óbvias:
+    - Cada bloco redefine SÓ superfície, texto, borda e neutros (+ overlay e a
+      tinta da sombra no claro). Accent, estados e agenda seguem os do tema.
+    - O claro usa `:not([data-theme="dark"])` porque `:root[data-neutros]` (0,2,0)
+      ganharia do `[data-theme="dark"]` (0,1,0) e pintaria o claro sobre o escuro.
+    - O escopo claro (`[data-theme="light"]` dentro de página escura) ganha o
+      preset por descendência, senão o preview mostraria o greige.
+    - Os seletores NÃO são lista no :root/[data-theme="dark"] originais: o
+      `extrairRegua` acha esses blocos por igualdade exata. A régua de cada
+      preset sai destes blocos (`extrairRegua(css, preset)`), nunca de lista à mão.
+   ───────────────────────────────────────────────────────────────────────── */
+
+:root[data-neutros="cinza"]:not([data-theme="dark"]), [data-neutros="cinza"][data-theme="light"], [data-neutros="cinza"] [data-theme="light"] {
+  --color-bg: #f9f9f9;
+  --color-surface: #ffffff;
+  --color-surface-elevated: #f3f3f3;
+  --color-overlay: rgba(26, 26, 26, 0.42);
+  --color-text: #1a1a1a;
+  --color-text-muted: #595959;
+  --color-text-subtle: #787878;
+  --color-border: #e3e3e3;
+  --color-border-strong: #cdcdcd;
+  --color-neutral-50: #f9f9f9;
+  --color-neutral-100: #f1f1f1;
+  --color-neutral-200: #e3e3e3;
+  --color-neutral-300: #cdcdcd;
+  --color-neutral-400: #a3a3a3;
+  --color-neutral-500: #787878;
+  --color-neutral-600: #595959;
+  --color-neutral-700: #434343;
+  --color-neutral-800: #2c2c2c;
+  --color-neutral-900: #1a1a1a;
+  --color-neutral-950: #0d0d0d;
+  --shadow-xs: 0 1px 2px 0 rgba(17, 17, 17, 0.04);
+  --shadow-sm: 0 1px 2px 0 rgba(17, 17, 17, 0.05), 0 1px 1px 0 rgba(17, 17, 17, 0.03);
+  --shadow-md: 0 4px 12px -2px rgba(17, 17, 17, 0.06), 0 2px 4px -1px rgba(17, 17, 17, 0.04);
+  --shadow-lg: 0 12px 32px -6px rgba(17, 17, 17, 0.1), 0 4px 12px -2px rgba(17, 17, 17, 0.06);
+  --shadow-xl: 0 24px 48px -12px rgba(17, 17, 17, 0.16), 0 8px 16px -4px rgba(17, 17, 17, 0.08);
+}
+
+[data-theme="dark"][data-neutros="cinza"] {
+  --color-bg: #151515;
+  --color-surface: #1c1c1c;
+  --color-surface-elevated: #262626;
+  --color-text: #f4f4f4;
+  --color-text-muted: #8b8b8b;
+  --color-text-subtle: #5e5e5e;
+  --color-border: #313131;
+  --color-border-strong: #424242;
+  --color-neutral-50: #f4f4f4;
+  --color-neutral-100: #e4e4e4;
+  --color-neutral-200: #b8b8b8;
+  --color-neutral-300: #8b8b8b;
+  --color-neutral-400: #5e5e5e;
+  --color-neutral-500: #424242;
+  --color-neutral-600: #313131;
+  --color-neutral-700: #262626;
+  --color-neutral-800: #1c1c1c;
+  --color-neutral-900: #151515;
+  --color-neutral-950: #0b0b0b;
+}
+
+:root[data-neutros="frio"]:not([data-theme="dark"]), [data-neutros="frio"][data-theme="light"], [data-neutros="frio"] [data-theme="light"] {
+  --color-bg: #f5faff;
+  --color-surface: #ffffff;
+  --color-surface-elevated: #eff4f9;
+  --color-overlay: rgba(23, 27, 31, 0.42);
+  --color-text: #171b1f;
+  --color-text-muted: #525a64;
+  --color-text-subtle: #707985;
+  --color-border: #dde4ed;
+  --color-border-strong: #c4cedc;
+  --color-neutral-50: #f5faff;
+  --color-neutral-100: #edf2f7;
+  --color-neutral-200: #dde4ed;
+  --color-neutral-300: #c4cedc;
+  --color-neutral-400: #9aa5b3;
+  --color-neutral-500: #707985;
+  --color-neutral-600: #525a64;
+  --color-neutral-700: #3e444c;
+  --color-neutral-800: #282d32;
+  --color-neutral-900: #171b1f;
+  --color-neutral-950: #0a0d11;
+  --shadow-xs: 0 1px 2px 0 rgba(14, 18, 24, 0.04);
+  --shadow-sm: 0 1px 2px 0 rgba(14, 18, 24, 0.05), 0 1px 1px 0 rgba(14, 18, 24, 0.03);
+  --shadow-md: 0 4px 12px -2px rgba(14, 18, 24, 0.06), 0 2px 4px -1px rgba(14, 18, 24, 0.04);
+  --shadow-lg: 0 12px 32px -6px rgba(14, 18, 24, 0.1), 0 4px 12px -2px rgba(14, 18, 24, 0.06);
+  --shadow-xl: 0 24px 48px -12px rgba(14, 18, 24, 0.16), 0 8px 16px -4px rgba(14, 18, 24, 0.08);
+}
+
+[data-theme="dark"][data-neutros="frio"] {
+  --color-bg: #12151a;
+  --color-surface: #191c21;
+  --color-surface-elevated: #22262c;
+  --color-text: #f0f4fa;
+  --color-text-muted: #838c98;
+  --color-text-subtle: #575e68;
+  --color-border: #2c3138;
+  --color-border-strong: #3c424b;
+  --color-neutral-50: #f0f4fa;
+  --color-neutral-100: #dee5ec;
+  --color-neutral-200: #b0b9c5;
+  --color-neutral-300: #838c98;
+  --color-neutral-400: #575e68;
+  --color-neutral-500: #3c424b;
+  --color-neutral-600: #2c3138;
+  --color-neutral-700: #22262c;
+  --color-neutral-800: #191c21;
+  --color-neutral-900: #12151a;
+  --color-neutral-950: #090b0f;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
    Ponte token → utilitário (o que era `theme.extend` no `tailwind.config.ts`).
 
    `@theme inline` e não `@theme`: com `inline`, o utilitário recebe o

@@ -5328,6 +5328,24 @@ export const DICIONARIO: Traducoes = {
     es: "Cada valor CSS puede tener un máximo de 256 caracteres.",
   },
   "Informe ao menos uma regra CSS.": { es: "Indica al menos una regla CSS." },
+  "Cores de fundo e texto": { es: "Colores de fondo y texto" },
+  "A paleta neutra do sistema: fundos, cartões, bordas e textos. A cor da marca vem por cima dela.": {
+    es: "La paleta neutra del sistema: fondos, tarjetas, bordes y textos. El color de la marca va encima.",
+  },
+  "Quente (padrão)": { es: "Cálido (predeterminado)" },
+  "Fundos e textos com um leve tom de areia, o visual de sempre.": {
+    es: "Fondos y textos con un leve tono arena, el aspecto de siempre.",
+  },
+  "Cinza puro, sem puxar para nenhuma cor.": { es: "Gris puro, sin inclinarse hacia ningún color." },
+  "Cinza azulado, mais técnico e limpo.": { es: "Gris azulado, más técnico y limpio." },
+  "Usar a da instalação": { es: "Usar la de la instalación" },
+  "Hoje: ": { es: "Hoy: " },
+  "A cor da marca não tem contraste suficiente sobre os neutros escolhidos. Escolha outra paleta de neutros ou ajuste a cor.": {
+    es: "El color de la marca no tiene contraste suficiente sobre los neutros elegidos. Elige otra paleta de neutros o ajusta el color.",
+  },
+  "A cor da marca não tem contraste suficiente sobre estes neutros. Escolha outra paleta ou ajuste a cor.": {
+    es: "El color de la marca no tiene contraste suficiente sobre estos neutros. Elige otra paleta o ajusta el color.",
+  },
   "Sua cor": { es: "Tu color" },
   "fora da escala — fica só no logo": { es: "fuera de la escala: solo se usa en el logo" },
   "Botões no modo claro": { es: "Botones en el modo claro" },

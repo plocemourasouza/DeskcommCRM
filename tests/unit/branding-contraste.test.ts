@@ -22,9 +22,12 @@ import {
   simularDicromacia,
   superficiesDoTema,
 } from "@/lib/branding/contraste";
-import type { Regua, TemaDaRegua } from "@/lib/branding/contraste";
+import type { Regua, Tema, TemaDaRegua } from "@/lib/branding/contraste";
 import { deltaEOklab, hexParaOklch, rampaDeSemente } from "@/lib/branding/rampa";
 import type { Rampa } from "@/lib/branding/rampa";
+import { REGUA_DO_PRODUTO, reguaDoProduto } from "@/lib/branding/regua-do-produto";
+import { NEUTROS_DA_MARCA } from "@/lib/branding/schema";
+import type { NeutrosDaMarca } from "@/lib/branding/schema";
 
 const RAIZ = process.cwd();
 const CSS = fs.readFileSync(path.join(RAIZ, "app/globals.css"), "utf8");
@@ -484,3 +487,159 @@ describe("ramo degradado — rampas que não têm solução", () => {
     }
   });
 });
+
+// ── Neutros: quente | cinza | frio ───────────────────────────────────────────
+
+const PRESETS_NOVOS = NEUTROS_DA_MARCA.filter((n) => n !== "quente");
+const TEXTOS = ["--color-text", "--color-text-muted", "--color-text-subtle"] as const;
+
+function hexDe(tema: TemaDaRegua, chave: string): string {
+  const h = tema.base.find((b) => b.chave === chave)?.hex;
+  if (!h) throw new Error(`base sem ${chave}`);
+  return h;
+}
+
+describe("neutros — o preset muda a base e os neutros, nada além", () => {
+  it("`quente` (e o argumento ausente) é EXATAMENTE a régua de hoje", () => {
+    expect(extrairRegua(CSS, "quente")).toEqual(REGUA);
+    expect(extrairRegua(CSS)).toEqual(REGUA);
+  });
+
+  it.each(PRESETS_NOVOS)(
+    "%s: superfícies e neutros trocam; a rampa e os papéis do accent não",
+    (n) => {
+      const r = extrairRegua(CSS, n);
+      expect(r.rampaDoProduto).toEqual(REGUA.rampaDoProduto);
+      for (const t of ["claro", "escuro"] as const) {
+        expect(r[t].papeis).toEqual(REGUA[t].papeis);
+        expect(r[t].semanticas).toEqual(REGUA[t].semanticas);
+        expect(r[t].neutros, `${n}/${t}: neutros iguais ao quente — o bloco não pegou`).not.toEqual(
+          REGUA[t].neutros,
+        );
+        expect(
+          r[t].base.map((b) => b.hex),
+          `${n}/${t}: base igual ao quente`,
+        ).not.toEqual(REGUA[t].base.map((b) => b.hex));
+      }
+    },
+  );
+
+  it("um preset sem bloco no CSS estoura (nunca cai em silêncio no quente)", () => {
+    expect(() => extrairRegua(".x { color: red }", "cinza" as NeutrosDaMarca)).toThrow();
+  });
+
+  it("cinza é acromático de verdade; frio é azulado", () => {
+    const croma = (hex: string) => hexParaOklch(hex).C;
+    const matiz = (hex: string) => hexParaOklch(hex).h;
+    for (const t of ["claro", "escuro"] as const) {
+      for (const hex of extrairRegua(CSS, "cinza")[t].neutros)
+        expect(croma(hex)).toBeLessThan(0.004);
+      const frio = extrairRegua(CSS, "frio")[t].neutros.filter((h) => croma(h) > 0.004);
+      expect(frio.length).toBeGreaterThan(8);
+      for (const hex of frio) {
+        expect(matiz(hex)).toBeGreaterThan(220);
+        expect(matiz(hex)).toBeLessThan(290);
+      }
+    }
+  });
+});
+
+describe("neutros — os pisos valem nos 3 presets × 2 temas", () => {
+  for (const n of NEUTROS_DA_MARCA) {
+    const regua = reguaDoProduto(n);
+
+    it(`${n}: a régua congelada é a que o globals.css produz`, () => {
+      expect(regua).toEqual(extrairRegua(CSS, n));
+    });
+
+    it(`${n}: a Sage do produto cabe nos pisos`, () => {
+      for (const tema of [regua.claro, regua.escuro]) {
+        const pares = medirPares(tema, regua.rampaDoProduto, 0);
+        expect(pares.length).toBeGreaterThanOrEqual(18);
+        expect(pares.filter((p) => !p.passa)).toEqual([]);
+      }
+    });
+
+    it(`${n}: as 16 sementes derivadas contra ESTE preset ficam dentro dos pisos`, () => {
+      for (const semente of FIXTURE) {
+        const marca = derivarMarca(semente, regua);
+        for (const tema of [marca.claro, marca.escuro] as const) {
+          expect(tema.pares.length, `${n}/${semente}: nada medido`).toBeGreaterThanOrEqual(18);
+          const reprovas = tema.pares.filter((p) => !p.passa);
+          expect(
+            reprovas,
+            `${n}/${semente}: ` +
+              reprovas.map((r) => `${r.papel}×${r.superficie}=${r.razao.toFixed(2)}`).join(", "),
+          ).toEqual([]);
+        }
+      }
+    });
+
+    it(`${n}: o accent acromático segue separável do neutro do mesmo grau`, () => {
+      const marca = derivarMarca("#808080", regua);
+      for (const [tema, derivado] of [
+        [regua.claro, marca.claro],
+        [regua.escuro, marca.escuro],
+      ] as const) {
+        expect(
+          separacaoDoNeutro(tema, derivado.grauDoAccent, derivado.accent),
+        ).toBeGreaterThanOrEqual(PISO_DE_SEPARACAO_DO_NEUTRO);
+      }
+    });
+
+    it(`${n}: o texto não perde legibilidade para o quente`, () => {
+      for (const t of ["claro", "escuro"] as const) {
+        const tema = regua[t];
+        for (const bg of ["--color-bg", "--color-surface", "--color-surface-elevated"]) {
+          const doPreset = tema.base.find((b) => b.chave === bg)?.hex;
+          expect(doPreset).toBeTruthy();
+        }
+        // Texto principal: a régua de AAA, em qualquer fundo.
+        const texto = extrairTexto(n, t);
+        for (const bg of ["--color-bg", "--color-surface", "--color-surface-elevated"]) {
+          expect(
+            razaoDeContraste(texto["--color-text"]!, hexDe(tema, bg)),
+            `${n}/${t} text×${bg}`,
+          ).toBeGreaterThanOrEqual(7);
+        }
+        // Os dois secundários: nunca pior que o quente menos 0,1 (o escuro do produto
+        // já nasce em 4,44 no muted; o preset herda a medida, não a piora).
+        const quente = extrairTexto("quente", t);
+        for (const k of TEXTOS) {
+          for (const bg of ["--color-bg", "--color-surface", "--color-surface-elevated"]) {
+            const agora = razaoDeContraste(texto[k]!, hexDe(tema, bg));
+            const antes = razaoDeContraste(quente[k]!, hexDe(reguaDoProduto("quente")[t], bg));
+            expect(agora, `${n}/${t} ${k}×${bg}`).toBeGreaterThanOrEqual(antes - 0.1);
+          }
+        }
+      }
+    });
+  }
+
+  it("a régua de produto exportada é a do quente", () => {
+    expect(reguaDoProduto("quente")).toEqual(REGUA_DO_PRODUTO);
+  });
+});
+
+/** Os tokens de TEXTO de um preset, lidos do globals.css (a régua não os carrega). */
+function extrairTexto(n: NeutrosDaMarca, tema: Tema): Record<string, string> {
+  const alvo =
+    n === "quente"
+      ? tema === "claro"
+        ? /\n:root \{[\s\S]*?\n\}/
+        : /\n\[data-theme="dark"\] \{[\s\S]*?\n\}/
+      : tema === "claro"
+        ? new RegExp(
+            `\\n:root\\[data-neutros="${n}"\\]:not\\(\\[data-theme="dark"\\]\\)[^{]*\\{[\\s\\S]*?\\n\\}`,
+          )
+        : new RegExp(`\\n\\[data-theme="dark"\\]\\[data-neutros="${n}"\\] \\{[\\s\\S]*?\\n\\}`);
+  const bloco = alvo.exec(CSS)?.[0];
+  if (!bloco) throw new Error(`bloco de texto de ${n}/${tema} ausente`);
+  const saida: Record<string, string> = {};
+  for (const k of TEXTOS) {
+    const m = new RegExp(`${k}:\\s*(#[0-9a-f]{6})`).exec(bloco);
+    if (!m?.[1]) throw new Error(`${k} ausente em ${n}/${tema}`);
+    saida[k] = m[1];
+  }
+  return saida;
+}

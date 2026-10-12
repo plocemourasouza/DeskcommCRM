@@ -8650,6 +8650,7 @@ export type Database = {
           id: number
           logo_path: string | null
           logo_url: string | null
+          neutros: string
           seeded_from_env: boolean
           show_powered_by: boolean
           updated_at: string
@@ -8664,6 +8665,7 @@ export type Database = {
           id?: number
           logo_path?: string | null
           logo_url?: string | null
+          neutros?: string
           seeded_from_env?: boolean
           show_powered_by?: boolean
           updated_at?: string
@@ -8678,6 +8680,7 @@ export type Database = {
           id?: number
           logo_path?: string | null
           logo_url?: string | null
+          neutros?: string
           seeded_from_env?: boolean
           show_powered_by?: boolean
           updated_at?: string

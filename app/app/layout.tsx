@@ -9,6 +9,8 @@ import { ProvedorDeCoresDasEtiquetas } from "@/components/tags/CoresDasEtiquetas
 import { AppShell } from "./_components/AppShell";
 import { EstiloDaMarcaDaOrganizacao } from "./_components/EstiloDaMarcaDaOrganizacao";
 import { EstiloDoTemaDaExtensao } from "./_components/EstiloDoTemaDaExtensao";
+import { NeutrosDaOrganizacao } from "./_components/NeutrosDaOrganizacao";
+import type { NeutrosDaMarca } from "@/lib/branding/schema";
 import { MfaEnrollGate } from "@/components/auth/MfaEnrollGate";
 import { cssDaMarca, ESCOPO_DA_ORGANIZACAO } from "@/lib/branding/css";
 import { cssDaExtensaoDeTema, linhaBrutaDeTema, temaAplicavel } from "@/lib/extensions/tema";
@@ -62,6 +64,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
    * e não aqui: a precedência é regra do produto, não detalhe deste layout.
    */
   let cssDaOrganizacao: string | null = null;
+  // So quando a ORGANIZACAO escolheu: sem escolha, o <html> da instalacao ja vale.
+  let neutrosDaOrganizacao: NeutrosDaMarca | null = null;
   // O tema de extensão, se a organização escolheu um. `null` = quem não
   // escolheu — e aí o `EstiloDoTemaDaExtensao` não renderiza nada.
   let cssDoTemaDaExtensao: string | null = null;
@@ -180,6 +184,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     // resolução devolve a cor da instalação — e reemiti-la aqui, escopada no
     // `<body>`, seria repetir no documento um bloco que já vale pela raiz. Além
     // de bytes, custaria a única pergunta que a presença do bloco responde.
+    if (marca.origens?.neutros === "organizacao") neutrosDaOrganizacao = marca.neutros;
+
     if (marca.origens.cor === "organizacao") {
       // Os `motivos` de uma cor recusada NÃO são registrados aqui de propósito:
       // este caminho roda para todo tenant a cada render, e um aviso por
@@ -320,6 +326,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       */}
       <div data-marca-org="" className="contents">
         <EstiloDaMarcaDaOrganizacao css={cssDaOrganizacao} />
+        {neutrosDaOrganizacao ? <NeutrosDaOrganizacao neutros={neutrosDaOrganizacao} /> : null}
         <EstiloDoTemaDaExtensao css={cssDoTemaDaExtensao} />
         <ImpersonateBanner impersonating={impersonating} />
         <ConexaoCaidaBanner caidas={conexoesCaidas} />
