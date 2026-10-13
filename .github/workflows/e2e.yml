@@ -1223,6 +1223,7 @@ jobs:
       # `desligada` a apaga e confere a ausência; a outra devolve o valor
       # anterior no `finally`). PREVISÃO, não medida: ~1 min + ~2,5 min.
       SPECS_PARTE_6: >-
+        marca-neutros.spec.ts
         agenda-google-meet.spec.ts
         agenda-presenca-recuperacao.spec.ts
         celular-cabe-na-tela.spec.ts
