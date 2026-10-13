@@ -21,6 +21,7 @@ vi.mock("@/hooks/inbox/useUploadMedia", () => ({
 vi.mock("@/components/feedback/ApiErrorToast", () => ({ showApiError: (e: unknown) => toastMock(e) }));
 
 import { useSendMessage } from "@/hooks/inbox/useSendMessage";
+import type * as UploadMediaModule from "@/hooks/inbox/useUploadMedia";
 
 interface Page {
   data: Message[];
@@ -117,6 +118,64 @@ describe("useSendMessage — feedback de envio", () => {
     act(() => view.result.current.retry(failedId));
     await waitFor(() => expect(list().map((m) => m.id)).toEqual(["m3"]));
     expect(uploadMock).toHaveBeenCalledTimes(2);
+    expect(uploadMock.mock.calls[1]![0]).toEqual(expect.objectContaining({ file }));
+  });
+
+  it("anexo de RESPOSTA sobe pela rota de MENSAGEM (`/media`), nunca pela de nota", async () => {
+    // A guarda que o composer tinha (`destino: "mensagem"`) mudou de casa junto
+    // com o upload: agora é o hook que sobe. Aqui o upload REAL roda, com o
+    // `fetch` interceptado, e o que se mede é o endereço que ele pede — a
+    // diferença entre o arquivo ir para o cliente e ir para a nota interna.
+    // O `beforeEach` troca `URL` por um objeto sem construtor (para a prévia
+    // local); o import real precisa do `URL` de verdade, e a prévia o reinstala.
+    const urlFalso = globalThis.URL;
+    vi.unstubAllGlobals();
+    const real = await vi.importActual<typeof UploadMediaModule>("@/hooks/inbox/useUploadMedia");
+    vi.stubGlobal("URL", urlFalso);
+    uploadMock.mockImplementation((a: Parameters<typeof real.uploadMedia>[0]) => real.uploadMedia(a));
+    const fetchMock = vi.fn(async () =>
+      new Response(
+        JSON.stringify({
+          data: { storage_path: "org/conv/a.jpg", media_mime: "image/jpeg", media_size_bytes: 1, kind: "image" },
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      ),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    postMock.mockResolvedValue({ data: { id: "m4", status: "sent", type: "image" } });
+    const { view, list } = setup();
+    const file = new File([new Uint8Array([1])], "a.jpg", { type: "image/jpeg" });
+    act(() => view.result.current.mutate({ conversation_id: "conv-1", file }));
+    await waitFor(() => expect(list().map((m) => m.id)).toEqual(["m4"]));
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(String((fetchMock.mock.calls[0] as unknown[])[0])).toBe("/api/v1/conversations/conv-1/media");
+    expect(uploadMock.mock.calls[0]![0]).not.toHaveProperty("destino", "nota");
+    vi.unstubAllGlobals();
+  });
+
+  it("anexo enviado ANTES de a lista carregar ganha bolha, e a falha fica para 'Tentar de novo'", async () => {
+    // Sem a página em cache, `onMutate` não tinha onde pôr a bolha: o diálogo
+    // fechava, nada aparecia, e a falha perdia o arquivo de vez.
+    uploadMock.mockRejectedValueOnce(new Error("upload_failed"));
+    uploadMock.mockResolvedValueOnce({
+      storage_path: "org/conv/a.jpg",
+      media_mime: "image/jpeg",
+      media_size_bytes: 1,
+      kind: "image",
+    });
+    postMock.mockResolvedValue({ data: real("m5") });
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+    );
+    const view = renderHook(() => useSendMessage(), { wrapper });
+    const list = () => qc.getQueryData<InfiniteData<Page>>(KEY)?.pages[0]?.data ?? [];
+    const file = new File([new Uint8Array([1])], "a.jpg", { type: "image/jpeg" });
+    act(() => view.result.current.mutate({ conversation_id: "conv-1", type: "image", file }));
+    await waitFor(() => expect(list()[0]?.status).toBe("failed"));
+    expect(list()).toHaveLength(1);
+    act(() => view.result.current.retry(list()[0]!.id));
+    await waitFor(() => expect(list().map((m) => m.id)).toEqual(["m5"]));
     expect(uploadMock.mock.calls[1]![0]).toEqual(expect.objectContaining({ file }));
   });
 

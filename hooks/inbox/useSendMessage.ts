@@ -5,6 +5,12 @@ import { apiClient } from "@/lib/api/client";
 import { randomId } from "@/lib/random-id";
 import { showApiError } from "@/components/feedback/ApiErrorToast";
 import { uploadMedia } from "@/hooks/inbox/useUploadMedia";
+import {
+  envioDaBolhaLocal,
+  esquecerBolhaLocal,
+  registrarBolhaLocal,
+  type PaginaDeMensagens,
+} from "@/hooks/inbox/bolhasLocais";
 import type { Message } from "@/lib/types/messaging";
 
 interface SendArgs {
@@ -35,13 +41,6 @@ interface SendArgs {
   filename?: string;
 }
 
-/**
- * Envios que a tela já mostrou como bolha otimista, por id da bolha. Módulo, não
- * estado do hook: quem toca "Tentar de novo" (o fio) não é quem enviou (o
- * composer). Some no sucesso e no retry.
- */
-const ENVIOS_EM_VOO = new Map<string, SendArgs>();
-
 function tipoPelaMime(mime: string): string {
   if (mime.startsWith("image/")) return "image";
   if (mime.startsWith("video/")) return "video";
@@ -51,11 +50,6 @@ function tipoPelaMime(mime: string): string {
 
 function soltarPrevia(url: string | null | undefined) {
   if (url?.startsWith("blob:")) URL.revokeObjectURL(url);
-}
-
-interface MessagesPage {
-  data: Message[];
-  meta?: { cursor?: string | null; has_more?: boolean };
 }
 
 export function useSendMessage() {
@@ -80,10 +74,14 @@ export function useSendMessage() {
       }
 
       const queryKey = ["messages", args.conversation_id];
-      await qc.cancelQueries({ queryKey });
+      // Com a lista já em cache, um refetch em voo não pode sobrescrever a bolha.
+      // SEM a lista (anexo enviado antes de ela carregar), a primeira leitura não
+      // é cancelada: cancelá-la deixaria a conversa só com a bolha, sem histórico.
+      // Ela chega depois e passa pela mescla de `bolhasLocais`, que guarda a bolha.
+      if (qc.getQueryData(queryKey)) await qc.cancelQueries({ queryKey });
 
       const tempId = `temp-${randomId()}`;
-      ENVIOS_EM_VOO.set(tempId, args);
+      registrarBolhaLocal(tempId, args);
       const previa = args.file ? URL.createObjectURL(args.file) : null;
       const mime = args.file?.type || null;
       const tempMsg: Message = {
@@ -122,8 +120,10 @@ export function useSendMessage() {
         created_at: new Date().toISOString(),
       };
 
-      qc.setQueryData<InfiniteData<MessagesPage>>(queryKey, (old) => {
-        if (!old) return old;
+      qc.setQueryData<InfiniteData<PaginaDeMensagens>>(queryKey, (old) => {
+        // Sem página em cache ainda: a bolha CRIA a forma, senão não teria onde
+        // aparecer — e uma falha perderia o arquivo sem "Tentar de novo".
+        if (!old) return { pages: [{ data: [tempMsg] }], pageParams: [undefined] };
         const pages = [...old.pages];
         if (pages.length > 0) {
           // A primeira página contém as mensagens mais recentes. As páginas
@@ -141,10 +141,10 @@ export function useSendMessage() {
     },
     onSuccess: (result, args, context) => {
       const real = result.data;
-      if (context?.tempId) ENVIOS_EM_VOO.delete(context.tempId);
+      if (context?.tempId) esquecerBolhaLocal(context.tempId);
       soltarPrevia(context?.previa);
       const queryKey = ["messages", args.conversation_id];
-      qc.setQueryData<InfiniteData<MessagesPage>>(queryKey, (old) => {
+      qc.setQueryData<InfiniteData<PaginaDeMensagens>>(queryKey, (old) => {
         if (!old || old.pages.length === 0) return old;
         // O Realtime pode ter buscado a mensagem real antes da resposta do
         // POST. Remover ambas as cópias antes de inseri-la evita duplicação.
@@ -160,7 +160,7 @@ export function useSendMessage() {
       if (context?.tempId) {
         // A bolha NÃO some: vira `failed` e oferece "Tentar de novo". Sumir com
         // ela era perder o que a pessoa acabou de escrever ou anexar.
-        qc.setQueryData<InfiniteData<MessagesPage>>(["messages", args.conversation_id], (old) =>
+        qc.setQueryData<InfiniteData<PaginaDeMensagens>>(["messages", args.conversation_id], (old) =>
           old
             ? {
                 ...old,
@@ -195,10 +195,10 @@ export function useSendMessage() {
   const { mutate } = mutation;
   const retry = useCallback(
     (tempId: string) => {
-      const args = ENVIOS_EM_VOO.get(tempId);
+      const args = envioDaBolhaLocal<SendArgs>(tempId);
       if (!args) return;
-      ENVIOS_EM_VOO.delete(tempId);
-      qc.setQueryData<InfiniteData<MessagesPage>>(["messages", args.conversation_id], (old) => {
+      esquecerBolhaLocal(tempId);
+      qc.setQueryData<InfiniteData<PaginaDeMensagens>>(["messages", args.conversation_id], (old) => {
         if (!old) return old;
         return {
           ...old,

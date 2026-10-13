@@ -100,6 +100,12 @@ export function useTasks(filtros: FiltrosDeTarefa = {}) {
   return {
     tarefas: query.data?.tasks ?? [],
     carregando: query.isLoading,
+    /**
+     * Buscando AGORA, inclusive no refetch — é o `loading` do botão "Atualizar".
+     * `carregando` só cobre a primeira carga (e decide o esqueleto da lista); o
+     * clique da pessoa recarregava sem o botão anunciar `aria-busy`.
+     */
+    atualizando: query.isFetching,
     falhou: query.isError,
     recarregar: invalidar,
     criarTarefa: (entrada: NovaTarefa) => criar.mutateAsync(entrada),
