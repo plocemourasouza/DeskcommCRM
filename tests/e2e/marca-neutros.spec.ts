@@ -146,11 +146,15 @@ test.beforeAll(async () => {
   const db = createClient(c.url, c.serviceRole, { auth: { persistSession: false } });
   const { error: e1 } = await db.from("platform_branding").update({ neutros: "quente" } as never).eq("id", 1);
   if (e1) throw new Error(`reset da instalação: ${e1.message}`);
-  const { data: orgs, error: e2 } = await db.from("organizations").select("id, settings");
+  // Só quem gravou `neutros` — nunca "todas" (cerca e2e-nao-escolhe-a-primeira-linha).
+  const { data: orgs, error: e2 } = await db
+    .from("organizations")
+    .select("id, settings")
+    .filter("settings->branding->>neutros", "not.is", null);
   if (e2) throw new Error(`leitura das organizações: ${e2.message}`);
   for (const o of (orgs ?? []) as { id: string; settings: Record<string, unknown> | null }[]) {
     const branding = (o.settings?.branding ?? null) as Record<string, unknown> | null;
-    if (!branding || !("neutros" in branding)) continue;
+    if (!branding) continue;
     const { neutros: _fora, ...resto } = branding;
     const { error } = await db
       .from("organizations")

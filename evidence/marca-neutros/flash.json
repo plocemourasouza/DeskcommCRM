@@ -1,10 +1,10 @@
 {
-  "fcp_ms": 284,
+  "fcp_ms": 200,
   "trocas": [
-    "cinza@267.7ms",
-    "frio@268.3ms"
+    "cinza@182.8ms",
+    "frio@183.4ms"
   ],
   "quadros_com_paleta_errada": 0,
-  "primeiro_quadro_frio_ms": 272.29999999701977,
+  "primeiro_quadro_frio_ms": 188.29999999701977,
   "janela_do_flash_ms": "0"
 }
