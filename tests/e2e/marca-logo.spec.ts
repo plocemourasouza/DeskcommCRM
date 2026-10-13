@@ -20,8 +20,9 @@
  *      final troca a barra lateral dele e o `/login` continua sendo o do
  *      revendedor. É a propriedade que separa "marca própria" de "qualquer um
  *      repinta a instalação".
- *   3. **O que não é imagem não entra.** Um SVG renomeado para `.png` é recusado
- *      pelos BYTES, com a razão dita em português, e nada muda na tela.
+ *   3. **SVG vira PNG; SVG inseguro não entra.** Um SVG limpo sobe e o bucket
+ *      guarda e serve PNG; um SVG com script, renomeado para `.png`, é recusado
+ *      pelos BYTES (`logo_svg_invalido`), com a razão dita, e nada muda na tela.
  *   4. **Logo grande é ajustado antes de subir, e o teto continua de pé.** Um
  *      PNG acima de 512 KB com margem transparente é recortado e reduzido pelo
  *      `<canvas>` do navegador, e o arquivo gravado cabe no teto (issue #1655).
@@ -158,6 +159,18 @@ function pngSolido(lado: number, cor: [number, number, number]): Buffer {
 
 const PNG_DA_PLATAFORMA = pngSolido(48, [0x1d, 0x4e, 0xd8]);
 const PNG_DA_ORGANIZACAO = pngSolido(48, [0xd8, 0x4e, 0x1d]);
+/**
+ * Um SVG LIMPO — o arquivo que um designer entrega. Desde a rasterização no
+ * servidor (`lib/branding/logo-rasterizar.ts`) ele é aceito e vira PNG; o SVG
+ * em si nunca chega ao bucket.
+ */
+const SVG_LIMPO = Buffer.from(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="96" height="48" viewBox="0 0 96 48">' +
+    '<rect width="96" height="48" rx="8" fill="#0f766e"/>' +
+    '<circle cx="24" cy="24" r="14" fill="#f8fafc"/>' +
+    '<rect x="46" y="16" width="40" height="16" rx="4" fill="#f8fafc"/></svg>',
+  "utf8",
+);
 /** Um SVG legítimo com script — o arquivo que o produto tem de recusar. */
 const SVG_DISFARCADO = Buffer.from(
   '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48"><script>fetch("/x")</script><rect width="48" height="48"/></svg>',
@@ -991,64 +1004,84 @@ test.describe("o logo subido pela tela chega à tela", () => {
     }
   });
 
-  test("(4) SVG renomeado para .png é recusado pelos BYTES, com a razão dita", async ({ page }) => {
-    // ── A PRECONDIÇÃO QUE ESTE CASO MONTA PARA SI MESMO (issue #306) ──────────
-    // Até esta mudança o caso (4) começava asseverando o logo que o caso (3)
-    // tinha subido, e a reprovação saía exatamente assim — no relato do autor da
-    // issue: "5ª execução: caso (4) falhou na precondição — a barra precisa entrar
-    // neste caso COM logo da empresa". Ou seja: um PR que não toca marca caía por
-    // causa de um estado que outro caso devia ter deixado. Aqui ele SOBE o próprio
-    // logo da empresa e espera a barra refletir, então uma falha dele é dele.
+  test("(4) SVG limpo vira PNG no bucket; SVG com script é recusado pelos BYTES, com a razão dita", async ({
+    page,
+  }) => {
+    // ── O QUE MUDOU (logo SVG rasterizado) ───────────────────────────────────
+    // Até a rasterização no servidor este caso provava "SVG não é aceito". Agora
+    // a propriedade tem DUAS metades, e as duas se provam pela tela:
+    //   (a) o SVG que um designer entrega SOBE, e o que a barra baixa é um PNG
+    //       do bucket (o SVG nunca é gravado — `route.ts`, passo 5);
+    //   (b) o SVG com `<script>`, com nome e `Content-Type` mentindo "png", é
+    //       recusado pelos BYTES com `logo_svg_invalido`, e nada muda na tela.
+    // A precondição continua montada AQUI (issue #306): a subida do SVG limpo É
+    // o logo da empresa que a metade (b) precisa ver sobreviver à recusa. A conta
+    // de trocas do `admin` não muda — eram duas operações, continuam duas.
     await entrarNaCamada(page, "organizacao");
-    await subirLogoDaCamada(page, "organizacao");
+    await page.goto(CAMADAS.organizacao.tela);
+    await subir(page, "organizacao", {
+      nome: "logo-do-designer.svg",
+      mime: "image/svg+xml",
+      bytes: SVG_LIMPO,
+    });
+    await expect(page.getByText(/logo atualizado/i)).toBeVisible({ timeout: 15_000 });
+    await aindaNaTelaDeMarca(page, CAMADAS.organizacao.rota, "organizacao");
+    await page.screenshot({ path: evidencia("5-svg-limpo-aceito-claro.png"), fullPage: true });
 
     await page.goto("/app/inbox");
-    // O estado de partida é o logo que ESTE caso subiu, e a espera é no VALOR —
-    // `barraMostraLogoDe` POLLA o endereço da camada CERTA. `Sidebar.tsx` faz
-    // `activeOrg?.marca?.logoUrl || brand.logoUrl`: se a camada da organização
-    // ainda não tivesse chegado à barra, o que estaria lá é o logo da INSTALAÇÃO,
-    // a comparação lá embaixo (`depois === antes`) viraria tautologia — comparando
-    // o logo da instalação consigo mesmo — e o caso se chama "o logo da empresa
-    // sobrevive à recusa". Então é o da empresa que a precondição tem de provar,
-    // e é isso que o poll garante.
-    const antes = await barraMostraLogoDe(page, `${creds.org_id}/`, "precondição do caso (4)");
+    const antes = await barraMostraLogoDe(page, `${creds.org_id}/`, "SVG limpo, caso (4a)");
     expect(antes.src, "a barra lateral mostrou outro logo, não o da empresa").toContain(
       `${PREFIXO_PUBLICO}${creds.org_id}/`,
     );
+    // O caminho gravado termina em .png — o SVG não chegou ao bucket.
+    expect(
+      new URL(antes.src).pathname,
+      "o objeto gravado não é PNG — o SVG chegou ao bucket",
+    ).toMatch(/\.png$/);
+    // E quem decide é o CONTEÚDO servido, não a extensão: o bucket entrega PNG.
+    const servido = await page.request.get(antes.src);
+    expect(servido.status(), "o bucket público não serviu o logo rasterizado").toBe(200);
+    expect(servido.headers()["content-type"], "o bucket serviu outro tipo que não PNG").toBe(
+      "image/png",
+    );
+    const corpo = await servido.body();
+    expect(
+      corpo.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])),
+      "os bytes servidos não começam pela assinatura PNG",
+    ).toBe(true);
+    expect(corpo.includes(Buffer.from("<svg")), "o objeto servido ainda contém SVG").toBe(false);
+    // `baixou()` já reprovou se `naturalWidth` fosse 0; o número vai para o log.
+    console.info(
+      `[marca-logo (4a)] naturalWidth=${antes.larguraNatural} altura=${antes.altura} bytes=${corpo.length}`,
+    );
 
-    await page.goto("/app/settings/marca");
+    // Escuro: a mesma barra, a outra aparência — evidência, não asserção nova.
+    await page.emulateMedia({ colorScheme: "dark" });
+    await page.reload();
+    await barraMostraLogoDe(page, `${creds.org_id}/`, "SVG limpo, tema escuro");
+    await page.screenshot({ path: evidencia("5-svg-limpo-aceito-escuro.png"), fullPage: true });
+    await page.emulateMedia({ colorScheme: "light" });
+
+    await page.goto(CAMADAS.organizacao.tela);
     await subir(page, "organizacao", {
       // Nome E `Content-Type` mentem — os dois campos que o atacante escolhe.
       nome: "logo.png",
       mime: "image/png",
       bytes: SVG_DISFARCADO,
     });
-    // A recusa tem código próprio para a frase falar de SVG, e não "tipo de
-    // mídia não suportado": é o formato em que um designer entrega logo.
-    //
-    // ⚠️ A âncora é DUPLA de propósito, e nenhuma metade é decorativa. O texto de
-    // ajuda do campo (`CampoDeLogo.tsx:258-262`) diz, o tempo todo e antes de
-    // qualquer upload, "SVG não é aceito: ele pode executar código…" — então
-    // `getByText(/SVG não é aceito/i)` casava aquele `<p>` em t=0 e ficava verde
-    // sem o toast jamais ter existido (e virava violação de strict mode quando o
-    // toast aparecia no mesmo poll, com 2 elementos). O contêiner do toast
-    // (`[data-sonner-toast]`) exclui o texto de ajuda; "aceito COMO LOGO" é a
-    // frase que só a rota escreve (`app/api/v1/marca/logo/route.ts:396`).
+    // A âncora é o contêiner do toast (`[data-sonner-toast]`), não a página: o
+    // texto de ajuda do campo fala de SVG o tempo todo e casaria em t=0. A frase
+    // é a que só a rota escreve, com o código `logo_svg_invalido`.
     const recusa = page
       .locator("[data-sonner-toast]")
-      .filter({ hasText: /SVG não é aceito como logo/i });
+      .filter({ hasText: /Não foi possível usar este SVG como logo/i });
     await expect(recusa).toBeVisible({ timeout: 15_000 });
-    await page.screenshot({ path: evidencia("5-svg-recusado.png"), fullPage: true });
+    await page.screenshot({ path: evidencia("5-svg-com-script-recusado.png"), fullPage: true });
 
     await page.goto("/app/inbox");
     const depois = await logoDaBarra(page);
-    // ⚠️ As mensagens NÃO acusam mais a gravação. A versão anterior dizia "a
-    // recusa apagou o logo — a gravação não foi atômica", e isso é impossível
-    // por construção: a recusa por bytes sai da rota com 415 em
-    // `route.ts:399-406`, treze linhas ANTES da primeira leitura do banco
-    // (`:419`) e vinte antes do primeiro toque no storage. Uma mensagem que
-    // nomeia uma causa impossível manda o próximo leitor investigar o lugar
-    // errado — foi o que aconteceu, e custou caro.
+    // A recusa sai da rota com 415 ANTES da primeira leitura do banco e de
+    // qualquer toque no storage — se isto reprovar, o logo sumiu por outro caminho.
     expect(
       depois,
       `a barra ficou sem logo depois de uma recusa (a recusa não escreve nada — ` +
