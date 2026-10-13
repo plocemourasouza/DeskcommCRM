@@ -263,6 +263,10 @@ test("(3) a empresa escolhe FRIO → em /app vence a da instalação, sem flash"
 });
 
 test("(4) limpeza pela tela: empresa herda, instalação volta a quente", async ({ page, browser }) => {
+  // Dois logins com TOTP: o helper espera a PRÓXIMA janela de 30 s quando o
+  // código já foi usado (medido: 18,4 s num só login), e os 30 s padrão do
+  // caso estouravam com todos os passos verdes.
+  test.setTimeout(90_000);
   creds = await loginComoAdmin(page, creds);
   await salvarNeutrosDaEmpresa(page, "herdar");
   const outra = await browser.newPage();
