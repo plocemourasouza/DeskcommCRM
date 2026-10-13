@@ -14,22 +14,28 @@ import { neutrosDeTexto, type NeutrosDaMarca } from "@/lib/branding/schema";
  * por que um componente aqui e nao o layout raiz: a organizacao so e conhecida
  * dentro de `/app` (o raiz serve tambem `/login`, que e da instalacao).
  *
- * O cleanup devolve o que havia, entao sair de `/app` (logout navega por
- * client-side) volta a paleta da instalacao sem recarregar a pagina.
- * `useLayoutEffect` para trocar antes da pintura quando o JS ja chegou; o
- * primeiro byte do HTML ainda leva a paleta da instalacao (nao medido o flash).
+ * O primeiro byte ja sai certo pelo `scriptDosNeutros` que o layout emite; este
+ * efeito cobre a navegacao pelo cliente, onde script inline nao executa. O
+ * cleanup devolve os neutros da INSTALACAO (logout navega por client-side e o
+ * /login e da instalacao) — e nao o que havia no `<html>` na montagem, porque o
+ * script do servidor ja o trocou para o da organizacao antes da hidratacao.
  */
-export function NeutrosDaOrganizacao({ neutros }: { readonly neutros: NeutrosDaMarca }) {
+export function NeutrosDaOrganizacao({
+  neutros,
+  instalacao,
+}: {
+  readonly neutros: NeutrosDaMarca;
+  readonly instalacao: NeutrosDaMarca;
+}) {
   useLayoutEffect(() => {
     const raiz = document.documentElement;
-    const anterior = raiz.getAttribute("data-neutros");
-    const valor = neutrosDeTexto(neutros);
-    if (valor === "quente") raiz.removeAttribute("data-neutros");
-    else raiz.setAttribute("data-neutros", valor);
-    return () => {
-      if (anterior === null) raiz.removeAttribute("data-neutros");
-      else raiz.setAttribute("data-neutros", anterior);
-    };
-  }, [neutros]);
+    aplicar(raiz, neutrosDeTexto(neutros));
+    return () => aplicar(raiz, neutrosDeTexto(instalacao));
+  }, [neutros, instalacao]);
   return null;
+}
+
+function aplicar(raiz: HTMLElement, valor: NeutrosDaMarca): void {
+  if (valor === "quente") raiz.removeAttribute("data-neutros");
+  else raiz.setAttribute("data-neutros", valor);
 }

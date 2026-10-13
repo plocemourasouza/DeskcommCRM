@@ -10,10 +10,9 @@
  *      no claro E no escuro.
  *   3. O admin da empresa escolhe `frio` em Configurações › Marca → dentro de
  *      `/app` a escolha da empresa vence a da instalação.
- *   4. O FLASH: o HTML do servidor só conhece a instalação; a troca para a
- *      paleta da empresa acontece num `useLayoutEffect` depois da hidratação.
- *      A spec MEDE quanto tempo o `<body>` pinta com a paleta da instalação
- *      antes da troca e registra o número — é medida, não asserção de gosto.
+ *   4. SEM FLASH: o layout de /app emite um script inline que troca o atributo
+ *      no parse (`lib/branding/script-dos-neutros.ts`). A spec registra cada
+ *      quadro pintado e exige zero quadros com a paleta da instalação.
  *
  * Limpeza: o caso final devolve as duas camadas ao padrão PELA TELA.
  */
@@ -194,7 +193,7 @@ test("(2) o dono escolhe CINZA na instalação → HTML do servidor já sai cinz
   }
 });
 
-test("(3) a empresa escolhe FRIO → em /app vence a da instalação; o flash é medido", async ({ page }) => {
+test("(3) a empresa escolhe FRIO → em /app vence a da instalação, sem flash", async ({ page }) => {
   creds = await loginComoAdmin(page, creds);
   await salvarNeutrosDaEmpresa(page, "frio");
 
@@ -256,8 +255,11 @@ test("(3) a empresa escolhe FRIO → em /app vence a da instalação; o flash é
   };
   console.info(`[marca-neutros] FLASH ${JSON.stringify(resumo)}`);
   fs.writeFileSync(evidencia("flash.json"), JSON.stringify(resumo, null, 2));
-  // Asserção única: o estado FINAL é o da empresa. O flash é número de relatório.
   expect(flash.quadros.at(-1)?.bg, "o body não terminou na paleta da empresa").toBe(frio);
+  // Zero quadros com a paleta da instalação: o layout de /app emite o
+  // `scriptDosNeutros` no HTML, e a troca acontece no parse, antes da primeira
+  // pintura. Antes dele, medido 112–144 ms (4–5 quadros) de paleta errada.
+  expect(errados, `o body pintou ${errados.length} quadro(s) com outra paleta antes da da empresa`).toEqual([]);
 });
 
 test("(4) limpeza pela tela: empresa herda, instalação volta a quente", async ({ page, browser }) => {
