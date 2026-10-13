@@ -140,3 +140,49 @@ describe("rasterizarSvg — guardas (cada uma devolve invalido)", () => {
     await recusa('<svg xmlns="http://www.w3.org/2000/svg"/>');
   });
 });
+
+/**
+ * Desvios que uma regex sobre TEXTO não enxerga e o parser enxerga. O librsvg
+ * os barrou na revisão — e a defesa não pode depender disso: cada caso tem de ser
+ * recusado pelo filtro, ANTES do sharp (a frase do catch do sharp não serve).
+ */
+describe("rasterizarSvg — desvios do filtro textual (recusa antes do sharp)", () => {
+  async function recusaNoFiltro(svg: string) {
+    const r = await recusa(svg);
+    expect(r.ok === false && r.detalhe, "chegou ao sharp: o filtro deixou passar").not.toBe(
+      "não foi possível desenhar o SVG",
+    );
+  }
+  it("href real escondido depois de um falso href dentro do valor de outro atributo", async () => {
+    await recusaNoFiltro(
+      LIMPO.replace("<rect", `<image x=" href='#a" href='file:///etc/passwd' width="9" height="9"/><rect`),
+    );
+  });
+  it("url() escrito com escape CSS (u\\72 l)", async () => {
+    await recusaNoFiltro(LIMPO.replace("<rect", '<rect style="fill:u\\72 l(&quot;http://evil.test/p&quot;)"'));
+  });
+  it("@import escrito com escape CSS (@\\69mport)", async () => {
+    await recusaNoFiltro(LIMPO.replace("<rect", '<style>@\\69mport "http://evil.test/x.css";</style><rect'));
+  });
+});
+
+/**
+ * Ruído (feTurbulence) num retângulo de 800×800 é PNG incomprimível: com o
+ * esforço máximo de compressão ele queimava ~12 s de CPU por upload, prendendo
+ * o pool do libuv para todas as organizações. O caso tem de terminar rápido e
+ * cair na regra de tamanho — nunca no teto de tempo.
+ */
+describe("rasterizarSvg — custo limitado", () => {
+  const RUIDO =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800">' +
+    '<filter id="f" x="-10" width="20"><feTurbulence baseFrequency="0.9" numOctaves="4"/></filter>' +
+    '<rect width="800" height="800" filter="url(#f)"/></svg>';
+
+  it("ruído incomprimível termina em menos de 2 s e é recusado pelo tamanho", async () => {
+    const inicio = performance.now();
+    const r = await rasterizarSvg(enc(RUIDO));
+    const decorrido = performance.now() - inicio;
+    expect(r.ok === false && r.motivo).toBe("grande_demais");
+    expect(decorrido).toBeLessThan(2000);
+  }, 60_000);
+});
