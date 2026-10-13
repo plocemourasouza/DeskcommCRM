@@ -46,7 +46,6 @@ import {
   resolverMarca,
   type LinhaDaInstalacao,
 } from "@/lib/branding/resolve";
-import { aprovarContrasteNosNeutros } from "@/lib/branding/neutros";
 import { neutrosDeTexto, neutrosEscolhidos } from "@/lib/branding/schema";
 import { marcaDaOrganizacaoSchema } from "@/lib/schemas/settings";
 import { dicaDoRelatorio, type VocabularioDaEmpresa } from "@/lib/legal/dica-do-relatorio-de-dados";
@@ -104,8 +103,6 @@ const ERRO_EM_PORTUGUES: Record<string, string> = {
   // gravação não casou nenhuma linha, e a tela dizer "salvo" quando nada foi
   // gravado é a forma exata do defeito que a função SQL veio fechar.
   nao_gravou: "A alteração não chegou ao banco — nada foi mudado. Tente de novo.",
-  contraste_insuficiente:
-    "A cor da marca não tem contraste suficiente sobre os neutros escolhidos. Escolha outra paleta de neutros ou ajuste a cor.",
 };
 
 const CLASSE_DO_TOM: Record<Tom, string> = {
@@ -205,18 +202,7 @@ export function FormularioDaMarcaDaOrganizacao({ gravada, instalacao, ambiente, 
     [resolvida.cor],
   );
 
-  // A mesma regra que a Server Action aplica ao salvar. Quem herda é medido contra
-  // os neutros da instalação — são eles que vão aparecer.
   const neutrosDaInstalacao = neutrosDeTexto(instalacao.neutros);
-  const contraste = useMemo(
-    () =>
-      aprovarContrasteNosNeutros({
-        accent: hexValido ? hexLimpo : null,
-        accentEscuro: hexEscuroValido ? hexEscuroLimpo : null,
-        neutros: neutros ?? neutrosDaInstalacao,
-      }),
-    [hexValido, hexLimpo, hexEscuroValido, hexEscuroLimpo, neutros, neutrosDaInstalacao],
-  );
 
   const derivada = resolvida.cor?.derivada ?? null;
   /**
@@ -532,13 +518,6 @@ export function FormularioDaMarcaDaOrganizacao({ gravada, instalacao, ambiente, 
           onChange={setNeutros}
           herdado={neutrosDaInstalacao}
         />
-        {contraste.ok ? null : (
-          <p role="alert" className="text-sm text-error-fg">
-            {t(
-              "A cor da marca não tem contraste suficiente sobre estes neutros. Escolha outra paleta ou ajuste a cor.",
-            )}
-          </p>
-        )}
       </Card>
 
       <Card className="space-y-2 p-6">
@@ -601,7 +580,7 @@ export function FormularioDaMarcaDaOrganizacao({ gravada, instalacao, ambiente, 
         {erroTecnico ? (
           <span className="font-mono text-xs text-text-muted">{erroTecnico}</span>
         ) : null}
-        <Button type="submit" disabled={isPending || !hexValido || !hexEscuroValido || !contraste.ok}>
+        <Button type="submit" disabled={isPending || !hexValido || !hexEscuroValido}>
           {isPending ? t("Salvando…") : t("Salvar")}
         </Button>
       </div>

@@ -7,10 +7,7 @@ import { revalidatePath } from "next/cache";
 import { audit } from "@/lib/audit";
 import { loadAuthUser, mfaEmDivida, resolveActiveOrg } from "@/lib/auth/server";
 import { podeAdministrarEmpresa } from "@/lib/auth/pode-administrar-empresa";
-import { marcaDaInstalacao } from "@/lib/branding/instalacao";
-import { aprovarContrasteNosNeutros } from "@/lib/branding/neutros";
 import { normalizarHex } from "@/lib/branding/rampa";
-import { neutrosDeTexto } from "@/lib/branding/schema";
 import {
   marcaDaOrganizacaoSchema,
   type MarcaDaOrganizacaoInput,
@@ -28,7 +25,6 @@ export type UpdateMarcaDaOrganizacaoResult =
         | "forbidden_role"
         | "mfa_required"
         | "nao_gravou"
-        | "contraste_insuficiente"
         | "db_error";
       details?: unknown;
     };
@@ -116,19 +112,6 @@ export async function updateMarcaDaOrganizacao(
   // fator e sessão `aal1` passava por este ponto e agora é barrado.
   if (await mfaEmDivida()) {
     return { ok: false, error: "mfa_required" };
-  }
-
-  // A regua de contraste, NO SERVIDOR (o formulario so avisa). Organizacao que
-  // nao escolhe neutros herda os da instalacao, e a cor e medida contra eles.
-  const neutrosEmVigor =
-    parsed.data.neutros ?? neutrosDeTexto((await marcaDaInstalacao())?.neutros);
-  const contraste = aprovarContrasteNosNeutros({
-    accent: parsed.data.accent_hex,
-    accentEscuro: parsed.data.accent_dark_hex,
-    neutros: neutrosEmVigor,
-  });
-  if (!contraste.ok) {
-    return { ok: false, error: "contraste_insuficiente", details: contraste.temas };
   }
 
   const hdrs = await headers();

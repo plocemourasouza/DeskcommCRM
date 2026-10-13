@@ -7,8 +7,6 @@ const mocks = vi.hoisted(() => ({
   upsert: vi.fn(),
   rpc: vi.fn(),
   invalidar: vi.fn(),
-  marcaDaInstalacao: vi.fn(),
-  aprovar: vi.fn(),
   loadAuthUser: vi.fn(),
   resolveActiveOrg: vi.fn(),
   mfaEmDivida: vi.fn(),
@@ -27,9 +25,7 @@ vi.mock("@/lib/auth/pode-administrar-empresa", () => ({ podeAdministrarEmpresa: 
 vi.mock("@/lib/impersonate/support", () => ({ supportWriteError: () => null }));
 vi.mock("@/lib/branding/instalacao", () => ({
   invalidarMarcaDaInstalacao: mocks.invalidar,
-  marcaDaInstalacao: mocks.marcaDaInstalacao,
 }));
-vi.mock("@/lib/branding/neutros", () => ({ aprovarContrasteNosNeutros: mocks.aprovar }));
 vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: () => ({ from: () => ({ upsert: mocks.upsert }), rpc: mocks.rpc }),
 }));
@@ -52,32 +48,20 @@ describe("updateBranding — neutros", () => {
     mocks.headers.mockResolvedValue(new Headers());
     mocks.escritaDeAdminOuRecusa.mockResolvedValue({ ok: true, ctx: { user: USER } });
     mocks.upsert.mockResolvedValue({ error: null });
-    mocks.marcaDaInstalacao.mockResolvedValue({ neutros: "cinza" });
-    mocks.aprovar.mockReturnValue({ ok: true });
   });
 
   it("grava a escolha, invalida o memo e audita", async () => {
     const r = await updateBranding({ ...INSTALACAO, neutros: "frio" });
     expect(r).toEqual({ ok: true });
-    expect(mocks.aprovar).toHaveBeenCalledWith(expect.objectContaining({ neutros: "frio", accent: "#2563eb" }));
     expect(mocks.upsert.mock.calls[0]?.[0]).toMatchObject({ id: 1, neutros: "frio" });
     expect(mocks.invalidar).toHaveBeenCalled();
     expect(mocks.audit.mock.calls[0]?.[0].metadata).toMatchObject({ neutros: "frio" });
   });
 
-  it("sem neutros na entrada, NAO toca a coluna e mede a cor contra a gravada", async () => {
+  it("sem neutros na entrada, NAO toca a coluna", async () => {
     const r = await updateBranding(INSTALACAO);
     expect(r).toEqual({ ok: true });
     expect("neutros" in (mocks.upsert.mock.calls[0]?.[0] ?? {})).toBe(false);
-    expect(mocks.aprovar).toHaveBeenCalledWith(expect.objectContaining({ neutros: "cinza" }));
-  });
-
-  it("a regua reprova: recusa com contraste_insuficiente e NAO grava", async () => {
-    mocks.aprovar.mockReturnValue({ ok: false, temas: ["escuro"] });
-    const r = await updateBranding({ ...INSTALACAO, neutros: "frio" });
-    expect(r).toMatchObject({ ok: false, error: "contraste_insuficiente" });
-    expect(mocks.upsert).not.toHaveBeenCalled();
-    expect(mocks.audit).not.toHaveBeenCalled();
   });
 
   it("valor fora do vocabulario e recusado antes de tudo", async () => {
@@ -97,21 +81,17 @@ describe("updateMarcaDaOrganizacao — neutros", () => {
     mocks.resolveActiveOrg.mockResolvedValue({ orgId: "org-1", role: "admin" });
     mocks.mfaEmDivida.mockResolvedValue(false);
     mocks.rpc.mockResolvedValue({ data: 1, error: null });
-    mocks.marcaDaInstalacao.mockResolvedValue({ neutros: "cinza" });
-    mocks.aprovar.mockReturnValue({ ok: true });
   });
 
   it("grava a chave quando escolhe", async () => {
     const r = await updateMarcaDaOrganizacao({ ...ORG, neutros: "frio" });
     expect(r).toEqual({ ok: true });
-    expect(mocks.aprovar).toHaveBeenCalledWith(expect.objectContaining({ neutros: "frio" }));
     expect(mocks.rpc.mock.calls[0]?.[1].p_marca).toMatchObject({ neutros: "frio" });
   });
 
-  it("herdar (null) OMITE a chave — o banco recusa 'neutros' nao-string — e mede contra a instalacao", async () => {
+  it("herdar (null) OMITE a chave — o banco recusa 'neutros' nao-string", async () => {
     await updateMarcaDaOrganizacao({ ...ORG, neutros: null });
     expect("neutros" in mocks.rpc.mock.calls[0]?.[1].p_marca).toBe(false);
-    expect(mocks.aprovar).toHaveBeenCalledWith(expect.objectContaining({ neutros: "cinza" }));
   });
 
   it("tudo vazio limpa a marca inteira", async () => {
@@ -122,12 +102,5 @@ describe("updateMarcaDaOrganizacao — neutros", () => {
   it("so a escolha de neutros ja e uma marca (nao limpa)", async () => {
     await updateMarcaDaOrganizacao({ app_name: null, accent_hex: null, accent_dark_hex: null, neutros: "cinza" });
     expect(mocks.rpc.mock.calls[0]?.[1].p_marca).toMatchObject({ neutros: "cinza" });
-  });
-
-  it("a regua reprova: contraste_insuficiente, sem RPC", async () => {
-    mocks.aprovar.mockReturnValue({ ok: false, temas: ["claro"] });
-    const r = await updateMarcaDaOrganizacao({ ...ORG, neutros: "frio" });
-    expect(r).toMatchObject({ ok: false, error: "contraste_insuficiente" });
-    expect(mocks.rpc).not.toHaveBeenCalled();
   });
 });

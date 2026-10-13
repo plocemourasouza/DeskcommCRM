@@ -15,11 +15,6 @@
  *      A spec MEDE quanto tempo o `<body>` pinta com a paleta da instalação
  *      antes da troca e registra o número — é medida, não asserção de gosto.
  *
- * Fora desta spec, de propósito: "cor com contraste baixo bloqueia o Salvar".
- * A régua (`lib/branding/neutros.ts`) é uma rede, e medido por varredura de
- * 12.288 sementes × 3 presets, NENHUMA reprova — não há caminho pela tela que a
- * alcance. A recusa está coberta em `app/actions/settings/updateNeutros.test.ts`.
- *
  * Limpeza: o caso final devolve as duas camadas ao padrão PELA TELA.
  */
 import { execFileSync } from "node:child_process";

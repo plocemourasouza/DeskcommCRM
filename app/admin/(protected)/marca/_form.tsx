@@ -16,7 +16,6 @@ import { cssDaMarca } from "@/lib/branding/css";
 import { ehHexValido, K, normalizarHex } from "@/lib/branding/rampa";
 import { REGUA_DO_PRODUTO } from "@/lib/branding/regua-do-produto";
 import { resolverMarca } from "@/lib/branding/resolve";
-import { aprovarContrasteNosNeutros } from "@/lib/branding/neutros";
 import { envelopeDeSemente, type NeutrosDaMarca } from "@/lib/branding/schema";
 import { platformBrandingSchema, type PlatformBrandingInput } from "@/lib/schemas/settings";
 
@@ -71,8 +70,6 @@ const ERRO_EM_PORTUGUES: Record<string, string> = {
   validation_failed: "Algum campo não está no formato esperado.",
   unauthenticated: "Sua sessão expirou. Entre de novo para salvar.",
   forbidden_role: "Só quem administra a instalação pode mudar a marca.",
-  contraste_insuficiente:
-    "A cor da marca não tem contraste suficiente sobre os neutros escolhidos. Escolha outra paleta de neutros ou ajuste a cor.",
 };
 
 /** Cinza médio para o seletor visual quando o campo ainda não tem cor válida. */
@@ -140,17 +137,6 @@ export function FormularioDaMarca({
   // salvar, em vez de o operador descobrir pelo alarme de fallback depois.
   const serializacao = useMemo(() => cssDaMarca(resolvida.cor), [resolvida.cor]);
 
-  // A mesma regra que a Server Action aplica ao salvar: a cor tem de ler sobre os
-  // neutros escolhidos. Aqui ela só AVISA cedo; quem recusa é o servidor.
-  const contraste = useMemo(
-    () =>
-      aprovarContrasteNosNeutros({
-        accent: hexValido ? hexLimpo : null,
-        accentEscuro: hexEscuroValido ? hexEscuroLimpo : null,
-        neutros,
-      }),
-    [hexValido, hexLimpo, hexEscuroValido, hexEscuroLimpo, neutros],
-  );
 
   const derivada = resolvida.cor?.derivada ?? null;
   /**
@@ -438,13 +424,6 @@ export function FormularioDaMarca({
 
       <Card className="space-y-3 p-6">
         <SeletorDeNeutros id="neutros" valor={neutros} onChange={(v) => setNeutros(v ?? "quente")} />
-        {contraste.ok ? null : (
-          <p role="alert" className="text-sm text-error-fg">
-            {t(
-              "A cor da marca não tem contraste suficiente sobre estes neutros. Escolha outra paleta ou ajuste a cor.",
-            )}
-          </p>
-        )}
       </Card>
 
       {/*
@@ -485,7 +464,7 @@ export function FormularioDaMarca({
         {erroTecnico ? (
           <span className="font-mono text-xs text-text-muted">{erroTecnico}</span>
         ) : null}
-        <Button type="submit" disabled={isPending || !hexValido || !hexEscuroValido || !contraste.ok}>
+        <Button type="submit" disabled={isPending || !hexValido || !hexEscuroValido}>
           {isPending ? t("Salvando…") : t("Salvar")}
         </Button>
       </div>

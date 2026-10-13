@@ -5344,12 +5344,6 @@ export const DICIONARIO: Traducoes = {
   "Cinza azulado, mais técnico e limpo.": { es: "Gris azulado, más técnico y limpio." },
   "Usar a da instalação": { es: "Usar la de la instalación" },
   "Hoje: ": { es: "Hoy: " },
-  "A cor da marca não tem contraste suficiente sobre os neutros escolhidos. Escolha outra paleta de neutros ou ajuste a cor.": {
-    es: "El color de la marca no tiene contraste suficiente sobre los neutros elegidos. Elige otra paleta de neutros o ajusta el color.",
-  },
-  "A cor da marca não tem contraste suficiente sobre estes neutros. Escolha outra paleta ou ajuste a cor.": {
-    es: "El color de la marca no tiene contraste suficiente sobre estos neutros. Elige otra paleta o ajusta el color.",
-  },
   "Sua cor": { es: "Tu color" },
   "fora da escala — fica só no logo": { es: "fuera de la escala: solo se usa en el logo" },
   "Botões no modo claro": { es: "Botones en el modo claro" },
