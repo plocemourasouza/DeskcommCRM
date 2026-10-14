@@ -11,11 +11,12 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SeletorDeNeutros } from "@/components/branding/SeletorDeNeutros";
 import { cssDaMarca } from "@/lib/branding/css";
 import { ehHexValido, K, normalizarHex } from "@/lib/branding/rampa";
 import { REGUA_DO_PRODUTO } from "@/lib/branding/regua-do-produto";
 import { resolverMarca } from "@/lib/branding/resolve";
-import { envelopeDeSemente } from "@/lib/branding/schema";
+import { envelopeDeSemente, type NeutrosDaMarca } from "@/lib/branding/schema";
 import { platformBrandingSchema, type PlatformBrandingInput } from "@/lib/schemas/settings";
 
 import { EstadoDaMarca } from "./_estado";
@@ -36,6 +37,8 @@ export interface MarcaGravada {
   readonly accent_hex: string | null;
   /** A cor do TEMA ESCURO (#2482) — o par; `null` = só a cor acima pinta. */
   readonly accent_dark_hex: string | null;
+  /** A paleta de neutros gravada (`quente` quando a coluna ainda não existe ou é desconhecida). */
+  readonly neutros: NeutrosDaMarca;
   readonly show_powered_by: boolean;
 }
 
@@ -89,6 +92,7 @@ export function FormularioDaMarca({
   const [nome, setNome] = useState(gravada.app_name ?? "");
   const [hex, setHex] = useState(gravada.accent_hex ?? "");
   const [hexEscuro, setHexEscuro] = useState(gravada.accent_dark_hex ?? "");
+  const [neutros, setNeutros] = useState<NeutrosDaMarca>(gravada.neutros);
   const [erroTecnico, setErroTecnico] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -115,6 +119,7 @@ export function FormularioDaMarca({
         [
           {
             origem: "tela",
+            neutros,
             cor: hexLimpo.length > 0 ? envelopeDeSemente(hexLimpo) : undefined,
             // O par (#2482): a segunda semente entra pelo MESMO envelope e a
             // mesma validação — o preview mostra o que o servidor vai emitir.
@@ -124,13 +129,14 @@ export function FormularioDaMarca({
         ],
         REGUA_DO_PRODUTO,
       ),
-    [hexLimpo, hexEscuroLimpo],
+    [hexLimpo, hexEscuroLimpo, neutros],
   );
 
   // A mesma serialização que decide se a cor chega ao `<style>` da página —
   // rodada aqui para a tela poder dizer "esta cor não seria aplicada" ANTES de
   // salvar, em vez de o operador descobrir pelo alarme de fallback depois.
   const serializacao = useMemo(() => cssDaMarca(resolvida.cor), [resolvida.cor]);
+
 
   const derivada = resolvida.cor?.derivada ?? null;
   /**
@@ -220,6 +226,7 @@ export function FormularioDaMarca({
       // medido, zero ocorrências fora do schema e da tabela. Um interruptor que
       // não muda nada em tela nenhuma é pior que a ausência dele.
       show_powered_by: gravada.show_powered_by,
+      neutros,
     };
 
     const lido = platformBrandingSchema.safeParse(candidato);
@@ -413,6 +420,10 @@ export function FormularioDaMarca({
             {t("Sem cor definida, o sistema usa a cor padrão dele.")}
           </p>
         )}
+      </Card>
+
+      <Card className="space-y-3 p-6">
+        <SeletorDeNeutros id="neutros" valor={neutros} onChange={(v) => setNeutros(v ?? "quente")} />
       </Card>
 
       {/*

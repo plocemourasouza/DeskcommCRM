@@ -314,11 +314,31 @@ async function MarcaDosClientComponents({ children }: { children: React.ReactNod
   );
 }
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+/**
+ * Os neutros da INSTALACAO, para o atributo do `<html>`. Nunca lanca: um throw
+ * aqui e o documento inteiro em 500, e a pior consequencia de nao saber a
+ * paleta e a paleta de sempre (`quente`, que nao escreve atributo).
+ */
+async function neutrosDaInstalacao(): Promise<"cinza" | "frio" | null> {
+  try {
+    const { marca } = await marcaResolvida();
+    return marca.neutros === "quente" ? null : marca.neutros;
+  } catch {
+    return null;
+  }
+}
+
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  // O preset de neutros vive em `globals.css` (`[data-neutros=...]`), estatico de
+  // proposito: o CSS de marca nao pode declarar `--color-bg`. Aqui so se liga o
+  // atributo. A organizacao que sobrepoe a escolha o troca em `/app` (ver
+  // `NeutrosDaOrganizacao`), porque so la a organizacao e conhecida.
+  const neutros = await neutrosDaInstalacao();
   return (
     <html
       lang="pt-BR"
       data-theme="light"
+      {...(neutros ? { "data-neutros": neutros } : {})}
       suppressHydrationWarning
       className={`${atkinson.variable} ${plexMono.variable}`}
     >

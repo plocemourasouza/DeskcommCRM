@@ -35,6 +35,7 @@
  */
 
 import { REGUA_DO_PRODUTO } from "./regua-do-produto";
+import { neutrosEscolhidos } from "./schema";
 import {
   camadaDaInstalacao,
   camadaDaOrganizacao,
@@ -89,6 +90,9 @@ export function marcaDaOrganizacaoDeSettings(settings: unknown): MarcaDaOrganiza
     // partir de um objeto.
     logo_path: texto(envelope.logo_path),
     ...(texto(envelope.logo_dark_path) ? { logo_dark_path: texto(envelope.logo_dark_path) } : {}),
+    // Fora do vocabulario (versao futura, escrita manual) = a organizacao nao
+    // escolheu: a chave some e a instalacao vale. Nunca lanca.
+    ...(neutrosEscolhidos(envelope.neutros) ? { neutros: neutrosEscolhidos(envelope.neutros) } : {}),
   };
 }
 

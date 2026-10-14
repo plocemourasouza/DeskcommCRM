@@ -21,7 +21,9 @@
  * paleta, o teste reprova e entrega o texto para colar aqui.
  */
 
-import type { Regua } from "./contraste";
+import type { Regua, TemaDaRegua } from "./contraste";
+import type { Rampa } from "./rampa";
+import type { NeutrosDaMarca } from "./schema";
 
 export const REGUA_DO_PRODUTO: Regua = {
   rampaDoProduto: [
@@ -320,3 +322,125 @@ export const REGUA_DO_PRODUTO: Regua = {
     alfaDoSoft: 0.16,
   },
 } as const;
+
+/**
+ * O que um preset de neutros troca na régua: as três superfícies e os onze neutros, por tema.
+ * O resto (rampa, papéis, semânticas, índices) é do produto e não muda com o preset.
+ * GERADO do `app/globals.css` por `extrairRegua(css, preset)`; o teste
+ * `branding-contraste.test.ts` reprova se divergir e imprime o literal certo.
+ */
+type TrocaDoPreset = Pick<TemaDaRegua, "base" | "neutros">;
+
+const PRESETS_DE_NEUTROS: Record<
+  Exclude<NeutrosDaMarca, "quente">,
+  { readonly claro: TrocaDoPreset; readonly escuro: TrocaDoPreset }
+> = {
+  cinza: {
+    claro: {
+      base: [
+        { chave: "--color-bg", hex: "#f9f9f9" },
+        { chave: "--color-surface", hex: "#ffffff" },
+        { chave: "--color-surface-elevated", hex: "#f3f3f3" },
+      ],
+      neutros: [
+        "#f9f9f9",
+        "#f1f1f1",
+        "#e3e3e3",
+        "#cdcdcd",
+        "#a3a3a3",
+        "#787878",
+        "#595959",
+        "#434343",
+        "#2c2c2c",
+        "#1a1a1a",
+        "#0d0d0d",
+      ] as unknown as Rampa,
+    },
+    escuro: {
+      base: [
+        { chave: "--color-bg", hex: "#151515" },
+        { chave: "--color-surface", hex: "#1c1c1c" },
+        { chave: "--color-surface-elevated", hex: "#262626" },
+      ],
+      neutros: [
+        "#f4f4f4",
+        "#e4e4e4",
+        "#b8b8b8",
+        "#8b8b8b",
+        "#5e5e5e",
+        "#424242",
+        "#313131",
+        "#262626",
+        "#1c1c1c",
+        "#151515",
+        "#0b0b0b",
+      ] as unknown as Rampa,
+    },
+  },
+  frio: {
+    claro: {
+      base: [
+        { chave: "--color-bg", hex: "#f5faff" },
+        { chave: "--color-surface", hex: "#ffffff" },
+        { chave: "--color-surface-elevated", hex: "#eff4f9" },
+      ],
+      neutros: [
+        "#f5faff",
+        "#edf2f7",
+        "#dde4ed",
+        "#c4cedc",
+        "#9aa5b3",
+        "#707985",
+        "#525a64",
+        "#3e444c",
+        "#282d32",
+        "#171b1f",
+        "#0a0d11",
+      ] as unknown as Rampa,
+    },
+    escuro: {
+      base: [
+        { chave: "--color-bg", hex: "#12151a" },
+        { chave: "--color-surface", hex: "#191c21" },
+        { chave: "--color-surface-elevated", hex: "#22262c" },
+      ],
+      neutros: [
+        "#f0f4fa",
+        "#dee5ec",
+        "#b0b9c5",
+        "#838c98",
+        "#575e68",
+        "#3c424b",
+        "#2c3138",
+        "#22262c",
+        "#191c21",
+        "#12151a",
+        "#090b0f",
+      ] as unknown as Rampa,
+    },
+  },
+};
+
+/** A régua do produto sob um preset de neutros. `quente` é a régua de sempre. */
+const REGUAS_POR_PRESET = new Map<Exclude<NeutrosDaMarca, "quente">, Regua>();
+
+export function reguaDoProduto(neutros: NeutrosDaMarca): Regua {
+  if (neutros === "quente") return REGUA_DO_PRODUTO;
+  // Identidade estavel: a derivacao e cacheada POR REGUA (WeakMap em resolve.ts);
+  // um objeto novo a cada chamada anularia o cache em todo render.
+  const guardada = REGUAS_POR_PRESET.get(neutros);
+  if (guardada) return guardada;
+  const preset = PRESETS_DE_NEUTROS[neutros];
+  const sobrepor = (tema: TemaDaRegua, p: TrocaDoPreset): TemaDaRegua => ({
+    ...tema,
+    base: p.base,
+    neutros: p.neutros,
+  });
+  const regua: Regua = {
+    ...REGUA_DO_PRODUTO,
+    claro: sobrepor(REGUA_DO_PRODUTO.claro, preset.claro),
+    escuro: sobrepor(REGUA_DO_PRODUTO.escuro, preset.escuro),
+  };
+  REGUAS_POR_PRESET.set(neutros, regua);
+  return regua;
+}

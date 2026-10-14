@@ -32,6 +32,7 @@
  */
 
 import type { Grau, Oklch, Rampa } from "./rampa";
+import type { NeutrosDaMarca } from "./schema";
 import {
   compor,
   deltaEOklab,
@@ -345,23 +346,56 @@ const SEMANTICAS = ["success", "warning", "error", "info"] as const;
  * Referência INDIRETA (`--primary: var(--color-accent)`) é ignorada de propósito: é
  * alias do mesmo pixel, e medi-la duas vezes só inflaria a contagem de pares.
  */
-export function extrairRegua(css: string): Regua {
+export function extrairRegua(css: string, neutros: NeutrosDaMarca = "quente"): Regua {
   const regras = varrerRegras(css);
   const raiz = regras.find((r) => r.seletor === ":root");
   const escuro = regras.find(
-    (r) => r.seletor.includes('[data-theme="dark"]') && r.decls.some((d) => d.prop === "--color-bg"),
+    (r) =>
+      r.seletor.includes('[data-theme="dark"]') && r.decls.some((d) => d.prop === "--color-bg"),
   );
   if (!raiz || !escuro) {
-    throw new Error("régua: não achei os blocos :root e [data-theme=\"dark\"] no CSS");
+    throw new Error('régua: não achei os blocos :root e [data-theme="dark"] no CSS');
   }
 
   const rampaDoProduto = lerRampa(raiz.decls);
+  const declsClaro = comPreset(raiz.decls, presetDe(regras, neutros, "claro"));
+  const declsEscuro = comPreset(escuro.decls, presetDe(regras, neutros, "escuro"));
 
   return {
     rampaDoProduto,
-    claro: montarTema("claro", raiz.decls, regras, false),
-    escuro: montarTema("escuro", escuro.decls, regras, true),
+    claro: montarTema("claro", declsClaro, regras, false),
+    escuro: montarTema("escuro", declsEscuro, regras, true),
   };
+}
+
+/**
+ * O bloco do preset de neutros, achado pelo seletor (o claro é uma lista; o escuro, um
+ * atributo composto). `quente` não tem bloco: é o `:root`. Preset conhecido SEM bloco
+ * estoura — cair em silêncio no quente mediria o contraste de uma paleta que ninguém vê.
+ */
+function presetDe(
+  regras: readonly RegraCss[],
+  neutros: NeutrosDaMarca,
+  tema: Tema,
+): readonly Declaracao[] {
+  if (neutros === "quente") return [];
+  const regra = regras.find((r) =>
+    tema === "claro"
+      ? r.seletor.startsWith(`:root[data-neutros="${neutros}"]:not(`)
+      : r.seletor === `[data-theme="dark"][data-neutros="${neutros}"]`,
+  );
+  if (!regra) throw new Error(`régua: não achei o bloco de neutros "${neutros}" (${tema}) no CSS`);
+  return regra.decls;
+}
+
+/** O bloco do tema com as declarações do preset por cima (o preset só sobrescreve). */
+function comPreset(
+  base: readonly Declaracao[],
+  preset: readonly Declaracao[],
+): readonly Declaracao[] {
+  if (preset.length === 0) return base;
+  const trocadas = new Set(preset.map((d) => d.prop));
+  return [...base.filter((d) => !trocadas.has(d.prop)), ...preset];
 }
 
 function lerRampa(decls: readonly Declaracao[]): Rampa {
@@ -496,7 +530,11 @@ function montarTema(
 
 // ── Resolução de fontes sob um deslocamento ─────────────────────────────────
 
-function resolverFonte(fonte: Fonte, rampa: Rampa, deslocamento: number): { hex: string; alfa: number } {
+function resolverFonte(
+  fonte: Fonte,
+  rampa: Rampa,
+  deslocamento: number,
+): { hex: string; alfa: number } {
   if (fonte.tipo === "grau") {
     return { hex: stop(rampa, fonte.indice + deslocamento), alfa: fonte.alfa };
   }
@@ -522,10 +560,11 @@ export function superficiesDoTema(
     // Fonte literal numa tingida = o token não referencia a rampa (o caso do escuro).
     // Reancoramos no stop que o tema pinta como accent: é o que faz a marca do cliente
     // chegar ao chip em vez de o verde do produto ficar lá para sempre.
-    const tinta =
-      t.fonte.tipo === "grau" ? hex : stop(rampa, tema.indices.accent + deslocamento);
+    const tinta = t.fonte.tipo === "grau" ? hex : stop(rampa, tema.indices.accent + deslocamento);
     if (alfa >= 1) saida.push({ chave: t.chave, hex: tinta });
-    else for (const b of tema.base) saida.push({ chave: `${t.chave}@${b.chave}`, hex: compor(tinta, alfa, b.hex) });
+    else
+      for (const b of tema.base)
+        saida.push({ chave: `${t.chave}@${b.chave}`, hex: compor(tinta, alfa, b.hex) });
   }
   return saida;
 }
@@ -540,11 +579,7 @@ export type ParMedido = {
 };
 
 /** Mede TODOS os pares (papel × superfície) do tema sob um deslocamento. */
-export function medirPares(
-  tema: TemaDaRegua,
-  rampa: Rampa,
-  deslocamento: number,
-): ParMedido[] {
+export function medirPares(tema: TemaDaRegua, rampa: Rampa, deslocamento: number): ParMedido[] {
   const superficies = superficiesDoTema(tema, rampa, deslocamento);
   const pares: ParMedido[] = [];
   for (const papel of tema.papeis) {
@@ -600,11 +635,7 @@ export type EscolhaDeAccent = {
  * deslocamento e DIZER que ele não fecha, não lançar exceção numa função que roda no
  * caminho de render do `app/layout.tsx`.
  */
-export function escolherAccent(
-  rampa: Rampa,
-  tema: TemaDaRegua,
-  alcance = 10,
-): EscolhaDeAccent {
+export function escolherAccent(rampa: Rampa, tema: TemaDaRegua, alcance = 10): EscolhaDeAccent {
   const sentidoUtil = tema.nome === "claro" ? 1 : -1;
   const candidatos: number[] = [0];
   for (let d = 1; d <= alcance; d += 1) candidatos.push(d * sentidoUtil, -d * sentidoUtil);
@@ -707,7 +738,11 @@ export function reconciliarSemanticas(
       });
 
     let achou: { cor: string; rotacao: number; separacao: number } | null = null;
-    for (let passo = PASSO_DE_ROTACAO; passo <= ROTACAO_MAXIMA && !achou; passo += PASSO_DE_ROTACAO) {
+    for (
+      let passo = PASSO_DE_ROTACAO;
+      passo <= ROTACAO_MAXIMA && !achou;
+      passo += PASSO_DE_ROTACAO
+    ) {
       for (const sinal of [1, -1] as const) {
         const candidata = girar(hex, sinal * passo);
         const separacao = deltaESimulado(candidata, accent);

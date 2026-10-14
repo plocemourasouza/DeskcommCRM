@@ -102,6 +102,9 @@ export async function updateBranding(
     accent_dark_hex:
       parsed.data.accent_dark_hex === null ? null : normalizarHex(parsed.data.accent_dark_hex),
     show_powered_by: parsed.data.show_powered_by,
+    // Ausente = "nao mexa": a coluna e `not null default 'quente'`, entao omitir
+    // preserva a escolha gravada (e a linha nova nasce `quente`).
+    ...(parsed.data.neutros ? { neutros: parsed.data.neutros } : {}),
     // A linha passa a ser HUMANA. É o que impede a semeadura do `.env` de
     // reescrever a escolha no render seguinte — inclusive quando a escolha foi
     // apagar tudo para voltar ao padrão do produto. Ver `precisaSemear`.
@@ -157,6 +160,7 @@ export async function updateBranding(
       fields_changed: Object.keys(parsed.data),
       accent_definido: parsed.data.accent_hex !== null,
       logo_definido: parsed.data.logo_url !== null,
+      ...(parsed.data.neutros ? { neutros: parsed.data.neutros } : {}),
     },
   });
 

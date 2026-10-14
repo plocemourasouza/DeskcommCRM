@@ -29,6 +29,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SeletorDeNeutros, type EscolhaDeNeutros } from "@/components/branding/SeletorDeNeutros";
 import { cssDaMarca, ESCOPO_DA_ORGANIZACAO } from "@/lib/branding/css";
 import {
   avisosDaMarca,
@@ -45,6 +46,7 @@ import {
   resolverMarca,
   type LinhaDaInstalacao,
 } from "@/lib/branding/resolve";
+import { neutrosDeTexto, neutrosEscolhidos } from "@/lib/branding/schema";
 import { marcaDaOrganizacaoSchema } from "@/lib/schemas/settings";
 import { dicaDoRelatorio, type VocabularioDaEmpresa } from "@/lib/legal/dica-do-relatorio-de-dados";
 import { useT } from "@/hooks/i18n/useT";
@@ -65,6 +67,8 @@ interface Props {
     /** A cor do TEMA ESCURO (#2482) — o par; `null` = só a cor acima pinta. */
     readonly accent_dark_hex: string | null;
     readonly logo_path: string | null;
+    /** A escolha de neutros desta organização; `null` = herda a da instalação. */
+    readonly neutros: string | null;
   };
   /** A linha da marca da INSTALAÇÃO — a camada logo abaixo desta. */
   readonly instalacao: LinhaDaInstalacao;
@@ -143,6 +147,7 @@ export function FormularioDaMarcaDaOrganizacao({ gravada, instalacao, ambiente, 
   const [nome, setNome] = useState(gravada.app_name ?? "");
   const [hex, setHex] = useState(gravada.accent_hex ?? "");
   const [hexEscuro, setHexEscuro] = useState(gravada.accent_dark_hex ?? "");
+  const [neutros, setNeutros] = useState<EscolhaDeNeutros>(neutrosEscolhidos(gravada.neutros));
   const [erroTecnico, setErroTecnico] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -174,6 +179,8 @@ export function FormularioDaMarcaDaOrganizacao({ gravada, instalacao, ambiente, 
             // organização sem cor do escuro não herda a do revendedor, assim
             // como não herda o logo dele quando define o próprio.
             accent_dark_hex: hexEscuroLimpo.length > 0 ? hexEscuroLimpo : null,
+            // `null` = herdar: a camada não fala de neutros e a instalação vale.
+            neutros,
             // GRAVADO, não digitado: o logo não é campo deste formulário — ele
             // já está no banco quando esta tela renderiza. Entra na prévia para
             // que o bloco "de onde vem cada coisa" possa responder sobre ele.
@@ -183,7 +190,7 @@ export function FormularioDaMarcaDaOrganizacao({ gravada, instalacao, ambiente, 
         ],
         REGUA_DO_PRODUTO,
       ),
-    [nomeLimpo, hexLimpo, hexEscuroLimpo, gravada.logo_path, abaixo],
+    [nomeLimpo, hexLimpo, hexEscuroLimpo, neutros, gravada.logo_path, abaixo],
   );
 
   // A MESMA serialização, com o MESMO escopo, que o layout de `/app` roda no
@@ -194,6 +201,8 @@ export function FormularioDaMarcaDaOrganizacao({ gravada, instalacao, ambiente, 
     () => cssDaMarca(resolvida.cor, ESCOPO_DA_ORGANIZACAO),
     [resolvida.cor],
   );
+
+  const neutrosDaInstalacao = neutrosDeTexto(instalacao.neutros);
 
   const derivada = resolvida.cor?.derivada ?? null;
   /**
@@ -261,6 +270,7 @@ export function FormularioDaMarcaDaOrganizacao({ gravada, instalacao, ambiente, 
       app_name: nomeLimpo.length > 0 ? nomeLimpo : null,
       accent_hex: hexLimpo.length > 0 ? hexLimpo : null,
       accent_dark_hex: hexEscuroLimpo.length > 0 ? hexEscuroLimpo : null,
+      neutros,
     });
     if (!lido.success) {
       toast.error(t("Confira os campos: algum valor não está no formato esperado."));
@@ -501,6 +511,15 @@ export function FormularioDaMarcaDaOrganizacao({ gravada, instalacao, ambiente, 
         algum canto do produto e conclui que não funcionou — e "não funcionou" é
         o que ela vai repetir para o fornecedor dela.
       */}
+      <Card className="space-y-3 p-6">
+        <SeletorDeNeutros
+          id="org-neutros"
+          valor={neutros}
+          onChange={setNeutros}
+          herdado={neutrosDaInstalacao}
+        />
+      </Card>
+
       <Card className="space-y-2 p-6">
         <h2 className="text-base font-semibold tracking-tight text-text">
           {t("O que isto ainda não muda")}

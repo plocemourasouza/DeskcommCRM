@@ -73,6 +73,33 @@ export function ehPapelConhecido(papel: string): papel is PapelDaSemente {
   return (PAPEIS_DA_SEMENTE as readonly string[]).includes(papel);
 }
 
+/**
+ * A paleta de neutros (superficie, texto, borda): `quente` e o greige de sempre
+ * (default), `cinza` e neutro puro, `frio` e azulado. Vocabulario fechado no
+ * CHECK `platform_branding_neutros` e em `fn_definir_marca_da_organizacao`
+ * (migration 0650); o invariante vocabulario-banco-x-typescript cobre a igualdade.
+ */
+export const NEUTROS_DA_MARCA = ["quente", "cinza", "frio"] as const;
+export type NeutrosDaMarca = (typeof NEUTROS_DA_MARCA)[number];
+
+/**
+ * Le um valor de fonte nao confiavel (coluna, jsonb, form) como neutros. Fora do
+ * vocabulario vira `quente` — o visual de sempre — e NUNCA lanca: isto roda no
+ * layout que embrulha o produto inteiro.
+ */
+export function neutrosDeTexto(valor: unknown): NeutrosDaMarca {
+  return typeof valor === "string" && (NEUTROS_DA_MARCA as readonly string[]).includes(valor)
+    ? (valor as NeutrosDaMarca)
+    : "quente";
+}
+
+/** O valor so quando ele e do vocabulario; `null` quando a fonte nao escolheu (ou escreveu lixo). */
+export function neutrosEscolhidos(valor: unknown): NeutrosDaMarca | null {
+  return typeof valor === "string" && (NEUTROS_DA_MARCA as readonly string[]).includes(valor)
+    ? (valor as NeutrosDaMarca)
+    : null;
+}
+
 export const CAMINHO_DA_SEMENTE = "semente_hex";
 
 export const esquemaDaCorDaMarca = z

@@ -9,6 +9,7 @@
 import { z } from "zod";
 
 import { ehHexValido } from "@/lib/branding/rampa";
+import { NEUTROS_DA_MARCA } from "@/lib/branding/schema";
 import { IDIOMAS } from "@/lib/i18n/idiomas";
 import { MOEDAS_SERVIDAS } from "@/lib/money";
 
@@ -313,6 +314,12 @@ export const platformBrandingSchema = z.object({
     .refine(ehHexValido, { message: "Use uma cor no formato #rrggbb" })
     .nullable(),
   show_powered_by: z.boolean(),
+  /**
+   * A paleta de neutros da instalacao (migration 0650). OPCIONAL, ao contrario
+   * dos irmaos: ausente = "nao mexa" (o `upsert` omite a coluna e ela mantem o
+   * valor), porque a coluna e `not null` — nao existe "apague", so "escolha".
+   */
+  neutros: z.enum(NEUTROS_DA_MARCA).optional(),
 });
 export type PlatformBrandingInput = z.infer<typeof platformBrandingSchema>;
 
@@ -348,6 +355,12 @@ export const marcaDaOrganizacaoSchema = z.object({
     .trim()
     .refine(ehHexValido, { message: "Use uma cor no formato #rrggbb" })
     .nullable(),
+  /**
+   * A paleta de neutros desta organizacao. `null` = "herde da instalacao"
+   * (a chave sai do jsonb); como nos irmaos, a ausencia nao existe: a RPC
+   * substitui o objeto `branding` inteiro, e omitir apagaria a escolha.
+   */
+  neutros: z.enum(NEUTROS_DA_MARCA).nullable(),
 });
 export type MarcaDaOrganizacaoInput = z.infer<typeof marcaDaOrganizacaoSchema>;
 

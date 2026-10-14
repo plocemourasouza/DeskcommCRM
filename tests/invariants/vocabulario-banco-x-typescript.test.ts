@@ -49,6 +49,12 @@ const PARES: Array<{
   simbolo: string;
 }> = [
   {
+    tabela: "platform_branding",
+    coluna: "neutros",
+    arquivo: "lib/branding/schema.ts",
+    simbolo: "NEUTROS_DA_MARCA",
+  },
+  {
     tabela: "ad_platform_connections",
     coluna: "google_api",
     arquivo: "lib/plataformas-de-anuncio/types.ts",

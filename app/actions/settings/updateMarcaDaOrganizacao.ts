@@ -125,7 +125,8 @@ export async function updateMarcaDaOrganizacao(
   const limpar =
     parsed.data.app_name === null &&
     parsed.data.accent_hex === null &&
-    parsed.data.accent_dark_hex === null;
+    parsed.data.accent_dark_hex === null &&
+    parsed.data.neutros === null;
   const marca = limpar
     ? null
     : {
@@ -141,6 +142,9 @@ export async function updateMarcaDaOrganizacao(
           parsed.data.accent_dark_hex === null
             ? null
             : normalizarHex(parsed.data.accent_dark_hex),
+        // `null` = herdar: a chave NAO vai. A RPC recusa `neutros` que nao seja
+        // string do vocabulario, entao um `null` explicito estouraria 22023.
+        ...(parsed.data.neutros ? { neutros: parsed.data.neutros } : {}),
         updated_by: authUser.id,
         updated_at: new Date().toISOString(),
       };
@@ -195,6 +199,7 @@ export async function updateMarcaDaOrganizacao(
       fields_changed: Object.keys(parsed.data),
       accent_definido: parsed.data.accent_hex !== null,
       nome_definido: parsed.data.app_name !== null,
+      neutros_definido: parsed.data.neutros !== null,
     },
   });
 
