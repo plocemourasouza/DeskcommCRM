@@ -5,6 +5,7 @@ import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerE
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Table,
@@ -18,7 +19,7 @@ import { useCatalogoExterno, type TabelaExterna } from "@/hooks/external-db/useC
 import { useDadosExternos } from "@/hooks/external-db/useDadosExternos";
 import { useT } from "@/hooks/i18n/useT";
 import { cn } from "@/lib/utils";
-import { CaretDown, CaretLeft, CaretRight, CaretUp, CircleNotch } from "@/lib/ui/icons";
+import { CaretDown, CaretLeft, CaretRight, CaretUp, } from "@/lib/ui/icons";
 
 const TAMANHOS = [25, 50, 100, 200];
 const LIMITE_PADRAO = 50;
@@ -288,7 +289,7 @@ export function ExploradorDeDados({ connectionId }: Props) {
         <div className="min-h-0 flex-1 overflow-y-auto p-2">
           {catalogo.isLoading && (
             <div className="flex items-center gap-2 p-3 text-sm text-muted-foreground">
-              <CircleNotch size={16} className="animate-spin" aria-hidden /> {t("Lendo o catálogo…")}
+              <Spinner /> {t("Lendo o catálogo…")}
             </div>
           )}
           {catalogo.isError && (
@@ -389,7 +390,7 @@ export function ExploradorDeDados({ connectionId }: Props) {
             <div className="min-h-0 flex-1 overflow-auto">
               {dados.isLoading && (
                 <div className="flex items-center gap-2 p-6 text-sm text-muted-foreground">
-                  <CircleNotch size={16} className="animate-spin" aria-hidden /> {t("Carregando dados…")}
+                  <Spinner /> {t("Carregando dados…")}
                 </div>
               )}
 

@@ -38,6 +38,25 @@ export function MediaRenderer({
 }) {
   const t = useT();
   const isOutbound = message.direction === "outbound";
+  // Bolha otimista: o arquivo ainda é LOCAL (blob:), a rota de mídia por id
+  // ainda não conhece esta mensagem. Mostra o próprio arquivo, sem rede.
+  if (message.metadata?._local_preview === true && message.media_url) {
+    const local = message.media_url;
+    switch (message.type) {
+      case "image":
+        return <ImageMedia messageId={message.id} src={local} alt={t("Imagem")} />;
+      case "video":
+        return <video src={local} controls className="max-h-64 rounded-md" />;
+      case "audio":
+        return <audio src={local} controls className="max-w-full" />;
+      default:
+        return (
+          <p className="text-sm font-medium wrap-anywhere">
+            {String(message.metadata?._filename ?? t("Documento"))}
+          </p>
+        );
+    }
+  }
   switch (message.type) {
     case "image":
       return <ImageMedia messageId={message.id} alt={t("Imagem recebida")} />;

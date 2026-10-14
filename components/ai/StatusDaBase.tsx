@@ -9,7 +9,8 @@
  * realtime de `ai_knowledge_sources`) e o estado da chave
  * (`GET /api/v1/ai/knowledge/chave`). Nenhuma rota nova só para contar.
  */
-import { CheckCircle2, Loader2, TriangleAlert } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { CheckCircle2, TriangleAlert } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
 import { useT } from "@/hooks/i18n/useT";
@@ -76,7 +77,7 @@ export function StatusDaBase({
         </div>
         {r.preparando > 0 ? (
           <span className="flex items-center gap-1 text-xs text-text-muted">
-            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+            <Spinner className="size-3.5" />
             {t("preparando o material…")}
           </span>
         ) : podeIndexar && r.comErro === 0 && r.prontos === r.total ? (

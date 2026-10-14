@@ -1,5 +1,6 @@
 "use client";
 
+import { Spinner } from "@/components/ui/spinner";
 import { useLocaleDeData } from "@/hooks/i18n/useLocaleDeData";
 
 import type { Locale } from "date-fns";
@@ -17,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { CircleNotch, MagnifyingGlass } from "@/lib/ui/icons";
+import { MagnifyingGlass } from "@/lib/ui/icons";
 import { cn } from "@/lib/utils";
 import { format, formatDistanceToNowStrict } from "date-fns";
 import { useT } from "@/hooks/i18n/useT";
@@ -148,7 +149,7 @@ export function InboxList() {
       <div className="flex-1 overflow-y-auto">
         {isLoading && (
           <div className="flex items-center justify-center py-8 text-muted-foreground">
-            <CircleNotch size={20} className="animate-spin" aria-label={t("Carregando")} />
+            <span role="status" aria-label={t("Carregando")}><Spinner className="size-5" /></span>
           </div>
         )}
 

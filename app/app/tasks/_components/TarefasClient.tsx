@@ -39,6 +39,7 @@ export function TarefasClient({ podeEditar }: { podeEditar: boolean }) {
   const {
     tarefas,
     carregando,
+    atualizando,
     falhou,
     recarregar,
     criarTarefa,
@@ -133,9 +134,9 @@ export function TarefasClient({ podeEditar }: { podeEditar: boolean }) {
             size="sm"
             className="h-9 gap-1.5 text-xs"
             onClick={() => recarregar()}
-            disabled={carregando}
+            loading={atualizando}
           >
-            <ArrowsClockwise size={14} className={cn(carregando && "animate-spin")} aria-hidden />
+            {!atualizando && <ArrowsClockwise size={14} aria-hidden />}
             {t("Atualizar")}
           </Button>
 

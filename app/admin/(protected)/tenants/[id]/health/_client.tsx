@@ -1,11 +1,12 @@
 "use client";
 
+import { Spinner } from "@/components/ui/spinner";
 import { useTagDeIdioma } from "@/hooks/i18n/useLocaleDeData";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTenantHealth } from "@/hooks/useTenantHealth";
 import { HealthGrid } from "@/components/admin/tenants/HealthGrid";
-import { ArrowsClockwise } from "@/lib/ui/icons";
+import { } from "@/lib/ui/icons";
 import { useT } from "@/hooks/i18n/useT";
 
 // ---------------------------------------------------------------------------
@@ -61,9 +62,7 @@ export function TenantHealthClient({ id }: TenantHealthClientProps) {
           {t("Status de Saúde")}
         </h2>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          {isFetching && (
-            <ArrowsClockwise size={13} className="animate-spin" aria-hidden />
-          )}
+          {isFetching && <Spinner className="size-3" />}
           {lastChecked && <span>{t("Atualizado às")} {lastChecked}</span>}
         </div>
       </div>

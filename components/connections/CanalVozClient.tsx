@@ -4,10 +4,11 @@ import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import { Card } from "@/components/ui/card";
 import { apiClient } from "@/lib/api/client";
 import { ApiError } from "@/lib/api/types";
-import { CheckCircle, CircleNotch, Phone } from "@/lib/ui/icons";
+import { CheckCircle, Phone } from "@/lib/ui/icons";
 import { useT } from "@/hooks/i18n/useT";
 
 /**
@@ -207,7 +208,7 @@ export function CanalVozClient({ wacallsConfigured }: { wacallsConfigured: boole
         </div>
       ) : pareando ? (
         <div className="flex flex-col items-center gap-2 py-6 text-sm text-muted-foreground">
-          <CircleNotch size={28} className="animate-spin" aria-hidden />
+          <Spinner className="size-7" />
           {t("Preparando o código…")}
         </div>
       ) : !conectado ? (

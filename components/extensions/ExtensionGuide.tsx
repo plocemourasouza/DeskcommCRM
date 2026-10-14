@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import { Card } from "@/components/ui/card";
 import { useT } from "@/hooks/i18n/useT";
 import { useIdioma } from "@/lib/i18n/IdiomaProvider";
@@ -18,7 +19,6 @@ import {
   ArrowsClockwise,
   BookOpen,
   CaretLeft,
-  CircleNotch,
   Lightbulb,
   ListChecks,
   Warning,
@@ -163,7 +163,7 @@ export function ExtensionGuide({
     return (
       <main className="mx-auto w-full max-w-4xl p-4 sm:p-6" data-testid="extension-guide-loading">
         <Card className="flex items-center gap-3 p-5 text-sm text-muted-foreground">
-          <CircleNotch className="animate-spin" aria-hidden />
+          <Spinner />
           {t("Conferindo se o guia continua ativo…")}
         </Card>
       </main>
@@ -335,15 +335,12 @@ export function ExtensionGuide({
 
               <div className="mt-5 border-t border-border pt-4">
                 <Button
+                  loading={openingCard === card.id}
                   disabled={openingCard !== null || !guideFresh}
                   data-testid={`extension-open-${card.id}`}
                   onClick={() => void abrirPorta(card.id, card.action.capability)}
                 >
-                  {openingCard === card.id ? (
-                    <CircleNotch className="animate-spin" aria-hidden />
-                  ) : (
-                    <ArrowRight aria-hidden />
-                  )}
+                  {openingCard === card.id ? null : <ArrowRight aria-hidden />}
                   {openingCard === card.id ? t("Conferindo acesso…") : action.text}
                 </Button>
                 <p className="mt-2 text-xs text-muted-foreground">

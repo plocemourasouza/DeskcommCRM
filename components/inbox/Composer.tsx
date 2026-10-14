@@ -671,31 +671,30 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
           // nota é tratada pelo onError do próprio hook, e o diálogo fica aberto
           // nos dois casos).
           const destino: DestinoDoUpload = pendingEm === "note" ? "nota" : "mensagem";
+          if (destino === "mensagem") {
+            // O envio de mensagem é OTIMISTA: o diálogo fecha agora, a bolha entra
+            // no fio com a prévia do arquivo e o upload + envio seguem lá (bolha
+            // `sending`; se falhar, vira `failed` com "Tentar de novo" e o arquivo
+            // continua em memória). Só a nota ainda espera o upload aqui.
+            send.mutate({
+              conversation_id: conversationId,
+              body: caption || undefined,
+              file: pendingFile,
+            });
+            setPendingFile(null);
+            return;
+          }
           try {
             const uploaded = await upload.mutateAsync({ conversationId, file: pendingFile, destino });
-            if (destino === "nota") {
-              createNote.mutate(
-                {
-                  conversation_id: conversationId,
-                  body: caption,
-                  anexo: {
-                    storage_path: uploaded.storage_path,
-                    media_mime: uploaded.media_mime,
-                    media_size_bytes: uploaded.media_size_bytes,
-                  },
-                },
-                { onSuccess: () => setPendingFile(null) },
-              );
-              return;
-            }
-            send.mutate(
+            createNote.mutate(
               {
                 conversation_id: conversationId,
-                type: uploaded.kind,
-                body: caption || undefined,
-                media_storage_path: uploaded.storage_path,
-                media_mime: uploaded.media_mime,
-                media_size_bytes: uploaded.media_size_bytes,
+                body: caption,
+                anexo: {
+                  storage_path: uploaded.storage_path,
+                  media_mime: uploaded.media_mime,
+                  media_size_bytes: uploaded.media_size_bytes,
+                },
               },
               { onSuccess: () => setPendingFile(null) },
             );

@@ -1,10 +1,11 @@
 "use client";
+import { Spinner } from "@/components/ui/spinner";
 import { useMemo } from "react";
 import { useAdminConversation } from "@/hooks/useAdminConversation";
 import { MessageBubble } from "@/components/inbox/MessageBubble";
 import { TenantBadge } from "@/components/admin/inbox/TenantBadge";
 import { AdminSidePanel } from "./AdminSidePanel";
-import { CircleNotch, Lock } from "@/lib/ui/icons";
+import { Lock } from "@/lib/ui/icons";
 import { Badge } from "@/components/ui/badge";
 import type { Message } from "@/lib/types/messaging";
 import { useT } from "@/hooks/i18n/useT";
@@ -41,7 +42,7 @@ export function AdminThreadClient({ conversationId }: Props) {
   if (isLoading) {
     return (
       <div className="flex flex-1 items-center justify-center text-muted-foreground">
-        <CircleNotch size={24} className="animate-spin" aria-label={t("Carregando")} />
+        <span role="status" aria-label={t("Carregando")}><Spinner className="size-6" /></span>
       </div>
     );
   }

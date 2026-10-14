@@ -84,13 +84,11 @@ export function AcervoClient({ initialSources, initialChave, agentes }: Props) {
             <Button
               variant="outline"
               onClick={() => reindexAll.mutate()}
-              disabled={reindexAll.isPending || !estado.pode_indexar}
+              loading={reindexAll.isPending}
+              disabled={!estado.pode_indexar}
               data-testid="acervo-reindexar-tudo"
             >
-              <RefreshCw
-                className={`mr-2 h-4 w-4 ${reindexAll.isPending ? "animate-spin" : ""}`}
-                aria-hidden
-              />
+              {!reindexAll.isPending && <RefreshCw className="mr-2 h-4 w-4" aria-hidden />}
               {reindexAll.isPending ? t("Preparando…") : t("Preparar tudo de novo")}
             </Button>
           ) : null}

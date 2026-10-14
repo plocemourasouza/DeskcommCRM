@@ -21,7 +21,7 @@ import {
   PaperPlaneTilt,
   ClockCountdown,
 } from "@/lib/ui/icons";
-import { cn } from "@/lib/utils";
+import { } from "@/lib/utils";
 import {
   useAutomationRuns,
   useResendAutomationRun,
@@ -330,10 +330,10 @@ export function ActivityTab() {
           type="button"
           variant="secondary"
           onClick={() => refetch()}
-          disabled={isRefetching}
+          loading={isRefetching}
           className="w-full sm:w-auto"
         >
-          <ArrowsClockwise className={cn(isRefetching && "animate-spin")} /> {t("Atualizar")}
+          {!isRefetching && <ArrowsClockwise />} {t("Atualizar")}
         </Button>
       </div>
 

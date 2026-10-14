@@ -115,7 +115,7 @@ describe("Composer — colar imagem", () => {
     createNoteMock.mockClear();
   });
 
-  it("colar imagem abre o preview e enviar dispara upload + send", async () => {
+  it("colar imagem abre o preview e enviar enfileira o envio otimista (o upload é do hook)", async () => {
     renderComposer();
     fireEvent.paste(campo(), { clipboardData: clipboard({ files: [png()] }) });
 
@@ -123,13 +123,12 @@ describe("Composer — colar imagem", () => {
     fireEvent.change(screen.getByLabelText(/legenda/i), { target: { value: "mirá esto" } });
     fireEvent.click(screen.getByRole("button", { name: /^enviar$/i }));
 
-    await waitFor(() => expect(uploadMock).toHaveBeenCalled());
     await waitFor(() =>
       expect(sendMock).toHaveBeenCalledWith(
-        expect.objectContaining({ conversation_id: "conv-1", type: "image", body: "mirá esto" }),
-        expect.anything(),
+        expect.objectContaining({ conversation_id: "conv-1", body: "mirá esto", file: expect.any(File) }),
       ),
     );
+    expect(uploadMock).not.toHaveBeenCalled();
   });
 
   it("colar TEXTO não abre preview e não cancela o paste do browser", () => {

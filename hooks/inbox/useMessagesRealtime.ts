@@ -1,17 +1,15 @@
 "use client";
-import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import { replaceEqualDeep, useInfiniteQuery, useQueryClient, type InfiniteData } from "@tanstack/react-query";
 import { useCallback, useMemo } from "react";
 import { useRealtimeChannel } from "@/hooks/realtime/useRealtimeChannel";
 import { useRefetchDeSeguranca } from "@/hooks/realtime/useRefetchDeSeguranca";
 import { agendarRecargaDasConversas } from "@/hooks/inbox/recargaDasConversas";
+import { mesclarBolhasLocais, type PaginaDeMensagens } from "@/hooks/inbox/bolhasLocais";
 import { apiClient } from "@/lib/api/client";
 import { showApiError } from "@/components/feedback/ApiErrorToast";
-import type { Message } from "@/lib/types/messaging";
 
-interface MessagesResponse {
-  data: Message[];
-  meta?: { cursor?: string | null; has_more?: boolean };
-}
+type MessagesResponse = PaginaDeMensagens;
+type Lista = InfiniteData<PaginaDeMensagens> | undefined;
 
 export function useMessagesRealtime(conversationId: string | null) {
   const qc = useQueryClient();
@@ -53,6 +51,15 @@ export function useMessagesRealtime(conversationId: string | null) {
      * "às vezes preciso atualizar para a mensagem aparecer".
      */
     refetchOnWindowFocus: true,
+    /**
+     * TODA escrita da lista — o refetch do foco, o do Realtime, o de segurança
+     * e o `setQueryData` do envio — passa por aqui. As bolhas locais (pendente
+     * ou falha) o servidor ainda não tem; sem a mescla a resposta dele as
+     * apagava, e com elas o "Tentar de novo". Depois, o compartilhamento
+     * estrutural de sempre, para não redesenhar o que não mudou.
+     */
+    structuralSharing: (anterior, nova) =>
+      replaceEqualDeep(anterior, mesclarBolhasLocais(anterior as Lista, nova as Lista)),
   });
 
   const onChange = useCallback(() => {

@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
@@ -31,7 +32,6 @@ import { compararVersoes } from "@/lib/extensions/versao";
 import {
   BookOpen,
   CheckCircle,
-  CircleNotch,
   Lightbulb,
   ListChecks,
   MagnifyingGlass,
@@ -196,14 +196,11 @@ export function CatalogAdmission({
           <Button
             data-testid="extension-catalog-submit"
             className="mt-4 w-full sm:w-auto"
-            disabled={!file || busy || disabled}
+            loading={busy}
+            disabled={!file || disabled}
             onClick={onSubmit}
           >
-            {busy ? (
-              <CircleNotch className="animate-spin" aria-hidden />
-            ) : (
-              <CheckCircle aria-hidden />
-            )}
+            {busy ? null : <CheckCircle aria-hidden />}
             {busy ? t("Admitindo…") : t("Admitir catálogo")}
           </Button>
           {error ? (
@@ -383,14 +380,11 @@ export function CatalogExtensionCard({
             <Button
               data-testid={`extension-install-${identidade}`}
               className="w-full sm:w-auto"
-              disabled={busy || actionsDisabled || preparationInProgress}
+              loading={busy}
+              disabled={actionsDisabled || preparationInProgress}
               onClick={() => (confirmable ? setConfirming(true) : onInstall(expectedRevision))}
             >
-              {busy ? (
-                <CircleNotch className="animate-spin" aria-hidden />
-              ) : (
-                <UploadSimple aria-hidden />
-              )}
+              {busy ? null : <UploadSimple aria-hidden />}
               {busy ? t("Preparando…") : actionLabel}
             </Button>
             {preparationInProgress ? (
@@ -504,7 +498,7 @@ export function ExtensionLoadingState() {
       className="flex items-center gap-3 p-5 text-sm text-muted-foreground"
       data-testid="extensions-loading"
     >
-      <CircleNotch className="animate-spin" aria-hidden />
+      <Spinner />
       {t("Carregando extensões…")}
     </Card>
   );
