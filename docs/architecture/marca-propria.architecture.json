@@ -107,7 +107,13 @@
     { "id": "lgpdworker", "lane": "saida", "col": 6, "type": "service", "label": "workers/lgpd-export-worker.ts + export-collector", "sublabel": "monta o ExportPayload; roda pelo scheduler (event-log-drain), nunca no contêiner worker" },
     { "id": "pdf", "lane": "saida", "col": 7, "type": "service", "label": "lib/lgpd/pdf-renderer.tsx", "sublabel": "DESLIGADO da marca de propósito — ver o card vermelho" },
     {"id": "iconeapp", "lane": "saida", "col": 9, "type": "service", "label": "/app-icon/192 e /app-icon/512", "sublabel": "arquivo platform/favicon_path limitado; falha retorna desenho e log"},
-    {"id": "manifestapp", "lane": "saida", "col": 10, "type": "frontend", "label": "manifest → aplicativo instalado", "sublabel": "marca pública da instalação; 192/512 PNG; leitura em runtime"}
+    {"id": "manifestapp", "lane": "saida", "col": 10, "type": "frontend", "label": "manifest → aplicativo instalado", "sublabel": "marca pública da instalação; 192/512 PNG; leitura em runtime"},
+    {"id": "seletoresaparencia", "lane": "humano", "col": 1, "type": "frontend", "label": "Cantos e barra lateral (seletores)", "sublabel": "SeletorDeRaio + SeletorDeBarraLateral nas DUAS telas de Marca · na org, 'Usar o padrão da instalação' grava null"},
+    {"id": "barralateral", "lane": "humano", "col": 8, "type": "frontend", "label": "A barra lateral do sistema", "sublabel": "data-theme=dark na subárvore da barra, mesmo em página clara · existe só dentro de /app"},
+    {"id": "aparenciacolunas", "lane": "banco", "col": 4, "type": "database", "label": "platform_branding.raio · barra_lateral (0671)", "sublabel": "CHECK de vocabulário fechado · organizations.settings.branding.raio e barra_lateral via fn_definir_marca_da_organizacao · padrao = o de sempre"},
+    {"id": "aparenciaschema", "lane": "resolver", "col": 5, "type": "service", "label": "lib/branding/schema.ts — RAIOS_DA_MARCA · BARRAS_LATERAIS_DA_MARCA", "sublabel": "raioDeTexto e barraLateralDeTexto NUNCA lançam: fora do vocabulário vira padrao · estiloDoRaio() espelha o globals.css"},
+    {"id": "scriptaparencia", "lane": "saida", "col": 7, "type": "service", "label": "lib/branding/script-da-aparencia.ts", "sublabel": "script inline do layout: data-raio e data-neutros no html antes da primeira pintura · padrao = atributo ausente"},
+    {"id": "globalscss", "lane": "saida", "col": 7, "type": "service", "label": "app/globals.css — :root[data-raio=...]", "sublabel": "quatro blocos estáticos de raio · os neutros cinza e frio chegam à barra por seletor descendente"}
   ],
   "edges": [
     { "id": "e1", "from": "installsh", "to": "env", "label": "grava a marca no .env — e o arquivo é escrito com truncamento: chave que o script não grava some no update seguinte" },
@@ -180,7 +186,21 @@
     { "id": "e63", "from": "layout", "to": "marcacliente", "label": "a MESMA marcaResolvida() do título e do CSS desce por prop, no payload do RSC — mesma rota de user/activeOrg" },
     { "id": "e64", "from": "marcacliente", "to": "interface", "label": "useMarcaDaInstalacao(): SSR e hidratação leem o mesmo objeto, então o logo do revendedor não troca de elemento no meio do caminho" },
     {"id": "e-icon-app-a", "from": "platformbranding", "to": "iconeapp", "label": "favicon_path validado; Storage da instalação; fallback limitado"},
-    {"id": "e-icon-app-b", "from": "iconeapp", "to": "manifestapp", "label": "PNG 192/512 públicos, sem cookie de organização"}
+    {"id": "e-icon-app-b", "from": "iconeapp", "to": "manifestapp", "label": "PNG 192/512 públicos, sem cookie de organização"},
+    {"id": "e70", "from": "seletoresaparencia", "to": "adminmarca", "label": "cantos e barra da INSTALAÇÃO, no mesmo Salvar da marca da instalação"},
+    {"id": "e71", "from": "seletoresaparencia", "to": "orgmarca", "label": "cantos e barra da ORGANIZAÇÃO; cada campo tem 'Usar o padrão da instalação' (grava null)"},
+    {"id": "e72", "from": "seletoresaparencia", "to": "updatebranding", "label": "raio e barra_lateral entram no update do singleton"},
+    {"id": "e73", "from": "seletoresaparencia", "to": "updateorg", "label": "raio e barra_lateral entram na RPC da organização; null = herda a instalação"},
+    {"id": "e74", "from": "updatebranding", "to": "aparenciacolunas", "label": "grava platform_branding.raio e barra_lateral"},
+    {"id": "e75", "from": "updateorg", "to": "aparenciacolunas", "label": "a RPC grava raio e barra_lateral no jsonb da organização, sem tocar os outros campos"},
+    {"id": "e76", "from": "aparenciacolunas", "to": "aparenciaschema", "label": "CHECK e parser têm o mesmo vocabulário (invariante vocabulario-banco-x-typescript cobre a igualdade)"},
+    {"id": "e77", "from": "aparenciaschema", "to": "scriptaparencia", "label": "raioDeTexto e neutrosDeTexto: só valores do vocabulário chegam ao script"},
+    {"id": "e78", "from": "scriptaparencia", "to": "applayout", "label": "o script roda no layout de /app: os atributos valem antes da primeira pintura"},
+    {"id": "e79", "from": "aparenciaschema", "to": "applayout", "label": "barraLateralDeTexto → prop para o AppShell (não atributo do html)"},
+    {"id": "e80", "from": "applayout", "to": "barralateral", "label": "barra escura por PROP: escurece só a subárvore da barra, não a página"},
+    {"id": "e81", "from": "globalscss", "to": "barralateral", "label": "accent escuro e neutros cinza/frio alcançam a barra por seletor descendente"},
+    {"id": "e82", "from": "globalscss", "to": "layout", "label": "os blocos :root[data-raio=...] trocam --radius-sm..xl de botões, campos e cartões"},
+    {"id": "e83", "from": "barralateral", "to": "interface", "label": "a barra é parte da interface pós-login"}
   ],
   "cards": [
     {
