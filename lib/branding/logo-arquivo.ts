@@ -12,18 +12,22 @@
  * pelo atacante. Aqui o tipo sai da assinatura do arquivo, e `file.type` só
  * entra no `details` do erro — para o log mostrar a mentira, nunca para decidir.
  *
- * ── Por que SVG é BANIDO, e não "aceito com cuidado" ─────────────────────────
+ * ── SVG: nunca é gravado, é RASTERIZADO ─────────────────────────────────────
  *
  * SVG é XML com `<script>` executável. Servido do bucket público e NAVEGADO
  * diretamente (não dentro de um `<img>`, onde o script não roda), ele executa no
  * origin do Storage do projeto — e não há `Content-Security-Policy` neste
- * repositório: medido, `next.config.ts` não define `headers()` com CSP e não há
- * `middleware.ts`. Sem CSP, a única defesa que sobra é não aceitar o formato.
+ * repositório. Por isso o SVG nunca chega ao bucket: a rota o entrega a
+ * `logo-rasterizar.ts`, que recusa o que for inseguro e devolve um PNG, e só o
+ * PNG é gravado. O servidor passou a DECODIFICAR bytes de quem sobe — o custo
+ * dessa escolha está limitado ali (teto cru de 512 KB, guardas no texto antes do
+ * sharp, `limitInputPixels`, tempo máximo). `pareceSvg` só decide quem vai para
+ * o rasterizador; um SVG que escape do farejo (tag raiz após 1 KB) cai em
+ * `farejarTipo` → null e não entra.
  *
- * A recusa tem código PRÓPRIO (`logo_svg_recusado`) em vez de cair no genérico
- * de tipo não suportado porque a pessoa que sobe um SVG fez a coisa mais natural
- * do mundo — é o formato em que um designer entrega logo. Ela precisa ler "SVG
- * não, mande PNG ou JPG", não "tipo de mídia não suportado".
+ * A recusa tem código PRÓPRIO (`logo_svg_invalido`; `logo_svg_recusado` ficou por
+ * compatibilidade) para a pessoa ler por que ESTE SVG não serviu, em vez de
+ * "tipo de mídia não suportado".
  *
  * ── O que este módulo NÃO faz, e por quê ─────────────────────────────────────
  *

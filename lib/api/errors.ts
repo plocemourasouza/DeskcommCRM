@@ -185,6 +185,10 @@ export const ApiErrorCodes = {
   // designer entrega logo) e precisa ler "mande PNG ou JPG", não "tipo de mídia
   // não suportado". A razão da recusa está em lib/branding/logo-arquivo.ts.
   logo_svg_recusado: "logo_svg_recusado",
+  // SVG enviado como logo que não pôde virar PNG com segurança (script, recurso
+  // externo, entidade, bomba de pixels, ilegível). A rota de logo rasteriza SVG;
+  // este é o código da recusa. `logo_svg_recusado` fica por compatibilidade.
+  logo_svg_invalido: "logo_svg_invalido",
 
   // 413
   payload_too_large: "payload_too_large",

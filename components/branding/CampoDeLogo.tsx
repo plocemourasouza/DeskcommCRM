@@ -124,6 +124,11 @@ const ERRO_EM_PORTUGUES: Record<string, string> = {
 const RAZAO_DO_TETO =
   "O logo precisa ter até 512 KB. Arquivo maior vai inteiro para o navegador em toda página.";
 
+/** O navegador declara o tipo; o nome cobre o caso em que ele não declara. A decisão final é dos bytes, no servidor. */
+function ehSvg(arquivo: File): boolean {
+  return arquivo.type === "image/svg+xml" || /\.svg$/i.test(arquivo.name);
+}
+
 export function CampoDeLogo({
   escopo,
   logoDaCamada,
@@ -272,7 +277,14 @@ export function CampoDeLogo({
        *   - o motor indisponível (ambiente sem `createImageBitmap`) NÃO recusa:
        *     manda o original e quem decide é o servidor, como antes.
        */
-      const { arquivo, recusar } = await ajustarLogo(arquivoEscolhido, lonaDoNavegador);
+      //
+      // SVG pula o ajuste: o `<canvas>` rasterizaria o SVG no navegador (e perderia
+      // a nitidez vetorial), e quem o converte é o servidor, que o recusa se
+      // trouxer script ou recurso externo (`lib/branding/logo-rasterizar.ts`). O
+      // teto de 512 KB do arquivo cru continua valendo lá.
+      const { arquivo, recusar } = ehSvg(arquivoEscolhido)
+        ? { arquivo: arquivoEscolhido, recusar: false }
+        : await ajustarLogo(arquivoEscolhido, lonaDoNavegador);
       if (recusar) {
         toast.error(t(RAZAO_DO_TETO));
         return;
@@ -342,7 +354,7 @@ export function CampoDeLogo({
             // `image/png,image/jpeg` FILTRA o seletor de arquivos, não decide
             // nada: quem decide é o farejador de bytes do servidor. O atributo
             // existe para a pessoa não navegar até um arquivo que será recusado.
-            accept="image/png,image/jpeg"
+            accept="image/png,image/jpeg,image/svg+xml"
             disabled={enviando}
             onChange={(e) => {
               const arquivo = e.target.files?.[0];
@@ -362,9 +374,9 @@ export function CampoDeLogo({
           ) : null}
         </div>
         <p className="text-xs text-text-muted">
-          {t("PNG ou JPG, até")} {Math.round(TAMANHO_MAXIMO_DO_LOGO / 1024)}{" "}
+          {t("PNG, JPG ou SVG, até")} {Math.round(TAMANHO_MAXIMO_DO_LOGO / 1024)}{" "}
           {t(
-            "KB. Prefira fundo transparente. SVG não é aceito: ele pode executar código quando aberto direto pelo endereço da imagem.",
+            "KB. Prefira fundo transparente. O SVG é convertido em PNG ao enviar, sem scripts nem imagens externas.",
           )}
         </p>
       </div>
@@ -375,7 +387,7 @@ export function CampoDeLogo({
           <input
             id={`logo-escuro-${escopo}`}
             type="file"
-            accept="image/png,image/jpeg"
+            accept="image/png,image/jpeg,image/svg+xml"
             disabled={enviando}
             onChange={(e) => {
               const arquivo = e.target.files?.[0];

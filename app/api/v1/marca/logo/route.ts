@@ -19,9 +19,10 @@ import { requireSupportWrite } from "@/lib/impersonate/support";
  *  3. **rate limit** — depois do gate: quem nem passou no papel não gasta o
  *     orçamento de quem passou.
  *  4. **tamanho (413)** — antes de ler os bytes.
- *  5. **`pareceSvg` (415)** — com a razão dita em português. SVG é o formato em
- *     que um designer entrega logo; a pessoa precisa ler "mande PNG ou JPG", não
- *     "tipo de mídia não suportado".
+ *  5. **`pareceSvg` → rasteriza** — SVG é o formato em que um designer entrega
+ *     logo: é desenhado no servidor (`logo-rasterizar.ts`) e SÓ O PNG segue
+ *     adiante; o SVG nunca é gravado. Inseguro ou ilegível → 415
+ *     `logo_svg_invalido`, com a razão dita em português.
  *  6. **`farejarTipo` (415)** — a decisão de tipo sai dos BYTES. `file.type` não
  *     decide nada e entra só no `details`, para o log mostrar a mentira.
  *  7. **prefixo de fonte confiável** — `orgAtivaDaApi` (cookie validado contra
@@ -73,6 +74,7 @@ import {
   baseDoStorage,
 } from "@/lib/branding/logo";
 import { extensaoDe, farejarTipo, pareceSvg, podeApagar } from "@/lib/branding/logo-arquivo";
+import { rasterizarSvg } from "@/lib/branding/logo-rasterizar";
 import { marcaDaOrganizacaoDeSettings } from "@/lib/branding/organizacao";
 import { traduzir } from "@/lib/i18n/dicionario";
 import { logger } from "@/lib/logger";
@@ -455,15 +457,30 @@ export async function POST(req: NextRequest): Promise<Response> {
     );
   }
 
-  const bytes = new Uint8Array(await file.arrayBuffer());
+  let bytes: Uint8Array<ArrayBuffer> = new Uint8Array(await file.arrayBuffer());
 
+  // SVG não entra no bucket: é desenhado aqui e só o PNG segue adiante (o
+  // restante da rota o trata como qualquer PNG). Recusa vem ANTES de o sharp ver
+  // o arquivo — ver `logo-rasterizar.ts` para o que é barrado e por quê.
   if (pareceSvg(bytes)) {
-    return fail(
-      "logo_svg_recusado",
-      "SVG não é aceito como logo: ele pode executar código quando aberto direto do endereço da imagem. Exporte o mesmo arquivo em PNG (fundo transparente) ou JPG.",
-      415,
-      { requestId },
-    );
+    const desenho = await rasterizarSvg(bytes);
+    if (!desenho.ok) {
+      logger.warn("[marca/logo] svg recusado", {
+        action: "marca.logo.svg_recusado",
+        userId: ctx.userId,
+        tenantId: ctx.escopo === "organizacao" ? ctx.orgId : undefined,
+        motivo: desenho.motivo,
+        detalhe: desenho.detalhe,
+        requestId,
+      });
+      return fail(
+        "logo_svg_invalido",
+        "Não foi possível usar este SVG como logo. Ele precisa ser um desenho simples, sem scripts nem imagens ou arquivos externos. Exporte em PNG (fundo transparente) ou JPG, ou use um SVG sem esses recursos.",
+        415,
+        { requestId },
+      );
+    }
+    bytes = desenho.png;
   }
 
   const tipo = farejarTipo(bytes);

@@ -4,7 +4,7 @@
  * O campo do ícone da aba (favicon) — subir, ver e remover. Só na instalação.
  *
  * Usa a MESMA rota do logo (`/api/v1/marca/logo`, `peca=icone`): gate, teto de
- * 512 KB, farejador de bytes (PNG ou JPG, SVG recusado) e a ordem sobe → grava →
+ * 512 KB, farejador de bytes (PNG ou JPG; SVG é rasterizado para PNG no servidor) e a ordem sobe → grava →
  * apaga são os do logo, sem cópia. A diferença é só a coluna (`favicon_path`).
  *
  * Sem `ajustarLogo` antes de subir: aquele ajuste recorta margem e reduz LARGURA
@@ -138,7 +138,7 @@ export function CampoDoIconeDaAba({ iconeDaCamada }: Props) {
           id="icone-da-aba"
           type="file"
           // Filtra o seletor; quem decide o tipo é o farejador de bytes da rota.
-          accept="image/png,image/jpeg"
+          accept="image/png,image/jpeg,image/svg+xml"
           disabled={enviando}
           onChange={(e) => {
             const arquivo = e.target.files?.[0];
@@ -158,7 +158,7 @@ export function CampoDoIconeDaAba({ iconeDaCamada }: Props) {
         ) : null}
       </div>
       <p className="text-xs text-text-muted">
-        {t("Imagem quadrada, de preferência 512×512 ou maior. PNG ou JPG, até")}{" "}
+        {t("Imagem quadrada, de preferência 512×512 ou maior. PNG, JPG ou SVG, até")}{" "}
         {Math.round(TAMANHO_MAXIMO_DO_LOGO / 1024)}{" "}
         {t(
           "KB. Usada no navegador e no aplicativo instalado. Sem arquivo, mantém o desenho da marca.",

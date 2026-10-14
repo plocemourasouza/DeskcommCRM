@@ -744,8 +744,8 @@ export const DICIONARIO: Traducoes = {
   "Você não tem permissão para trocar o ícone da aba.": {
     es: "No tienes permiso para cambiar el ícono de la pestaña.",
   },
-  "Imagem quadrada, de preferência 512×512 ou maior. PNG ou JPG, até": {
-    es: "Imagen cuadrada, preferiblemente de 512×512 o mayor. PNG o JPG, hasta",
+  "Imagem quadrada, de preferência 512×512 ou maior. PNG, JPG ou SVG, até": {
+    es: "Imagen cuadrada, preferiblemente de 512×512 o mayor. PNG, JPG o SVG, hasta",
   },
   "KB. Usada no navegador e no aplicativo instalado. Sem arquivo, mantém o desenho da marca.": {
     es: "KB. Se usa en el navegador y en la aplicación instalada. Sin archivo, conserva el dibujo de la marca.",
@@ -5411,10 +5411,8 @@ export const DICIONARIO: Traducoes = {
   },
   "Logo atualizado.": { es: "Logo actualizado." },
   "Logo removido.": { es: "Logo eliminado." },
-  "PNG ou JPG, até": { es: "PNG o JPG, hasta" },
-  "KB. Prefira fundo transparente. SVG não é aceito: ele pode executar código quando aberto direto pelo endereço da imagem.": {
-    es: "KB. Prefiere fondo transparente. No se acepta SVG, porque puede ejecutar código cuando se abre directamente desde la dirección de la imagen.",
-  },
+  "PNG, JPG ou SVG, até": { es: "PNG, JPG o SVG, hasta" },
+  "KB. Prefira fundo transparente. O SVG é convertido em PNG ao enviar, sem scripts nem imagens externas.": { es: "KB. Prefiere fondo transparente. El SVG se convierte en PNG al enviarlo, sin scripts ni imágenes externas." },
   "Como o logo aparece nas duas aparências do sistema:": {
     es: "Cómo se ve el logo en las dos apariencias del sistema:",
   },
@@ -5490,9 +5488,7 @@ export const DICIONARIO: Traducoes = {
   "O logo precisa ter até 512 KB. Arquivo maior vai inteiro para o navegador em toda página.": {
     es: "El logo debe pesar 512 KB como máximo. Un archivo más grande se envía completo al navegador en cada página.",
   },
-  "SVG não é aceito como logo: ele pode executar código quando aberto direto do endereço da imagem. Exporte o mesmo arquivo em PNG (fundo transparente) ou JPG.": {
-    es: "No se acepta SVG como logo, porque puede ejecutar código cuando se abre directamente desde la dirección de la imagen. Exporta el mismo archivo como PNG (fondo transparente) o JPG.",
-  },
+  "Não foi possível usar este SVG como logo. Ele precisa ser um desenho simples, sem scripts nem imagens ou arquivos externos. Exporte em PNG (fundo transparente) ou JPG, ou use um SVG sem esses recursos.": { es: "No se pudo usar este SVG como logo. Debe ser un dibujo simple, sin scripts ni imágenes o archivos externos. Expórtalo como PNG (fondo transparente) o JPG, o usa un SVG sin esos recursos." },
   "Erro ao gravar o logo.": { es: "Error al guardar el logo." },
   "O caminho do logo não pertence a esta empresa.": {
     es: "La ruta del logo no pertenece a esta empresa.",
