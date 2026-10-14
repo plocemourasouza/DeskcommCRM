@@ -83,7 +83,7 @@ export function AppShell({
         cima da lista.
       */}
       <div className="flex min-h-dvh min-w-0 flex-1 flex-col">
-        <TopBar />
+        <TopBar barraLateral={barraLateral} />
         {/*
           O RODAPÉ DESCONTA O QUE AS PEÇAS FIXAS OCUPAM (issue #1305).
 
@@ -125,7 +125,7 @@ export function AppShell({
         Ela própria se esconde acima de `md` — o mesmo corte em que a barra
         lateral aparece, logo acima.
       */}
-      <BarraInferior />
+      <BarraInferior barraLateral={barraLateral} />
     </div>
   );
 }

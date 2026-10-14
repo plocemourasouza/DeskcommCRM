@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ReactElement, ReactNode } from "react";
 
+import { AppShell } from "@/app/app/_components/AppShell";
 import { AparenciaDaOrganizacao } from "@/app/app/_components/AparenciaDaOrganizacao";
 import { scriptDaAparencia } from "@/lib/branding/script-da-aparencia";
 
@@ -113,5 +114,18 @@ describe("layout de /app — aparencia da organizacao", () => {
       aparencia: { neutros: "cinza", raio: "suave" },
       instalacao: { neutros: "cinza", raio: "arredondado" },
     });
+  });
+  it("barra lateral: o valor RESOLVIDO (escura) chega ao AppShell", async () => {
+    estado.marca = { ...BASE, barraLateral: "escura", origens: { ...PADRAO_ORIGENS, barraLateral: "organizacao" } };
+    const { default: AppLayout } = await import("@/app/app/layout");
+    const arvore = await AppLayout({ children: null });
+    expect(achar(arvore, AppShell)?.props).toMatchObject({ barraLateral: "escura" });
+  });
+
+  it("barra lateral: sem escolha chega 'padrao' (nada de data-theme)", async () => {
+    estado.marca = { ...BASE, origens: PADRAO_ORIGENS };
+    const { default: AppLayout } = await import("@/app/app/layout");
+    const arvore = await AppLayout({ children: null });
+    expect(achar(arvore, AppShell)?.props).toMatchObject({ barraLateral: "padrao" });
   });
 });

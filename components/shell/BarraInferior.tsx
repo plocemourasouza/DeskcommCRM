@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { ContadorDaFila } from "@/components/shell/ContadorDaFila";
 import { ContadorDeCasos } from "@/components/shell/ContadorDeCasos";
 import { GavetaDeNavegacao } from "@/components/shell/MobileSidebar";
+import type { BarraLateral } from "@/components/shell/Sidebar";
 import { useAuth } from "@/hooks/auth/AuthProvider";
 import { useT } from "@/hooks/i18n/useT";
 import { sidebarGroups, type NavDestination } from "@/lib/navigation/registry";
@@ -97,7 +98,7 @@ const VAGAS = 4;
  * `SidebarContent`: ausente quer dizer "não filtra por área", e um `?? []`
  * esconderia Análise e Agente de IA de uma vez.
  */
-export function BarraInferior() {
+export function BarraInferior({ barraLateral = "padrao" }: { barraLateral?: BarraLateral }) {
   const t = useT();
   const pathname = usePathname();
   const { user, activeOrg } = useAuth();
@@ -193,7 +194,7 @@ export function BarraInferior() {
           o faria acusar um botão correto. O porquê está em `MobileSidebar.tsx`.
         */}
         <li className="flex min-w-0 flex-1">
-          <GavetaDeNavegacao comoAba />
+          <GavetaDeNavegacao comoAba barraLateral={barraLateral} />
         </li>
       </ul>
     </nav>
