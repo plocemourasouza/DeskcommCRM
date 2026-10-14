@@ -1,30 +1,31 @@
-# 05 — Iconografia Phosphor
+# 05 — Iconografia
 
-> **Source of truth:** `@phosphor-icons/react`, peso default `duotone`.
+> **Source of truth:** `lib/ui/icons.ts` (o barril). Desenho: **Lucide** (`lucide-react`). Nomes: o vocabulário do produto, herdado do Phosphor.
 
-## Por que Phosphor
+## Decisão vigente (2026-10-13, fork local)
 
-A iconografia canônica do DeskcommCRM é **Phosphor Icons** com peso **duotone** como default, **regular** como secundário.
+A iconografia trocou de **Phosphor duotone** para **Lucide**. O motivo foi a qualidade de exibição, julgada pelo dono do fork olhando as telas: a camada duotone (preenchimento a ~20% de opacidade) e os pesos `fill`/`bold`/`duotone` misturados na mesma tela não davam um conjunto uniforme. O Lucide tem um traço só, desenhado em grade de 24 px. As capturas de antes e depois estão em `evidence/icones-lucide/`.
 
-Razões:
+O argumento antigo contra o Lucide ("~80% dos CRMs usam, é previsível") continua verdadeiro e foi pesado: a uniformidade venceu a diferenciação.
 
-- **Diferenciação de mercado.** ~80% dos CRMs SaaS atuais usam Lucide (Feather fork). Lucide é correto e neutro, mas previsível. Phosphor diverge sem custo de qualidade — pelo contrário, é mais expressivo.
-- **Duotone tem peso visual sem ruído.** A camada secundária (preenchimento ~20% opacity) dá presença sem competir com o texto. Regular fica pra contextos onde duotone seria excessivo (sidebar densa).
-- **5 weights disponíveis.** `thin`, `light`, `regular`, `bold`, `duotone`, `fill`. Permite hierarquia dentro do mesmo set sem trocar família.
-- **Cobertura grande e consistente.** ~9000 ícones. Cobre todos os domínios do produto (chat, comércio, dados, IA, gestão).
-- **Família humanista.** Curvas suaves combinam com Atkinson Hyperlegible. Lucide é mais geométrico, Heroicons é mais "clean SaaS"; Phosphor cabe no soft-tech.
+## Como a troca foi feita (e por que os nomes não mudaram)
 
-## Instalação
+O ADR-05 (Spec 09 §12) criou o barril justamente para trocar de biblioteca sem refatorar o produto. Os 186 arquivos que importam ícones continuam importando os **mesmos nomes** de `@/lib/ui/icons` (`Gear`, `MagnifyingGlass`, `CaretDown`…). Só o barril mudou: cada nome agora renderiza o ícone Lucide equivalente. Assim o fork segue mesclável com a `main` do produto.
 
-```bash
-pnpm add @phosphor-icons/react
-```
+- **`weight` continua aceito** e vira espessura de traço: `thin` 1.25 · `light` 1.5 · `regular`/`duotone` 2 · `bold`/`fill` 2.5. `strokeWidth` explícito vence.
+- **Logos de marca** (`WhatsappLogo`, `InstagramLogo`, `MessengerLogo`, `GoogleLogo`) seguem pelo Phosphor: o Lucide 1.x não desenha marcas, e logo de terceiro não é ícone de UI.
+- **Ninguém importa a biblioteca direto.** `lib/ui/icons.test.ts` reprova qualquer import de `@phosphor-icons/react` fora do barril e qualquer ícone (fora as marcas) que não saia do Lucide.
 
 ```tsx
-import { ChatCircle, Kanban, UserCircle } from "@phosphor-icons/react";
+import { ChatCircle, Kanban, UserCircle } from "@/lib/ui/icons";
 
-<ChatCircle weight="duotone" size={20} />
+<ChatCircle size={20} />
+<Kanban size={20} weight="bold" />   // traço 2.5
 ```
+
+Ícone novo: escolha o Lucide em [lucide.dev](https://lucide.dev/icons), acrescente ao barril com o nome do produto (`export const X = doLucide(L.Y, "X")`) e use pelo barril.
+
+> Na tabela abaixo, a coluna "Notas" ainda fala em `duotone`/`regular`: leia `duotone` e `regular` como traço 2 e `bold` como traço 2.5.
 
 ## Tamanhos canônicos
 
@@ -62,7 +63,7 @@ CSS:
 .icon-on-bg   { color: var(--ds-accent-fg); }  /* sobre bg accent */
 ```
 
-**Duotone:** o peso secundário (preenchimento) usa automaticamente `currentColor` em opacidade reduzida. Não há config extra.
+Ícones Lucide usam `currentColor` no traço; não há camada de preenchimento.
 
 ## Mapeamento canônico — função → ícone
 
@@ -176,4 +177,4 @@ Use **estes ícones** para estas funções. Se não está na lista e parece não
 - Icon-only button → `aria-label` obrigatório.
 - Ícone + texto → `aria-hidden="true"` no ícone.
 - Ícone de status → ou role/aria-label, ou texto adjacente sempre presente (mesmo que sr-only).
-- Phosphor renderiza como `<svg>`, então ele já é tratável por screen readers conforme attrs.
+- O Lucide renderiza como `<svg>`, então ele já é tratável por screen readers conforme attrs.

@@ -44,14 +44,14 @@ Lista canônica do que **não fazer** no DeskcommCRM. Anti-patterns ficam aqui p
 ## 6. ❌ `Sparkle` ou `Sparkles` icon pra IA
 
 **Por quê:** clichê 2023–2024. Comunica "feature de marketing" mais que função.
-**✅ Sim:** `Brain` (Phosphor duotone) pra "processamento", `MagicWand` pra "sugestão automática" raro. `Lightning` é reservado pra **shortcuts/templates do atendente**, não IA.
+**✅ Sim:** `Brain` pra "processamento", `MagicWand` pra "sugestão automática" raro. `Lightning` é reservado pra **shortcuts/templates do atendente**, não IA.
 
 ---
 
-## 7. ❌ Lucide Icons (default shadcn)
+## 7. ❌ Importar a biblioteca de ícones direto
 
-**Por quê:** ~80% dos shadcn-based usam Lucide. Genérico por convergência.
-**✅ Sim:** Phosphor com peso `duotone` default. Ver `05-iconography-phosphor.md`.
+**Por quê:** o barril `lib/ui/icons.ts` é a única porta (ADR-05). Import direto de `lucide-react` ou `@phosphor-icons/react` numa tela impede a próxima troca de biblioteca de ser uma mudança de um arquivo só.
+**✅ Sim:** `import { Gear } from "@/lib/ui/icons"`. Desenho Lucide desde 2026-10-13 — a regra antiga ("❌ Lucide, ✅ Phosphor duotone") foi revogada pela qualidade de exibição. Ver `05-iconography-phosphor.md`.
 
 ---
 

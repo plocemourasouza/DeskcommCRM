@@ -24,7 +24,7 @@ import {
   Stack,
   Receipt,
 } from "@/lib/ui/icons";
-import type { Icon as PhosphorIcon } from "@phosphor-icons/react";
+import type { Icone } from "@/lib/ui/icons";
 import { cn } from "@/lib/utils";
 import { SimboloDoProduto } from "@/components/branding/MarcaDoProduto";
 import { marcaEhADoProduto } from "@/lib/branding";
@@ -35,7 +35,7 @@ import type { ModuloOpcional } from "@/lib/instalacao/modulos";
 interface NavItem {
   href: string;
   label: string;
-  icon: PhosphorIcon;
+  icon: Icone;
   /** Só aparece com este módulo da instalação ligado (spec da cobrança §9). */
   modulo?: ModuloOpcional;
 }
