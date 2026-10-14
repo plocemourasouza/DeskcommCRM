@@ -16,7 +16,7 @@ Esta pasta é a **fonte canônica** da linguagem visual do DeskcommCRM. Toda dec
 | 02 | [Paleta Sage](./02-palette-sage.md) | 22 stops com hex (light + dark), estados, contraste |
 | 03 | [Tipografia](./03-typography.md) | Atkinson Hyperlegible, escala, IBM Plex Mono |
 | 04 | [Densidade Aerada](./04-density-aerada.md) | Row 56 / gap 24, quando overrider |
-| 05 | [Iconografia Phosphor](./05-iconography-phosphor.md) | Duotone, mapeamento por feature |
+| 05 | [Iconografia](./05-iconography-phosphor.md) | Lucide pelo barril, mapeamento por feature |
 | 06 | [Componentes](./06-components.md) | shadcn customizado + componentes do produto |
 | 07 | [Motion Language](./07-motion-language.md) | 4 tipos canônicos, curvas, durations |
 | 08 | [Voz e Tom](./08-voice-and-tone.md) | PT-BR profissional calmo, microcopy |
