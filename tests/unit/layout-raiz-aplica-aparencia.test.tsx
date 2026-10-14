@@ -59,4 +59,35 @@ describe("RootLayout — data-neutros", () => {
     estado.lanca = true;
     expect(await atributo()).toBeUndefined();
   });
+
+  describe("data-raio", () => {
+    async function raio(): Promise<unknown> {
+      const html = await RootLayout({ children: null });
+      return (html.props as Record<string, unknown>)["data-raio"];
+    }
+
+    it("instalacao suave / arredondado: o <html> leva data-raio", async () => {
+      estado.linha = { raio: "suave" };
+      expect(await raio()).toBe("suave");
+      estado.linha = { raio: "arredondado" };
+      expect(await raio()).toBe("arredondado");
+    });
+
+    it("padrao, linha ausente, valor desconhecido ou leitura que falha: sem atributo", async () => {
+      estado.linha = { raio: "padrao" };
+      expect(await raio()).toBeUndefined();
+      estado.linha = null;
+      expect(await raio()).toBeUndefined();
+      estado.linha = { raio: "quadrado" };
+      expect(await raio()).toBeUndefined();
+      estado.lanca = true;
+      expect(await raio()).toBeUndefined();
+    });
+
+    it("neutros e raio convivem", async () => {
+      estado.linha = { neutros: "frio", raio: "suave" };
+      expect(await atributo()).toBe("frio");
+      expect(await raio()).toBe("suave");
+    });
+  });
 });

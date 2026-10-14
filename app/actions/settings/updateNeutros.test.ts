@@ -95,7 +95,9 @@ describe("updateMarcaDaOrganizacao — neutros", () => {
   });
 
   it("tudo vazio limpa a marca inteira", async () => {
-    await updateMarcaDaOrganizacao({ app_name: null, accent_hex: null, accent_dark_hex: null, neutros: null });
+    await updateMarcaDaOrganizacao({
+      app_name: null, accent_hex: null, accent_dark_hex: null, neutros: null, raio: null, barra_lateral: null,
+    });
     expect(mocks.rpc.mock.calls[0]?.[1].p_marca).toBeNull();
   });
 

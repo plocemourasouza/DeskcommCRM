@@ -77,12 +77,21 @@ const CASOS: readonly Caso[] = [
   },
 ];
 
-/** Separa o CSS nos DOIS blocos que `cssDaMarca` emite, na ordem: claro, escuro. */
+/**
+ * Separa o CSS nos blocos que `cssDaMarca` emite, na ordem: claro, escuro e (barra
+ * lateral escura) escuro da subárvore. O "escuro" daqui é o SEGUNDO bloco; o
+ * terceiro é o mesmo conjunto sob outro seletor, coberto por `branding-barra-escura`.
+ */
 function blocos(css: string | null): { claro: string; escuro: string } {
   expect(css, "o CSS da marca foi recusado pela allowlist").not.toBeNull();
   const corte = (css as string).indexOf("\n}\n");
-  expect(corte, "esperava exatamente dois blocos (claro e escuro)").toBeGreaterThan(0);
-  return { claro: (css as string).slice(0, corte), escuro: (css as string).slice(corte) };
+  expect(corte, "esperava os blocos claro e escuro").toBeGreaterThan(0);
+  const resto = (css as string).slice(corte);
+  const fim = resto.indexOf("\n}\n", 1);
+  return {
+    claro: (css as string).slice(0, corte),
+    escuro: fim === -1 ? resto : resto.slice(0, fim),
+  };
 }
 
 /** Os nomes de custom property declarados num bloco, em ordem. */

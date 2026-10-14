@@ -72,6 +72,7 @@ describe("serialização — os dois blocos", () => {
     expect(Object.keys(lerBlocos(css ?? ""))).toEqual([
       ":root:root",
       ':root:root[data-theme="dark"]',
+      ':root:root [data-theme="dark"]',
     ]);
   });
 
@@ -146,6 +147,7 @@ describe("o escopo da organização", () => {
     expect(Object.keys(lerBlocos(css ?? ""))).toEqual([
       "body:has([data-marca-org])",
       '[data-theme="dark"] body:has([data-marca-org])',
+      ':root:root body:has([data-marca-org]) [data-theme="dark"]',
     ]);
   });
 
@@ -156,7 +158,9 @@ describe("o escopo da organização", () => {
     // herda a cor da organização; ancorado numa div (ou na raiz, que é onde a
     // instalação já manda), a página teria uma cor e o menu, outra.
     for (const [seletor] of ESCOPO_DA_ORGANIZACAO) {
-      expect(seletor, seletor).not.toContain(":root");
+      // `:root:root` só aparece no seletor da SUBÁRVORE escura (barra lateral), e
+      // ali sempre seguido de combinador descendente: o <html> nunca é casado.
+      expect(seletor.replace(/^:root:root\s+(?=body)/, ""), seletor).not.toContain(":root");
       expect(/(^|\s)body\b/.test(seletor), seletor).toBe(true);
     }
   });

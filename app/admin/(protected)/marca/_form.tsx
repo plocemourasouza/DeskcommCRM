@@ -11,12 +11,20 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PreviaDaAparencia } from "@/components/branding/PreviaDaAparencia";
+import { SeletorDeBarraLateral } from "@/components/branding/SeletorDeBarraLateral";
 import { SeletorDeNeutros } from "@/components/branding/SeletorDeNeutros";
+import { SeletorDeRaio } from "@/components/branding/SeletorDeRaio";
 import { cssDaMarca } from "@/lib/branding/css";
 import { ehHexValido, K, normalizarHex } from "@/lib/branding/rampa";
 import { REGUA_DO_PRODUTO } from "@/lib/branding/regua-do-produto";
 import { resolverMarca } from "@/lib/branding/resolve";
-import { envelopeDeSemente, type NeutrosDaMarca } from "@/lib/branding/schema";
+import {
+  envelopeDeSemente,
+  type BarraLateralDaMarca,
+  type NeutrosDaMarca,
+  type RaioDaMarca,
+} from "@/lib/branding/schema";
 import { platformBrandingSchema, type PlatformBrandingInput } from "@/lib/schemas/settings";
 
 import { EstadoDaMarca } from "./_estado";
@@ -39,6 +47,10 @@ export interface MarcaGravada {
   readonly accent_dark_hex: string | null;
   /** A paleta de neutros gravada (`quente` quando a coluna ainda não existe ou é desconhecida). */
   readonly neutros: NeutrosDaMarca;
+  /** Os cantos gravados (`padrao` quando a coluna ainda não existe). Obrigatório: ver a org. */
+  readonly raio: RaioDaMarca;
+  /** O menu lateral gravado (`padrao` quando a coluna ainda não existe). */
+  readonly barra_lateral: BarraLateralDaMarca;
   readonly show_powered_by: boolean;
 }
 
@@ -93,6 +105,8 @@ export function FormularioDaMarca({
   const [hex, setHex] = useState(gravada.accent_hex ?? "");
   const [hexEscuro, setHexEscuro] = useState(gravada.accent_dark_hex ?? "");
   const [neutros, setNeutros] = useState<NeutrosDaMarca>(gravada.neutros);
+  const [raio, setRaio] = useState<RaioDaMarca>(gravada.raio);
+  const [barraLateral, setBarraLateral] = useState<BarraLateralDaMarca>(gravada.barra_lateral);
   const [erroTecnico, setErroTecnico] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -120,6 +134,8 @@ export function FormularioDaMarca({
           {
             origem: "tela",
             neutros,
+            raio,
+            barraLateral,
             cor: hexLimpo.length > 0 ? envelopeDeSemente(hexLimpo) : undefined,
             // O par (#2482): a segunda semente entra pelo MESMO envelope e a
             // mesma validação — o preview mostra o que o servidor vai emitir.
@@ -129,7 +145,7 @@ export function FormularioDaMarca({
         ],
         REGUA_DO_PRODUTO,
       ),
-    [hexLimpo, hexEscuroLimpo, neutros],
+    [hexLimpo, hexEscuroLimpo, neutros, raio, barraLateral],
   );
 
   // A mesma serialização que decide se a cor chega ao `<style>` da página —
@@ -227,6 +243,8 @@ export function FormularioDaMarca({
       // não muda nada em tela nenhuma é pior que a ausência dele.
       show_powered_by: gravada.show_powered_by,
       neutros,
+      raio,
+      barra_lateral: barraLateral,
     };
 
     const lido = platformBrandingSchema.safeParse(candidato);
@@ -424,6 +442,16 @@ export function FormularioDaMarca({
 
       <Card className="space-y-3 p-6">
         <SeletorDeNeutros id="neutros" valor={neutros} onChange={(v) => setNeutros(v ?? "quente")} />
+      </Card>
+
+      <Card className="space-y-4 p-6">
+        <SeletorDeRaio id="raio" valor={raio} onChange={(v) => setRaio(v ?? "padrao")} />
+        <SeletorDeBarraLateral
+          id="barra-lateral"
+          valor={barraLateral}
+          onChange={(v) => setBarraLateral(v ?? "padrao")}
+        />
+        <PreviaDaAparencia raio={resolvida.raio} barraLateral={resolvida.barraLateral} />
       </Card>
 
       {/*

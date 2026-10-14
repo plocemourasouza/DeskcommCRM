@@ -43,6 +43,13 @@ export const DICIONARIO: Traducoes = {
   "O canal escolhido vale para todas as reservas deste tipo, inclusive as criadas manualmente. Se ele não puder enviar, a equipe recebe um aviso; o sistema não troca de número sozinho.": { es: "El canal elegido se aplica a todas las reservas de este tipo, incluidas las creadas manualmente. Si no puede enviar, el equipo recibe un aviso; el sistema no cambia de número por su cuenta." },
   "Não foi possível carregar os canais. A escolha guardada será preservada; tente novamente.": { es: "No se pudieron cargar los canales. Se conservará la elección guardada; inténtalo de nuevo." },
   "Canal sem nome": { es: "Canal sin nombre" },
+  "Nome interno da conexão": { es: "Nombre interno de la conexión" },
+  "Nome interno": { es: "Nombre interno" },
+  "Nome interno atualizado.": { es: "Nombre interno actualizado." },
+  "Não foi possível salvar o nome.": { es: "No se pudo guardar el nombre." },
+  "Só a sua equipe vê este nome. O nome público no provedor não muda.": { es: "Solo tu equipo ve este nombre. El nombre público en el proveedor no cambia." },
+  "Ex.: WA | Fixo 7906": { es: "Ej.: WA | Fijo 7906" },
+  "Informe um nome interno com até 80 caracteres.": { es: "Indica un nombre interno de hasta 80 caracteres." },
   "Não foi possível consultar o canal do lembrete.": { es: "No se pudo consultar el canal del recordatorio." },
   "Escolha um canal de mensagem não arquivado desta organização.": { es: "Elige un canal de mensajes no archivado de esta organización." },
   "Conectar a assinatura do ChatGPT": { es: "Conectar la suscripción de ChatGPT" },
@@ -5344,6 +5351,21 @@ export const DICIONARIO: Traducoes = {
   "Cinza azulado, mais técnico e limpo.": { es: "Gris azulado, más técnico y limpio." },
   "Usar a da instalação": { es: "Usar la de la instalación" },
   "Hoje: ": { es: "Hoy: " },
+  "Cantos dos botões e cartões": { es: "Esquinas de botones y tarjetas" },
+  "O quanto os cantos de botões, campos e cartões são arredondados em todo o sistema.": { es: "Cuán redondeadas son las esquinas de botones, campos y tarjetas en todo el sistema." },
+  "Suave": { es: "Suave" },
+  "Arredondado": { es: "Redondeado" },
+  "Cantos quase retos, um visual mais sóbrio.": { es: "Esquinas casi rectas, un aspecto más sobrio." },
+  "Cantos levemente arredondados, o visual de sempre.": { es: "Esquinas levemente redondeadas, el aspecto de siempre." },
+  "Cantos bem arredondados, um visual mais leve.": { es: "Esquinas bien redondeadas, un aspecto más ligero." },
+  "Usar o padrão da instalação": { es: "Usar el valor predeterminado de la instalación" },
+  "Escolha se o menu lateral segue o modo claro ou escuro, ou se fica sempre escuro.": { es: "Elige si el menú lateral sigue el modo claro u oscuro, o si queda siempre oscuro." },
+  "Sempre escura": { es: "Siempre oscuro" },
+  "O menu lateral acompanha o modo claro ou escuro.": { es: "El menú lateral acompaña el modo claro u oscuro." },
+  "O menu lateral fica escuro, mesmo no modo claro.": { es: "El menú lateral queda oscuro, incluso en el modo claro." },
+  "Cantos": { es: "Esquinas" },
+  "Como vai ficar": { es: "Cómo quedará" },
+  "Uma amostra de botão, campo, cartão e menu lateral com as escolhas acima.": { es: "Una muestra de botón, campo, tarjeta y menú lateral con las opciones de arriba." },
   "Sua cor": { es: "Tu color" },
   "fora da escala — fica só no logo": { es: "fuera de la escala: solo se usa en el logo" },
   "Botões no modo claro": { es: "Botones en el modo claro" },
@@ -5906,6 +5928,9 @@ export const DICIONARIO: Traducoes = {
   },
   "Mover um lead para outro funil está desligado nesta organização.": {
     es: "Mover un lead a otro embudo está desactivado en esta organización.",
+  },
+  "A continuação de um negócio ganho só nasce em OUTRO funil. Aponte esta ação para o funil de pós-venda — nada foi movido.": {
+    es: "La continuación de un negocio ganado solo nace en OTRO embudo. Apunte esta acción al embudo de posventa — no se movió nada.",
   },
   "Outra regra deste mesmo evento já levou o lead para outro funil. Vale a primeira regra; esta não transfere de novo.":
     {
@@ -15461,6 +15486,17 @@ export const DICIONARIO: Traducoes = {
   },
   "Nenhum negócio com este campo de data neste período.": {
     es: "Ningún negocio con este campo de fecha en este período.",
+  },
+  // #2728 — o editor de campos do funil monta a condição de exibição.
+  "Mostrar só quando:": { es: "Mostrar solo cuando:" },
+  "Sempre mostrar": { es: "Mostrar siempre" },
+  "Campo da condição": { es: "Campo de la condición" },
+  "Operador da condição": { es: "Operador de la condición" },
+  "Valor da condição": { es: "Valor de la condición" },
+  "é igual a": { es: "es igual a" },
+  "é maior que": { es: "es mayor que" },
+  "Escondido, o campo não aparece no formulário nem é validado como obrigatório, e o valor já gravado continua no registro.": {
+    es: "Oculto, el campo no aparece en el formulario ni se valida como obligatorio, y el valor ya guardado sigue en el registro.",
   },
 };
 

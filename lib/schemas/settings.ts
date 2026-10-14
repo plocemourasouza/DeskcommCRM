@@ -9,11 +9,12 @@
 import { z } from "zod";
 
 import { ehHexValido } from "@/lib/branding/rampa";
-import { NEUTROS_DA_MARCA } from "@/lib/branding/schema";
+import { BARRAS_LATERAIS_DA_MARCA, NEUTROS_DA_MARCA, RAIOS_DA_MARCA } from "@/lib/branding/schema";
 import { IDIOMAS } from "@/lib/i18n/idiomas";
 import { MOEDAS_SERVIDAS } from "@/lib/money";
 
 import { conversationTagSchema } from "./messaging";
+import { mostrarQuandoSchema } from "./mostrar-quando";
 
 /**
  * Os idiomas que a interface REALMENTE serve.
@@ -199,6 +200,19 @@ export const customFieldSchema = z.object({
   options: z
     .array(z.object({ value: z.string().min(1), label: z.string().min(1) }))
     .optional(),
+  /**
+   * QUANDO este campo aparece (issue #2728) — "mostrar só quando outro tem
+   * determinado valor".
+   *
+   * A condição é montada no editor de campos do funil (campo + operador +
+   * valor) e lida por `lib/schemas/mostrar-quando.ts`, que os quatro pontos de
+   * renderização consultam. Esconder NÃO apaga valor: quem filtra é a lista
+   * que a tela renderiza, e o `custom_fields` gravado segue intacto.
+   *
+   * Ausente é o caminho de todo funil instalado hoje — a régua continua
+   * opt-in, igual a `obrigatorio_em`.
+   */
+  mostrar_quando: mostrarQuandoSchema.optional(),
 });
 export type CustomFieldDef = z.infer<typeof customFieldSchema>;
 
@@ -320,6 +334,10 @@ export const platformBrandingSchema = z.object({
    * valor), porque a coluna e `not null` — nao existe "apague", so "escolha".
    */
   neutros: z.enum(NEUTROS_DA_MARCA).optional(),
+  /** O raio dos cantos (migration 0671). Opcional pelo mesmo motivo: coluna `not null`. */
+  raio: z.enum(RAIOS_DA_MARCA).optional(),
+  /** A barra lateral (migration 0671). Opcional pelo mesmo motivo. */
+  barra_lateral: z.enum(BARRAS_LATERAIS_DA_MARCA).optional(),
 });
 export type PlatformBrandingInput = z.infer<typeof platformBrandingSchema>;
 
@@ -361,6 +379,14 @@ export const marcaDaOrganizacaoSchema = z.object({
    * substitui o objeto `branding` inteiro, e omitir apagaria a escolha.
    */
   neutros: z.enum(NEUTROS_DA_MARCA).nullable(),
+  /**
+   * O raio e a barra lateral desta organizacao (migration 0671). TRES estados,
+   * ao contrario dos irmaos: valor = escolhe, `null` = "herde da instalacao"
+   * (a chave sai do jsonb) e AUSENTE = "nao mexa" — a RPC preserva a chave
+   * gravada. Salvar so o nome nunca apaga o que o formulario nao enviou.
+   */
+  raio: z.enum(RAIOS_DA_MARCA).nullable().optional(),
+  barra_lateral: z.enum(BARRAS_LATERAIS_DA_MARCA).nullable().optional(),
 });
 export type MarcaDaOrganizacaoInput = z.infer<typeof marcaDaOrganizacaoSchema>;
 

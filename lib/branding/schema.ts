@@ -100,6 +100,69 @@ export function neutrosEscolhidos(valor: unknown): NeutrosDaMarca | null {
     : null;
 }
 
+/**
+ * O raio dos cantos (`--radius-sm..xl`): `padrao` e o de sempre, `suave` aperta
+ * (nunca chega a zero) e `arredondado` folga. Independe do tema. Vocabulario
+ * fechado no CHECK `platform_branding_raio` e em `fn_definir_marca_da_organizacao`
+ * (migration 0671); o invariante vocabulario-banco-x-typescript cobre a igualdade.
+ */
+export const RAIOS_DA_MARCA = ["suave", "padrao", "arredondado"] as const;
+export type RaioDaMarca = (typeof RAIOS_DA_MARCA)[number];
+
+/**
+ * Os quatro raios em px de cada escolha. Espelho de `app/globals.css` (`:root` e
+ * `:root[data-raio=...]`) para a PREVIA do formulario, que nao pode usar o
+ * atributo no `<html>`. `tests/unit/raio-da-marca-x-globals.test.ts` reprova a
+ * divergencia entre os dois lados.
+ */
+export const RAIO_EM_PX: Record<RaioDaMarca, { sm: number; md: number; lg: number; xl: number }> = {
+  suave: { sm: 2, md: 4, lg: 6, xl: 10 },
+  padrao: { sm: 4, md: 8, lg: 12, xl: 16 },
+  arredondado: { sm: 6, md: 12, lg: 16, xl: 24 },
+};
+
+/** As quatro custom properties do raio, prontas para `style` (previa). */
+export function estiloDoRaio(raio: RaioDaMarca): Record<`--radius-${"sm" | "md" | "lg" | "xl"}`, string> {
+  const r = RAIO_EM_PX[raio];
+  return {
+    "--radius-sm": `${r.sm}px`,
+    "--radius-md": `${r.md}px`,
+    "--radius-lg": `${r.lg}px`,
+    "--radius-xl": `${r.xl}px`,
+  };
+}
+
+/** Fora do vocabulario vira `padrao` e NUNCA lanca (roda no layout raiz). */
+export function raioDeTexto(valor: unknown): RaioDaMarca {
+  return raioEscolhido(valor) ?? "padrao";
+}
+
+/** O valor so quando ele e do vocabulario; `null` quando a fonte nao escolheu (ou escreveu lixo). */
+export function raioEscolhido(valor: unknown): RaioDaMarca | null {
+  return typeof valor === "string" && (RAIOS_DA_MARCA as readonly string[]).includes(valor)
+    ? (valor as RaioDaMarca)
+    : null;
+}
+
+/**
+ * A barra lateral: `padrao` acompanha o tema, `escura` e sempre escura. CHECK
+ * `platform_branding_barra_lateral` e a mesma guarda da funcao (migration 0671).
+ */
+export const BARRAS_LATERAIS_DA_MARCA = ["padrao", "escura"] as const;
+export type BarraLateralDaMarca = (typeof BARRAS_LATERAIS_DA_MARCA)[number];
+
+/** Fora do vocabulario vira `padrao` e NUNCA lanca. */
+export function barraLateralDeTexto(valor: unknown): BarraLateralDaMarca {
+  return barraLateralEscolhida(valor) ?? "padrao";
+}
+
+/** O valor so quando ele e do vocabulario; `null` quando a fonte nao escolheu. */
+export function barraLateralEscolhida(valor: unknown): BarraLateralDaMarca | null {
+  return typeof valor === "string" && (BARRAS_LATERAIS_DA_MARCA as readonly string[]).includes(valor)
+    ? (valor as BarraLateralDaMarca)
+    : null;
+}
+
 export const CAMINHO_DA_SEMENTE = "semente_hex";
 
 export const esquemaDaCorDaMarca = z

@@ -45,13 +45,15 @@ const url = (caminho: string) => urlPublicaDoLogo(caminho, baseDoStorage());
 const previa = (tema: "claro" | "escuro") =>
   document.querySelector<HTMLImageElement>(`[data-previa-do-logo='${tema}'] img`);
 
-const SEM_MARCA_NA_INSTALACAO: LinhaDaInstalacao = {
+const SEM_MARCA_NA_INSTALACAO: LinhaDaInstalacao & { raio: null; barra_lateral: null } = {
   app_name: null,
   logo_url: null,
   logo_path: null,
   logo_dark_path: null,
   accent_hex: null,
   accent_dark_hex: null,
+  raio: null,
+  barra_lateral: null,
 };
 
 function formulario(
@@ -65,6 +67,8 @@ function formulario(
         accent_hex: null,
         accent_dark_hex: null,
         neutros: null,
+        raio: null,
+        barra_lateral: null,
         ...gravada,
       }}
       instalacao={instalacao}

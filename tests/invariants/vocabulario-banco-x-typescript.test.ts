@@ -55,6 +55,18 @@ const PARES: Array<{
     simbolo: "NEUTROS_DA_MARCA",
   },
   {
+    tabela: "platform_branding",
+    coluna: "raio",
+    arquivo: "lib/branding/schema.ts",
+    simbolo: "RAIOS_DA_MARCA",
+  },
+  {
+    tabela: "platform_branding",
+    coluna: "barra_lateral",
+    arquivo: "lib/branding/schema.ts",
+    simbolo: "BARRAS_LATERAIS_DA_MARCA",
+  },
+  {
     tabela: "ad_platform_connections",
     coluna: "google_api",
     arquivo: "lib/plataformas-de-anuncio/types.ts",

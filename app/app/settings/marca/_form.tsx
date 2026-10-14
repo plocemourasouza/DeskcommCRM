@@ -29,7 +29,10 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PreviaDaAparencia } from "@/components/branding/PreviaDaAparencia";
+import { SeletorDeBarraLateral, type EscolhaDeBarraLateral } from "@/components/branding/SeletorDeBarraLateral";
 import { SeletorDeNeutros, type EscolhaDeNeutros } from "@/components/branding/SeletorDeNeutros";
+import { SeletorDeRaio, type EscolhaDeRaio } from "@/components/branding/SeletorDeRaio";
 import { cssDaMarca, ESCOPO_DA_ORGANIZACAO } from "@/lib/branding/css";
 import {
   avisosDaMarca,
@@ -46,7 +49,14 @@ import {
   resolverMarca,
   type LinhaDaInstalacao,
 } from "@/lib/branding/resolve";
-import { neutrosDeTexto, neutrosEscolhidos } from "@/lib/branding/schema";
+import {
+  barraLateralDeTexto,
+  barraLateralEscolhida,
+  neutrosDeTexto,
+  neutrosEscolhidos,
+  raioDeTexto,
+  raioEscolhido,
+} from "@/lib/branding/schema";
 import { marcaDaOrganizacaoSchema } from "@/lib/schemas/settings";
 import { dicaDoRelatorio, type VocabularioDaEmpresa } from "@/lib/legal/dica-do-relatorio-de-dados";
 import { useT } from "@/hooks/i18n/useT";
@@ -71,9 +81,22 @@ interface Props {
     readonly logo_dark_path: string | null;
     /** A escolha de neutros desta organização; `null` = herda a da instalação. */
     readonly neutros: string | null;
+    /**
+     * OBRIGATÓRIOS de propósito (sem `?`): `page.tsx` já esqueceu `logo_dark_path`
+     * e a prévia mostrou a coisa errada sem erro nenhum. Esquecer estes dois
+     * agora reprova o `tsc`. `null` = herda a instalação.
+     */
+    readonly raio: string | null;
+    readonly barra_lateral: string | null;
   };
-  /** A linha da marca da INSTALAÇÃO — a camada logo abaixo desta. */
-  readonly instalacao: LinhaDaInstalacao;
+  /**
+   * A linha da marca da INSTALAÇÃO — a camada logo abaixo desta. `raio` e
+   * `barra_lateral` obrigatórios pelo mesmo motivo de `gravada`.
+   */
+  readonly instalacao: LinhaDaInstalacao & {
+    readonly raio: string | null;
+    readonly barra_lateral: string | null;
+  };
   /** O arquivo de instalação do servidor — o fundo da pilha. */
   readonly ambiente: {
     readonly APP_NAME?: string;
@@ -150,6 +173,11 @@ export function FormularioDaMarcaDaOrganizacao({ gravada, instalacao, ambiente, 
   const [hex, setHex] = useState(gravada.accent_hex ?? "");
   const [hexEscuro, setHexEscuro] = useState(gravada.accent_dark_hex ?? "");
   const [neutros, setNeutros] = useState<EscolhaDeNeutros>(neutrosEscolhidos(gravada.neutros));
+  // Estado inicial = o gravado; o Salvar compara com ele para saber o que mudou.
+  const raioGravado = raioEscolhido(gravada.raio);
+  const barraGravada = barraLateralEscolhida(gravada.barra_lateral);
+  const [raio, setRaio] = useState<EscolhaDeRaio>(raioGravado);
+  const [barraLateral, setBarraLateral] = useState<EscolhaDeBarraLateral>(barraGravada);
   const [erroTecnico, setErroTecnico] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -183,6 +211,9 @@ export function FormularioDaMarcaDaOrganizacao({ gravada, instalacao, ambiente, 
             accent_dark_hex: hexEscuroLimpo.length > 0 ? hexEscuroLimpo : null,
             // `null` = herdar: a camada não fala de neutros e a instalação vale.
             neutros,
+            // `null` = herdar, igual aos neutros.
+            raio,
+            barra_lateral: barraLateral,
             // GRAVADO, não digitado: o logo não é campo deste formulário — ele
             // já está no banco quando esta tela renderiza. Entra na prévia para
             // que o bloco "de onde vem cada coisa" possa responder sobre ele.
@@ -193,7 +224,7 @@ export function FormularioDaMarcaDaOrganizacao({ gravada, instalacao, ambiente, 
         ],
         REGUA_DO_PRODUTO,
       ),
-    [nomeLimpo, hexLimpo, hexEscuroLimpo, neutros, gravada.logo_path, gravada.logo_dark_path, abaixo],
+    [nomeLimpo, hexLimpo, hexEscuroLimpo, neutros, raio, barraLateral, gravada.logo_path, gravada.logo_dark_path, abaixo],
   );
 
   // A MESMA serialização, com o MESMO escopo, que o layout de `/app` roda no
@@ -206,6 +237,8 @@ export function FormularioDaMarcaDaOrganizacao({ gravada, instalacao, ambiente, 
   );
 
   const neutrosDaInstalacao = neutrosDeTexto(instalacao.neutros);
+  const raioDaInstalacao = raioDeTexto(instalacao.raio);
+  const barraDaInstalacao = barraLateralDeTexto(instalacao.barra_lateral);
 
   const derivada = resolvida.cor?.derivada ?? null;
   /**
@@ -274,6 +307,10 @@ export function FormularioDaMarcaDaOrganizacao({ gravada, instalacao, ambiente, 
       accent_hex: hexLimpo.length > 0 ? hexLimpo : null,
       accent_dark_hex: hexEscuroLimpo.length > 0 ? hexEscuroLimpo : null,
       neutros,
+      // TRÊS estados: valor = escolhe, `null` = herda, AUSENTE = não mexa. Só
+      // vai a chave que a pessoa mexeu; a RPC preserva a gravada das outras.
+      ...(raio !== raioGravado ? { raio } : {}),
+      ...(barraLateral !== barraGravada ? { barra_lateral: barraLateral } : {}),
     });
     if (!lido.success) {
       toast.error(t("Confira os campos: algum valor não está no formato esperado."));
@@ -488,6 +525,11 @@ export function FormularioDaMarcaDaOrganizacao({ gravada, instalacao, ambiente, 
             campo={t("Logo")}
             valor={origemEmPortugues(resolvida.origens.logoUrl, t)}
           />
+          <LinhaDeOrigem campo={t("Cantos")} valor={origemEmPortugues(resolvida.origens.raio, t)} />
+          <LinhaDeOrigem
+            campo={t("Menu lateral")}
+            valor={origemEmPortugues(resolvida.origens.barraLateral, t)}
+          />
         </div>
 
         {avisos.length > 0 ? (
@@ -521,6 +563,17 @@ export function FormularioDaMarcaDaOrganizacao({ gravada, instalacao, ambiente, 
           onChange={setNeutros}
           herdado={neutrosDaInstalacao}
         />
+      </Card>
+
+      <Card className="space-y-4 p-6">
+        <SeletorDeRaio id="org-raio" valor={raio} onChange={setRaio} herdado={raioDaInstalacao} />
+        <SeletorDeBarraLateral
+          id="org-barra-lateral"
+          valor={barraLateral}
+          onChange={setBarraLateral}
+          herdado={barraDaInstalacao}
+        />
+        <PreviaDaAparencia raio={resolvida.raio} barraLateral={resolvida.barraLateral} />
       </Card>
 
       <Card className="space-y-2 p-6">

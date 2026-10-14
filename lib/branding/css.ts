@@ -185,6 +185,9 @@ function declaracoesDoTema(cor: CorResolvida, tema: "claro" | "escuro"): Declara
 export const ESCOPO_DA_INSTALACAO = [
   [":root:root", "claro"],
   [':root:root[data-theme="dark"]', "escuro"],
+  // A SUBÁRVORE escura sob página clara (barra lateral escura). Ver
+  // `SUBARVORE_ESCURA` abaixo: (0,3,0), vence o `[data-theme="dark"]` do globals.
+  [':root:root [data-theme="dark"]', "escuro"],
 ] as const;
 
 /**
@@ -229,7 +232,32 @@ export const ESCOPO_DA_INSTALACAO = [
 export const ESCOPO_DA_ORGANIZACAO = [
   ["body:has([data-marca-org])", "claro"],
   ['[data-theme="dark"] body:has([data-marca-org])', "escuro"],
+  // A SUBÁRVORE escura sob página clara. Ver `SUBARVORE_ESCURA` abaixo.
+  [':root:root body:has([data-marca-org]) [data-theme="dark"]', "escuro"],
 ] as const;
+
+/**
+ * ── A subárvore escura sob página clara (barra lateral escura) ───────────────
+ *
+ * Um `[data-theme="dark"]` que NÃO é o `<html>` (a barra lateral escura de
+ * `components/shell/Sidebar.tsx`) recebe os tokens escuros do `globals.css`, mas
+ * aplicados à rampa CLARA da marca: o papel `--color-accent` do globals aponta
+ * para `var(--color-accent-400)`, e sem este bloco o `-400` seria o da rampa clara
+ * — sem o deslocamento da caminhada de contraste e sem a segunda semente. Por isso
+ * o bloco escuro da marca também precisa valer para a subárvore.
+ *
+ * Aqui, ao contrário dos escopos de cima, instalação e organização casam o MESMO
+ * ELEMENTO (a própria subárvore), então quem decide é a ESPECIFICIDADE, e ela é
+ * medida:
+ *   - instalação `:root:root [data-theme="dark"]`                      = (0,3,0)
+ *   - organização `:root:root body:has([data-marca-org]) [data-theme="dark"]` = (0,4,1)
+ *   - `[data-theme="dark"]` do globals.css                             = (0,1,0)
+ * A organização vence a instalação (a mais específica manda, como na proximidade
+ * de herança dos blocos de cima) e as duas vencem o globals sem depender de ordem.
+ * O descendente (espaço) não casa o `<html>`: o bloco da página escura inteira
+ * continua sendo o de cima. Mesmo conjunto de tokens do bloco escuro — nunca
+ * `--color-bg`/`--color-surface*`: a barra usa as superfícies escuras do globals.
+ */
 
 export type EscopoDaMarca = typeof ESCOPO_DA_INSTALACAO | typeof ESCOPO_DA_ORGANIZACAO;
 

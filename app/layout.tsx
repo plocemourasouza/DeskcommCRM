@@ -315,16 +315,23 @@ async function MarcaDosClientComponents({ children }: { children: React.ReactNod
 }
 
 /**
- * Os neutros da INSTALACAO, para o atributo do `<html>`. Nunca lanca: um throw
- * aqui e o documento inteiro em 500, e a pior consequencia de nao saber a
- * paleta e a paleta de sempre (`quente`, que nao escreve atributo).
+ * A aparencia (neutros e raio) da INSTALACAO, para os atributos do `<html>`.
+ * Nunca lanca: um throw aqui e o documento inteiro em 500, e a pior consequencia
+ * de nao saber a aparencia e a de sempre (`quente`/`padrao`, que nao escrevem
+ * atributo).
  */
-async function neutrosDaInstalacao(): Promise<"cinza" | "frio" | null> {
+async function aparenciaDaInstalacao(): Promise<{
+  neutros: "cinza" | "frio" | null;
+  raio: "suave" | "arredondado" | null;
+}> {
   try {
     const { marca } = await marcaResolvida();
-    return marca.neutros === "quente" ? null : marca.neutros;
+    return {
+      neutros: marca.neutros === "quente" ? null : marca.neutros,
+      raio: marca.raio === "padrao" ? null : marca.raio,
+    };
   } catch {
-    return null;
+    return { neutros: null, raio: null };
   }
 }
 
@@ -332,13 +339,14 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   // O preset de neutros vive em `globals.css` (`[data-neutros=...]`), estatico de
   // proposito: o CSS de marca nao pode declarar `--color-bg`. Aqui so se liga o
   // atributo. A organizacao que sobrepoe a escolha o troca em `/app` (ver
-  // `NeutrosDaOrganizacao`), porque so la a organizacao e conhecida.
-  const neutros = await neutrosDaInstalacao();
+  // `AparenciaDaOrganizacao`), porque so la a organizacao e conhecida.
+  const { neutros, raio } = await aparenciaDaInstalacao();
   return (
     <html
       lang="pt-BR"
       data-theme="light"
       {...(neutros ? { "data-neutros": neutros } : {})}
+      {...(raio ? { "data-raio": raio } : {})}
       suppressHydrationWarning
       className={`${atkinson.variable} ${plexMono.variable}`}
     >

@@ -9,9 +9,9 @@ import { ProvedorDeCoresDasEtiquetas } from "@/components/tags/CoresDasEtiquetas
 import { AppShell } from "./_components/AppShell";
 import { EstiloDaMarcaDaOrganizacao } from "./_components/EstiloDaMarcaDaOrganizacao";
 import { EstiloDoTemaDaExtensao } from "./_components/EstiloDoTemaDaExtensao";
-import { NeutrosDaOrganizacao } from "./_components/NeutrosDaOrganizacao";
-import { neutrosDeTexto, type NeutrosDaMarca } from "@/lib/branding/schema";
-import { scriptDosNeutros } from "@/lib/branding/script-dos-neutros";
+import { AparenciaDaOrganizacao } from "./_components/AparenciaDaOrganizacao";
+import { barraLateralDeTexto, neutrosDeTexto, raioDeTexto, type BarraLateralDaMarca } from "@/lib/branding/schema";
+import { scriptDaAparencia, type AparenciaDoHtml } from "@/lib/branding/script-da-aparencia";
 import { MfaEnrollGate } from "@/components/auth/MfaEnrollGate";
 import { cssDaMarca, ESCOPO_DA_ORGANIZACAO } from "@/lib/branding/css";
 import { cssDaExtensaoDeTema, linhaBrutaDeTema, temaAplicavel } from "@/lib/extensions/tema";
@@ -65,9 +65,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
    * e não aqui: a precedência é regra do produto, não detalhe deste layout.
    */
   let cssDaOrganizacao: string | null = null;
-  // So quando a ORGANIZACAO escolheu: sem escolha, o <html> da instalacao ja vale.
-  let neutrosDaOrganizacao: NeutrosDaMarca | null = null;
-  let neutrosDaInstalacao: NeutrosDaMarca = "quente";
+  // So quando a ORGANIZACAO escolheu neutros OU raio: sem escolha, o <html> da
+  // instalacao ja vale. O valor em vigor dos dois eixos vai junto (um eixo herdado
+  // vale o da instalacao), e `instalacao` e para onde o cleanup devolve o <html>.
+  let aparenciaDaOrganizacao: AparenciaDoHtml | null = null;
+  let aparenciaDaInstalacao: AparenciaDoHtml = { neutros: "quente", raio: "padrao" };
+  // A barra lateral em vigor (organização > instalação > padrão). Não é atributo
+  // do <html>: desce por prop ao AppShell, que escurece só a subárvore da barra.
+  let barraLateral: BarraLateralDaMarca = "padrao";
   // O tema de extensão, se a organização escolheu um. `null` = quem não
   // escolheu — e aí o `EstiloDoTemaDaExtensao` não renderiza nada.
   let cssDoTemaDaExtensao: string | null = null;
@@ -178,14 +183,18 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     // por render, não uma derivação de rampa por requisição.
     const linhaDaInstalacao = await marcaDaInstalacao();
     const marca = resolverMarcaDaOrganizacao(orgRow?.settings ?? null, linhaDaInstalacao, env);
+    barraLateral = barraLateralDeTexto(marca.barraLateral);
 
     // SÓ quando a cor veio mesmo da organização. Se ela não configurou nada, a
     // resolução devolve a cor da instalação — e reemiti-la aqui, escopada no
     // `<body>`, seria repetir no documento um bloco que já vale pela raiz. Além
     // de bytes, custaria a única pergunta que a presença do bloco responde.
-    if (marca.origens?.neutros === "organizacao") {
-      neutrosDaOrganizacao = marca.neutros;
-      neutrosDaInstalacao = neutrosDeTexto(linhaDaInstalacao?.neutros);
+    if (marca.origens?.neutros === "organizacao" || marca.origens?.raio === "organizacao") {
+      aparenciaDaOrganizacao = { neutros: marca.neutros, raio: raioDeTexto(marca.raio) };
+      aparenciaDaInstalacao = {
+        neutros: neutrosDeTexto(linhaDaInstalacao?.neutros),
+        raio: raioDeTexto(linhaDaInstalacao?.raio),
+      };
     }
 
     if (marca.origens.cor === "organizacao") {
@@ -284,6 +293,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <AppShell
           sidebarCollapsed={collapsed}
           podeAtender={Boolean(activeOrg && roleAtLeast(activeOrg.role, "agent"))}
+          barraLateral={barraLateral}
         >
           {children}
         </AppShell>
@@ -328,12 +338,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       */}
       <div data-marca-org="" className="contents">
         <EstiloDaMarcaDaOrganizacao css={cssDaOrganizacao} />
-        {neutrosDaOrganizacao ? (
+        {aparenciaDaOrganizacao ? (
           <>
-            {/* No parse, antes da primeira pintura: sem ele o <body> pinta com os
-                neutros da instalação até a hidratação (flash medido de 112–144 ms). */}
-            <script dangerouslySetInnerHTML={{ __html: scriptDosNeutros(neutrosDaOrganizacao) }} />
-            <NeutrosDaOrganizacao neutros={neutrosDaOrganizacao} instalacao={neutrosDaInstalacao} />
+            {/* No parse, antes da primeira pintura: sem ele o <body> pinta com a
+                aparência da instalação até a hidratação (flash medido de 112–144 ms). */}
+            <script dangerouslySetInnerHTML={{ __html: scriptDaAparencia(aparenciaDaOrganizacao) }} />
+            <AparenciaDaOrganizacao aparencia={aparenciaDaOrganizacao} instalacao={aparenciaDaInstalacao} />
           </>
         ) : null}
         <EstiloDoTemaDaExtensao css={cssDoTemaDaExtensao} />

@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ReactElement, ReactNode } from "react";
 
-import { NeutrosDaOrganizacao } from "@/app/app/_components/NeutrosDaOrganizacao";
-import { scriptDosNeutros } from "@/lib/branding/script-dos-neutros";
+import { AppShell } from "@/app/app/_components/AppShell";
+import { AparenciaDaOrganizacao } from "@/app/app/_components/AparenciaDaOrganizacao";
+import { scriptDaAparencia } from "@/lib/branding/script-da-aparencia";
 
 const estado = vi.hoisted(() => ({ marca: null as unknown, instalacao: {} as unknown }));
 
@@ -51,43 +52,80 @@ function acharOnde(no: ReactNode, casa: (el: ReactElement) => boolean): ReactEle
   return acharOnde(el.props.children, casa);
 }
 
-const BASE = { name: "Deskcomm", logoUrl: null, cor: null };
+const BASE = { name: "Deskcomm", logoUrl: null, cor: null, raio: "padrao", barraLateral: "padrao" };
+const PADRAO_ORIGENS = { nome: "p", logoUrl: "p", cor: "p", raio: "padrao", barraLateral: "padrao" };
 
 /**
  * /app so liga o override quando a ORGANIZACAO escolheu: sem escolha, o atributo
  * do <html> (instalacao) ja vale e montar o componente seria ruido.
  */
-describe("layout de /app — neutros da organizacao", () => {
+describe("layout de /app — aparencia da organizacao", () => {
   beforeEach(() => {
     estado.marca = null;
     estado.instalacao = {};
   });
 
-  it("organizacao escolheu: monta NeutrosDaOrganizacao com o valor resolvido", async () => {
-    estado.marca = { ...BASE, neutros: "frio", origens: { nome: "p", logoUrl: "p", cor: "p", neutros: "organizacao" } };
+  it("organizacao escolheu: monta AparenciaDaOrganizacao com o valor resolvido", async () => {
+    estado.marca = { ...BASE, neutros: "frio", origens: { ...PADRAO_ORIGENS, neutros: "organizacao" } };
     const { default: AppLayout } = await import("@/app/app/layout");
     const arvore = await AppLayout({ children: null });
-    expect(achar(arvore, NeutrosDaOrganizacao)?.props).toMatchObject({ neutros: "frio" });
+    expect(achar(arvore, AparenciaDaOrganizacao)?.props).toMatchObject({ aparencia: { neutros: "frio", raio: "padrao" } });
   });
 
   it("organizacao escolheu: o HTML do servidor ja leva o script que troca antes da pintura", async () => {
-    estado.marca = { ...BASE, neutros: "frio", origens: { nome: "p", logoUrl: "p", cor: "p", neutros: "organizacao" } };
+    estado.marca = { ...BASE, neutros: "frio", origens: { ...PADRAO_ORIGENS, neutros: "organizacao" } };
     estado.instalacao = { neutros: "cinza" };
     const { default: AppLayout } = await import("@/app/app/layout");
     const arvore = await AppLayout({ children: null });
     const script = acharOnde(arvore, (el) => el.type === "script");
     const html = (script?.props as { dangerouslySetInnerHTML?: { __html: string } } | undefined)
       ?.dangerouslySetInnerHTML?.__html;
-    expect(html).toBe(scriptDosNeutros("frio"));
+    expect(html).toBe(scriptDaAparencia({ neutros: "frio", raio: "padrao" }));
     // A limpeza devolve a da INSTALACAO, nao o atributo que o script ja trocou.
-    expect(achar(arvore, NeutrosDaOrganizacao)?.props).toMatchObject({ neutros: "frio", instalacao: "cinza" });
+    expect(achar(arvore, AparenciaDaOrganizacao)?.props).toMatchObject({
+      aparencia: { neutros: "frio", raio: "padrao" },
+      instalacao: { neutros: "cinza", raio: "padrao" },
+    });
   });
 
   it("organizacao herdou: nao monta", async () => {
-    estado.marca = { ...BASE, neutros: "cinza", origens: { nome: "p", logoUrl: "p", cor: "p", neutros: "banco" } };
+    estado.marca = { ...BASE, neutros: "cinza", origens: { ...PADRAO_ORIGENS, neutros: "banco" } };
     const { default: AppLayout } = await import("@/app/app/layout");
     const arvore = await AppLayout({ children: null });
-    expect(achar(arvore, NeutrosDaOrganizacao)).toBeNull();
+    expect(achar(arvore, AparenciaDaOrganizacao)).toBeNull();
     expect(acharOnde(arvore, (el) => el.type === "script")).toBeNull();
+  });
+
+  it("so o RAIO veio da organizacao: monta, e o script leva o raio e os neutros em vigor", async () => {
+    estado.marca = {
+      ...BASE,
+      neutros: "cinza",
+      raio: "suave",
+      origens: { ...PADRAO_ORIGENS, neutros: "banco", raio: "organizacao" },
+    };
+    estado.instalacao = { neutros: "cinza", raio: "arredondado" };
+    const { default: AppLayout } = await import("@/app/app/layout");
+    const arvore = await AppLayout({ children: null });
+    const script = acharOnde(arvore, (el) => el.type === "script");
+    const html = (script?.props as { dangerouslySetInnerHTML?: { __html: string } } | undefined)
+      ?.dangerouslySetInnerHTML?.__html;
+    expect(html).toBe(scriptDaAparencia({ neutros: "cinza", raio: "suave" }));
+    expect(achar(arvore, AparenciaDaOrganizacao)?.props).toMatchObject({
+      aparencia: { neutros: "cinza", raio: "suave" },
+      instalacao: { neutros: "cinza", raio: "arredondado" },
+    });
+  });
+  it("barra lateral: o valor RESOLVIDO (escura) chega ao AppShell", async () => {
+    estado.marca = { ...BASE, barraLateral: "escura", origens: { ...PADRAO_ORIGENS, barraLateral: "organizacao" } };
+    const { default: AppLayout } = await import("@/app/app/layout");
+    const arvore = await AppLayout({ children: null });
+    expect(achar(arvore, AppShell)?.props).toMatchObject({ barraLateral: "escura" });
+  });
+
+  it("barra lateral: sem escolha chega 'padrao' (nada de data-theme)", async () => {
+    estado.marca = { ...BASE, origens: PADRAO_ORIGENS };
+    const { default: AppLayout } = await import("@/app/app/layout");
+    const arvore = await AppLayout({ children: null });
+    expect(achar(arvore, AppShell)?.props).toMatchObject({ barraLateral: "padrao" });
   });
 });
