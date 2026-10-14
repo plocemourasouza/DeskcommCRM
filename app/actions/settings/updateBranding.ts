@@ -105,6 +105,9 @@ export async function updateBranding(
     // Ausente = "nao mexa": a coluna e `not null default 'quente'`, entao omitir
     // preserva a escolha gravada (e a linha nova nasce `quente`).
     ...(parsed.data.neutros ? { neutros: parsed.data.neutros } : {}),
+    // Idem raio e barra lateral (0671): colunas `not null default 'padrao'`.
+    ...(parsed.data.raio ? { raio: parsed.data.raio } : {}),
+    ...(parsed.data.barra_lateral ? { barra_lateral: parsed.data.barra_lateral } : {}),
     // A linha passa a ser HUMANA. É o que impede a semeadura do `.env` de
     // reescrever a escolha no render seguinte — inclusive quando a escolha foi
     // apagar tudo para voltar ao padrão do produto. Ver `precisaSemear`.
@@ -161,6 +164,8 @@ export async function updateBranding(
       accent_definido: parsed.data.accent_hex !== null,
       logo_definido: parsed.data.logo_url !== null,
       ...(parsed.data.neutros ? { neutros: parsed.data.neutros } : {}),
+      ...(parsed.data.raio ? { raio: parsed.data.raio } : {}),
+      ...(parsed.data.barra_lateral ? { barra_lateral: parsed.data.barra_lateral } : {}),
     },
   });
 

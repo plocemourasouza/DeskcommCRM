@@ -35,7 +35,7 @@
  */
 
 import { REGUA_DO_PRODUTO } from "./regua-do-produto";
-import { neutrosEscolhidos } from "./schema";
+import { barraLateralEscolhida, neutrosEscolhidos, raioEscolhido } from "./schema";
 import {
   camadaDaInstalacao,
   camadaDaOrganizacao,
@@ -93,6 +93,10 @@ export function marcaDaOrganizacaoDeSettings(settings: unknown): MarcaDaOrganiza
     // Fora do vocabulario (versao futura, escrita manual) = a organizacao nao
     // escolheu: a chave some e a instalacao vale. Nunca lanca.
     ...(neutrosEscolhidos(envelope.neutros) ? { neutros: neutrosEscolhidos(envelope.neutros) } : {}),
+    ...(raioEscolhido(envelope.raio) ? { raio: raioEscolhido(envelope.raio) } : {}),
+    ...(barraLateralEscolhida(envelope.barra_lateral)
+      ? { barra_lateral: barraLateralEscolhida(envelope.barra_lateral) }
+      : {}),
   };
 }
 

@@ -8648,12 +8648,14 @@ export type Database = {
           accent_dark_hex: string | null
           accent_hex: string | null
           app_name: string | null
+          barra_lateral: string
           fallback_at: string | null
           fallback_reason: string | null
           id: number
           logo_path: string | null
           logo_url: string | null
           neutros: string
+          raio: string
           seeded_from_env: boolean
           show_powered_by: boolean
           updated_at: string
@@ -8663,12 +8665,14 @@ export type Database = {
           accent_dark_hex?: string | null
           accent_hex?: string | null
           app_name?: string | null
+          barra_lateral?: string
           fallback_at?: string | null
           fallback_reason?: string | null
           id?: number
           logo_path?: string | null
           logo_url?: string | null
           neutros?: string
+          raio?: string
           seeded_from_env?: boolean
           show_powered_by?: boolean
           updated_at?: string
@@ -8678,12 +8682,14 @@ export type Database = {
           accent_dark_hex?: string | null
           accent_hex?: string | null
           app_name?: string | null
+          barra_lateral?: string
           fallback_at?: string | null
           fallback_reason?: string | null
           id?: number
           logo_path?: string | null
           logo_url?: string | null
           neutros?: string
+          raio?: string
           seeded_from_env?: boolean
           show_powered_by?: boolean
           updated_at?: string

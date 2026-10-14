@@ -126,7 +126,11 @@ export async function updateMarcaDaOrganizacao(
     parsed.data.app_name === null &&
     parsed.data.accent_hex === null &&
     parsed.data.accent_dark_hex === null &&
-    parsed.data.neutros === null;
+    parsed.data.neutros === null &&
+    // Ausente (`undefined`) NAO limpa: "nao mexa" nao pode apagar o que a tela
+    // nao enviou. So o `null` explicito, que e "herde", conta como vazio.
+    parsed.data.raio === null &&
+    parsed.data.barra_lateral === null;
   const marca = limpar
     ? null
     : {
@@ -145,6 +149,13 @@ export async function updateMarcaDaOrganizacao(
         // `null` = herdar: a chave NAO vai. A RPC recusa `neutros` que nao seja
         // string do vocabulario, entao um `null` explicito estouraria 22023.
         ...(parsed.data.neutros ? { neutros: parsed.data.neutros } : {}),
+        // raio e barra lateral (0671), tres estados: valor grava; `null` VAI como
+        // `null` (a RPC apaga a chave = herdar); ausente NAO vai (a RPC preserva
+        // a gravada). Ao contrario de `neutros`, o `null` e aceito pela funcao.
+        ...(parsed.data.raio !== undefined ? { raio: parsed.data.raio } : {}),
+        ...(parsed.data.barra_lateral !== undefined
+          ? { barra_lateral: parsed.data.barra_lateral }
+          : {}),
         updated_by: authUser.id,
         updated_at: new Date().toISOString(),
       };
@@ -200,6 +211,8 @@ export async function updateMarcaDaOrganizacao(
       accent_definido: parsed.data.accent_hex !== null,
       nome_definido: parsed.data.app_name !== null,
       neutros_definido: parsed.data.neutros !== null,
+      raio_definido: (parsed.data.raio ?? null) !== null,
+      barra_lateral_definida: (parsed.data.barra_lateral ?? null) !== null,
     },
   });
 

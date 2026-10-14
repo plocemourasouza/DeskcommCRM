@@ -104,7 +104,15 @@ export type SementeDoAmbiente = {
  * 0155; tratá-la diferente agora criaria duas regras para o mesmo caso.
  */
 const COLUNAS =
-  "app_name, logo_url, logo_path, logo_dark_path, favicon_path, accent_hex, accent_dark_hex, neutros, show_powered_by, seeded_from_env, fallback_at, fallback_reason";
+  "app_name, logo_url, logo_path, logo_dark_path, favicon_path, accent_hex, accent_dark_hex, neutros, raio, barra_lateral, show_powered_by, seeded_from_env, fallback_at, fallback_reason";
+
+/**
+ * As colunas de ANTES da 0671 (raio e barra lateral). Código novo sobre banco
+ * que ainda não aplicou a migration recebe `42703` na leitura acima — e perder a
+ * marca inteira por duas colunas de aparência seria desproporcional. `lerLinha`
+ * tenta de novo com esta lista: o resolvedor trata a ausência como `padrao`.
+ */
+const COLUNAS_ANTES_DA_0671 = COLUNAS.replace(" raio, barra_lateral,", "");
 
 /**
  * Códigos de recusa — os que significam "a cor configurada NÃO pintou".
@@ -397,10 +405,24 @@ async function lerOuSemear(): Promise<LinhaDaMarca | null | "erro"> {
 }
 
 async function lerLinha(): Promise<LinhaDaMarca | null | "erro"> {
+  const lida = await lerLinhaCom(COLUNAS);
+  if (lida !== "coluna_ausente") return lida;
+  avisarUmaVez(
+    "leitura|0671",
+    "marca da instalação: raio e barra lateral ainda não existem no banco (migration 0671); valem os padrões",
+    {},
+  );
+  const antiga = await lerLinhaCom(COLUNAS_ANTES_DA_0671);
+  return antiga === "coluna_ausente" ? "erro" : antiga;
+}
+
+async function lerLinhaCom(
+  colunas: string,
+): Promise<LinhaDaMarca | null | "erro" | "coluna_ausente"> {
   try {
     const { data, error } = await createAdminClient()
       .from("platform_branding")
-      .select(COLUNAS)
+      .select(colunas)
       .eq("id", 1)
       // Fora da deduplicação de `fetch` do Next. Dentro de um render, o `fetch`
       // do servidor (`createDedupeFetch`, aplicado por `patchFetch`) devolve a
@@ -414,6 +436,7 @@ async function lerLinha(): Promise<LinhaDaMarca | null | "erro"> {
       .abortSignal(new AbortController().signal)
       .maybeSingle();
     if (error) {
+      if (error.code === "42703" && colunas === COLUNAS) return "coluna_ausente";
       avisarUmaVez(
         `leitura|${error.code ?? "?"}`,
         "marca da instalação: não deu para ler do banco; vale o .env",

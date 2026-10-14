@@ -459,9 +459,28 @@ function BotaoDeRecolher({
   );
 }
 
-export function Sidebar({ collapsed }: { collapsed: boolean }) {
+/**
+ * `barraLateral="escura"` (marca própria › aparência): a barra renderiza ESCURA
+ * mesmo com a página no tema claro. O mecanismo é `data-theme="dark"` na raiz:
+ * o `globals.css` casa esse atributo em qualquer elemento (tokens escuros) e o
+ * variant `dark:` do Tailwind também (a troca de logo de `SidebarContent`).
+ * `text-foreground` re-ancora a cor do texto (senão herdaria a da página clara) e
+ * `color-scheme: dark` vem do próprio `[data-theme="dark"]` do globals.
+ * `"padrao"` não escreve atributo nenhum: saída idêntica à de antes.
+ */
+export type BarraLateral = "padrao" | "escura";
+
+export function Sidebar({
+  collapsed,
+  barraLateral = "padrao",
+}: {
+  collapsed: boolean;
+  barraLateral?: BarraLateral;
+}) {
+  const escura = barraLateral === "escura";
   return (
     <aside
+      data-theme={escura ? "dark" : undefined}
       className={cn(
         // ⚠️ `sticky`, e NUNCA `fixed`.
         //
@@ -495,6 +514,7 @@ export function Sidebar({ collapsed }: { collapsed: boolean }) {
         // tabela de durações, e número solto é o que a faz apodrecer.
         "sticky top-0 z-30 flex h-dvh shrink-0 flex-col border-r bg-card transition-[width] duration-base",
         collapsed ? "w-16" : "w-60",
+        escura && "text-foreground",
       )}
     >
       <SidebarContent collapsed={collapsed} />

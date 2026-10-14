@@ -36,8 +36,12 @@ import {
   envelopeDeSemente,
   esquemaDaCorDaMarca,
   FORMATO_ATUAL,
+  barraLateralEscolhida,
   neutrosEscolhidos,
+  raioEscolhido,
+  type BarraLateralDaMarca,
   type NeutrosDaMarca,
+  type RaioDaMarca,
   type PapelDaSemente,
 } from "./schema";
 import { REGUA_DO_PRODUTO, reguaDoProduto } from "./regua-do-produto";
@@ -100,6 +104,10 @@ export type CamadaDeMarca = {
    * herde" — a mesma precedencia por campo de nome e logo.
    */
   readonly neutros?: NeutrosDaMarca | null;
+  /** O raio dos cantos desta camada; mesma regra dos neutros (fora do vocabulario = nao escolhi). */
+  readonly raio?: RaioDaMarca | null;
+  /** A barra lateral desta camada; mesma regra. */
+  readonly barraLateral?: BarraLateralDaMarca | null;
 };
 
 export type CorResolvida = {
@@ -122,6 +130,10 @@ export type MarcaResolvida = Branding & {
   readonly cor: CorResolvida | null;
   /** A paleta de neutros em vigor (`quente` quando nenhuma camada escolheu). */
   readonly neutros: NeutrosDaMarca;
+  /** O raio dos cantos em vigor (`padrao` quando nenhuma camada escolheu). */
+  readonly raio: RaioDaMarca;
+  /** A barra lateral em vigor (`padrao` quando nenhuma camada escolheu). */
+  readonly barraLateral: BarraLateralDaMarca;
   /** De qual camada veio cada campo — o que torna a precedência auditável. */
   readonly origens: {
     readonly nome: string;
@@ -129,6 +141,8 @@ export type MarcaResolvida = Branding & {
     readonly logoDarkUrl?: string;
     readonly cor: string;
     readonly neutros: string;
+    readonly raio: string;
+    readonly barraLateral: string;
     /** Só existe quando a MESMA camada que venceu a cor definiu a do escuro. */
     readonly corEscura?: string;
   };
@@ -490,6 +504,26 @@ export function resolverMarca(camadas: readonly CamadaDeMarca[], regua: Regua): 
       break;
     }
   }
+  let raio: RaioDaMarca = "padrao";
+  let origemDoRaio = PADRAO;
+  for (const camada of camadas) {
+    const escolhido = raioEscolhido(camada.raio);
+    if (escolhido) {
+      raio = escolhido;
+      origemDoRaio = camada.origem;
+      break;
+    }
+  }
+  let barraLateral: BarraLateralDaMarca = "padrao";
+  let origemDaBarra = PADRAO;
+  for (const camada of camadas) {
+    const escolhida = barraLateralEscolhida(camada.barraLateral);
+    if (escolhida) {
+      barraLateral = escolhida;
+      origemDaBarra = camada.origem;
+      break;
+    }
+  }
   // A cor e medida CONTRA os neutros que vao aparecer: o contraste do accent sobre
   // o fundo `frio` nao e o do `quente`. So a regua do PRODUTO ganha o preset — uma
   // regua injetada (teste, previa de outra regua) e do chamador e fica como veio.
@@ -515,12 +549,16 @@ export function resolverMarca(camadas: readonly CamadaDeMarca[], regua: Regua): 
     ...(logoEscuro ? { logoDarkUrl: logoEscuro.valor } : {}),
     cor,
     neutros,
+    raio,
+    barraLateral,
     origens: {
       nome: nome?.origem ?? PADRAO,
       logoUrl: logo?.origem ?? PADRAO,
       ...(logoEscuro ? { logoDarkUrl: logoEscuro.origem } : {}),
       cor: origemDaCor,
       neutros: origemDosNeutros,
+      raio: origemDoRaio,
+      barraLateral: origemDaBarra,
       ...(cor?.corEscura ? { corEscura: origemDaCor } : {}),
     },
     motivos,
@@ -570,6 +608,10 @@ export type LinhaDaInstalacao = {
   readonly accent_dark_hex?: string | null;
   /** A paleta de neutros (migration 0650). Linha anterior a coluna: ausente = `quente`. */
   readonly neutros?: string | null;
+  /** O raio dos cantos (migration 0671). Linha anterior a coluna: ausente = `padrao`. */
+  readonly raio?: string | null;
+  /** A barra lateral (migration 0671). Linha anterior a coluna: ausente = `padrao`. */
+  readonly barra_lateral?: string | null;
 };
 
 /**
@@ -596,6 +638,8 @@ export function camadaDaInstalacao(linha: LinhaDaInstalacao | null): CamadaDeMar
   const logoUrl = logoDaCamada(linha.logo_path, linha.logo_url);
   const logoDarkUrl = logoDaCamada(linha.logo_dark_path, null);
   const neutros = neutrosEscolhidos(linha.neutros);
+  const raio = raioEscolhido(linha.raio);
+  const barraLateral = barraLateralEscolhida(linha.barra_lateral);
   // Mesma regra do `.env`: campo vazio é ausência de configuração, não cor com
   // defeito. Sem isto, uma linha semeada de um `.env` sem cor emitiria
   // `cor_ausente` em toda instalação de fábrica — e aviso no caso normal ensina
@@ -607,6 +651,8 @@ export function camadaDaInstalacao(linha: LinhaDaInstalacao | null): CamadaDeMar
       logoUrl,
       ...(logoDarkUrl ? { logoDarkUrl } : {}),
       ...(neutros ? { neutros } : {}),
+      ...(raio ? { raio } : {}),
+      ...(barraLateral ? { barraLateral } : {}),
     };
   }
   return {
@@ -617,6 +663,8 @@ export function camadaDaInstalacao(linha: LinhaDaInstalacao | null): CamadaDeMar
     cor: envelopeDeSemente(hex),
     ...(hexEscuro.length > 0 ? { corEscura: envelopeDeSemente(hexEscuro) } : {}),
     ...(neutros ? { neutros } : {}),
+      ...(raio ? { raio } : {}),
+      ...(barraLateral ? { barraLateral } : {}),
   };
 }
 
@@ -680,6 +728,10 @@ export type MarcaDaOrganizacao = {
   readonly accent_dark_hex?: string | null;
   /** A paleta de neutros desta organizacao; ausente = herda da instalacao. */
   readonly neutros?: string | null;
+  /** O raio desta organizacao; ausente = herda da instalacao. */
+  readonly raio?: string | null;
+  /** A barra lateral desta organizacao; ausente = herda da instalacao. */
+  readonly barra_lateral?: string | null;
 };
 
 /**
@@ -715,6 +767,8 @@ export function camadaDaOrganizacao(marca: MarcaDaOrganizacao | null): CamadaDeM
   const logoUrl = logoDaCamada(marca.logo_path, null);
   const logoDarkUrl = logoDaCamada(marca.logo_dark_path, null);
   const neutros = neutrosEscolhidos(marca.neutros);
+  const raio = raioEscolhido(marca.raio);
+  const barraLateral = barraLateralEscolhida(marca.barra_lateral);
   if (hex.length === 0)
     return {
       origem: "organizacao",
@@ -722,6 +776,8 @@ export function camadaDaOrganizacao(marca: MarcaDaOrganizacao | null): CamadaDeM
       logoUrl,
       ...(logoDarkUrl ? { logoDarkUrl } : {}),
       ...(neutros ? { neutros } : {}),
+      ...(raio ? { raio } : {}),
+      ...(barraLateral ? { barraLateral } : {}),
     };
   return {
     origem: "organizacao",
@@ -731,5 +787,7 @@ export function camadaDaOrganizacao(marca: MarcaDaOrganizacao | null): CamadaDeM
     cor: envelopeDeSemente(hex),
     ...(hexEscuro.length > 0 ? { corEscura: envelopeDeSemente(hexEscuro) } : {}),
     ...(neutros ? { neutros } : {}),
+      ...(raio ? { raio } : {}),
+      ...(barraLateral ? { barraLateral } : {}),
   };
 }

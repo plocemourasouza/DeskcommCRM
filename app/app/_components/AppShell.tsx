@@ -1,6 +1,6 @@
 "use client";
 import type { ReactNode } from "react";
-import { Sidebar } from "@/components/shell/Sidebar";
+import { Sidebar, type BarraLateral } from "@/components/shell/Sidebar";
 import { TopBar } from "@/components/shell/TopBar";
 import { BarraInferior } from "@/components/shell/BarraInferior";
 import { BarraDeProgressoNavegacao } from "@/components/shell/BarraDeProgressoNavegacao";
@@ -22,10 +22,17 @@ interface AppShellProps {
    * 403 a cada minuto em nome de ninguém.
    */
   podeAtender: boolean;
+  /** Aparência da marca: barra lateral escura mesmo no tema claro. Default "padrao". */
+  barraLateral?: BarraLateral;
   children: ReactNode;
 }
 
-export function AppShell({ sidebarCollapsed, podeAtender, children }: AppShellProps) {
+export function AppShell({
+  sidebarCollapsed,
+  podeAtender,
+  barraLateral = "padrao",
+  children,
+}: AppShellProps) {
   useInboundMessageAlerts();
   useInboundCallAlerts();
   useCrmAlerts();
@@ -54,7 +61,7 @@ export function AppShell({ sidebarCollapsed, podeAtender, children }: AppShellPr
     <div className="flex min-h-dvh w-full bg-background">
       <BarraDeProgressoNavegacao />
       <div className="hidden md:block">
-        <Sidebar collapsed={sidebarCollapsed} />
+        <Sidebar collapsed={sidebarCollapsed} barraLateral={barraLateral} />
       </div>
       {/*
         `min-w-0` é o que permite a coluna de conteúdo ENCOLHER. Um flex item
