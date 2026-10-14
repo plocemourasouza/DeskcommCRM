@@ -90,6 +90,7 @@ export default async function MarcaDaOrganizacaoPage() {
           // a URL pronta do servidor faria a tela ter uma segunda regra de
           // montagem, e a que divergisse seria a que ninguém abre.
           logo_path: gravada?.logo_path ?? null,
+          logo_dark_path: gravada?.logo_dark_path ?? null,
           neutros: gravada?.neutros ?? null,
         }}
         // As DUAS camadas de baixo descem para o formulário, e não uma resolução
@@ -101,6 +102,7 @@ export default async function MarcaDaOrganizacaoPage() {
           app_name: linha?.app_name ?? null,
           logo_url: linha?.logo_url ?? null,
           logo_path: linha?.logo_path ?? null,
+          logo_dark_path: linha?.logo_dark_path ?? null,
           accent_hex: linha?.accent_hex ?? null,
           accent_dark_hex: linha?.accent_dark_hex ?? null,
           neutros: linha?.neutros ?? null,
