@@ -30,21 +30,14 @@ import "./globals.css";
 
 // Fontes versionadas em app/fonts/ (origem e licença no README de lá): o
 // next/font/google as baixava durante o build, e o build caía quando o Google
-// não respondia. A família passa a se chamar como a variável JS ("atkinson"),
+// não respondia. A Atkinson é a Hyperlegible Next, VARIÁVEL (200–800): sem a
+// faixa de pesos, font-medium (500) caía em 400 e font-semibold (600) em 700.
+// A família passa a se chamar como a variável JS ("atkinson"),
 // então use sempre a custom property (--font-atkinson), nunca o nome da fonte.
 const atkinson = localFont({
-  src: [
-    {
-      path: "./fonts/atkinson-hyperlegible-400-latin-latin-ext.woff2",
-      weight: "400",
-      style: "normal",
-    },
-    {
-      path: "./fonts/atkinson-hyperlegible-700-latin-latin-ext.woff2",
-      weight: "700",
-      style: "normal",
-    },
-  ],
+  src: "./fonts/atkinson-hyperlegible-next-200-800-latin-latin-ext.woff2",
+  weight: "200 800",
+  style: "normal",
   display: "swap",
   variable: "--font-atkinson",
 });

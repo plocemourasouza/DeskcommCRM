@@ -4,7 +4,7 @@
 
 ## Por que Atkinson Hyperlegible
 
-A fonte de display + body do DeskcommCRM é **Atkinson Hyperlegible**, criada pelo Braille Institute em 2020 com um único objetivo: **maximizar a distinção entre caracteres similares** para usuários com baixa visão.
+A fonte de display + body do DeskcommCRM é **Atkinson Hyperlegible Next** (sucessora da Atkinson Hyperlegible, criada pelo Braille Institute em 2020, agora mantida como projeto aberto e variável) com um único objetivo: **maximizar a distinção entre caracteres similares** para usuários com baixa visão.
 
 Razões da escolha:
 
@@ -24,13 +24,15 @@ A fonte secundária para **dados monoespaçados** é **IBM Plex Mono** — escol
 --ds-font-mono:    var(--font-plex-mono), ui-monospace, "SF Mono", Menlo, monospace;
 ```
 
-`var(--font-atkinson)` é injetado por `next/font/google` via `app/design/lib/fonts.ts`.
+`var(--font-atkinson)` é injetado por `next/font/local` (arquivo em `app/fonts/`) via `app/design/lib/fonts.ts`.
 
-**Pesos disponíveis** (Atkinson):
+**Pesos disponíveis** (Atkinson Hyperlegible Next, variável `wght` 200–800): qualquer valor da faixa é uma face real.
 - 400 — body, default UI
-- 700 — bold, headings, ênfase
+- 500 — `font-medium`: rótulos, itens de navegação, ênfase leve
+- 600 — `font-semibold`: títulos de card, valores em destaque
+- 700 — bold, headings de página
 
-Itálico disponível em ambos. Não há 500/600 — quando precisar de "semibold", use 700 com tamanho menor, ou aceite que peso 400 é o body.
+A família não traz face itálica: o `body` fixa `font-synthesis: style`, então o navegador continua inclinando o glifo para o itálico semântico (seção abaixo), mas nunca fabrica negrito.
 
 **Pesos disponíveis** (IBM Plex Mono):
 - 400 — default mono
@@ -133,7 +135,7 @@ Outro exemplo: **header de view**.
 - **Tamanho mínimo:** 12px (`caption`). Abaixo disso só ícones com `aria-label`.
 - **Line-height mínimo:** 1.4 em prosa, 1.35 em UI compacta.
 - **Tracking:** já calibrado por escala. Não sobrescreva sem motivo (legível ou marketing).
-- **Peso mínimo de leitura:** 400 sempre. Light (300) não existe na escala — Atkinson não tem 300 carregado.
+- **Peso mínimo de leitura:** 400 sempre. Light (300) e abaixo existem na fonte (variável), mas não fazem parte da escala.
 - **Foco visual:** texto em `text-muted` (`#5d594f` light / `#8e8b7f` dark) só pra UI 14px+; nunca aplicar a prosa longa.
 - **Truncate:** sempre com `text-overflow: ellipsis` + `white-space: nowrap` + `min-width: 0`. Tooltip com texto completo no hover (`<Tooltip>` shadcn).
 
