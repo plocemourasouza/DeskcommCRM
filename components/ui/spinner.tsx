@@ -1,5 +1,5 @@
 import * as React from "react";
-import { CircleNotch } from "@phosphor-icons/react/dist/ssr";
+import { CircleNotch } from "@/lib/ui/icons";
 
 import { cn } from "@/lib/utils";
 
