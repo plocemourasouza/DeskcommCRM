@@ -65,6 +65,16 @@ describe("updateBranding — raio e barra lateral", () => {
     expect("barra_lateral" in linha).toBe(false);
   });
 
+  it("densidade: grava, e sem ela na entrada NAO toca a coluna", async () => {
+    await updateBranding({ ...INSTALACAO, densidade: "compacta" });
+    expect(mocks.upsert.mock.calls[0]?.[0]).toMatchObject({ id: 1, densidade: "compacta" });
+    mocks.upsert.mockClear();
+    await updateBranding(INSTALACAO);
+    expect("densidade" in (mocks.upsert.mock.calls[0]?.[0] ?? {})).toBe(false);
+    const r = await updateBranding({ ...INSTALACAO, densidade: "enorme" as never });
+    expect(r).toMatchObject({ ok: false, error: "validation_failed" });
+  });
+
   it("valor fora do vocabulario e recusado antes de tudo", async () => {
     const r = await updateBranding({ ...INSTALACAO, raio: "quadrado" as never });
     expect(r).toMatchObject({ ok: false, error: "validation_failed" });
@@ -113,9 +123,40 @@ describe("updateMarcaDaOrganizacao — raio e barra lateral", () => {
 
   it("tudo vazio, raio e barra explicitamente null: limpa a marca inteira", async () => {
     await updateMarcaDaOrganizacao({
-      app_name: null, accent_hex: null, accent_dark_hex: null, neutros: null, raio: null, barra_lateral: null,
+      app_name: null, accent_hex: null, accent_dark_hex: null, neutros: null, raio: null, barra_lateral: null, densidade: null,
     });
     expect(mocks.rpc.mock.calls[0]?.[1].p_marca).toBeNull();
+  });
+
+  it("raio e barra null mas densidade AUSENTE nao limpa: a densidade gravada e preservada", async () => {
+    await updateMarcaDaOrganizacao({
+      app_name: null, accent_hex: null, accent_dark_hex: null, neutros: null, raio: null, barra_lateral: null,
+    });
+    expect(mocks.rpc.mock.calls[0]?.[1].p_marca).not.toBeNull();
+    expect("densidade" in marca()).toBe(false);
+  });
+
+  it("densidade: valor grava, null vai EXPLICITO, ausente nao vai", async () => {
+    await updateMarcaDaOrganizacao({ ...ORG, densidade: "compacta" });
+    expect(marca().densidade).toBe("compacta");
+    mocks.rpc.mockClear();
+    await updateMarcaDaOrganizacao({ ...ORG, densidade: null });
+    expect("densidade" in marca()).toBe(true);
+    expect(marca().densidade).toBeNull();
+    mocks.rpc.mockClear();
+    await updateMarcaDaOrganizacao(ORG);
+    expect("densidade" in marca()).toBe(false);
+  });
+
+  it("so a densidade ja e uma marca", async () => {
+    await updateMarcaDaOrganizacao({ app_name: null, accent_hex: null, accent_dark_hex: null, neutros: null, densidade: "equilibrada" });
+    expect(marca()).toMatchObject({ densidade: "equilibrada" });
+  });
+
+  it("densidade fora do vocabulario e recusada antes da RPC", async () => {
+    const r = await updateMarcaDaOrganizacao({ ...ORG, densidade: "enorme" as never });
+    expect(r).toMatchObject({ ok: false, error: "validation_failed" });
+    expect(mocks.rpc).not.toHaveBeenCalled();
   });
 
   it("so o raio ja e uma marca", async () => {

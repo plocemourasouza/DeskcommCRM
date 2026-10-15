@@ -4,7 +4,7 @@ import { lastLine, sql } from "./gov-helpers";
 import { motivoDoErro } from "./psql-transporte";
 
 /**
- * RAIO E BARRA LATERAL DA MARCA (migration 0671).
+ * RAIO E BARRA LATERAL DA MARCA (migration 0674).
  *
  *  - instalacao: `platform_branding.raio` (suave|padrao|arredondado) e
  *    `.barra_lateral` (padrao|escura), `not null default 'padrao'` + CHECK.
@@ -141,13 +141,14 @@ describe("settings.branding.raio / .barra_lateral (organizacao)", () => {
   it("CHAVE AUSENTE PRESERVA: salvar so o nome nao leva raio, barra, neutros nem logos", () => {
     sql(`
       update public.organizations set settings = jsonb_set(coalesce(settings,'{}'::jsonb), '{branding}',
-        '{"raio":"arredondado","barra_lateral":"escura","neutros":"frio","logo_path":"x/logo.png","logo_dark_path":"x/dark.png"}'::jsonb)
+        '{"raio":"arredondado","barra_lateral":"escura","densidade":"compacta","neutros":"frio","logo_path":"x/logo.png","logo_dark_path":"x/dark.png"}'::jsonb)
        where id = '${ORG_A}';
     `);
     definir(ORG_A, ADMIN_A, `'{"app_name":"So o nome","neutros":"frio"}'::jsonb`);
     expect(chave(ORG_A, "app_name")).toBe("So o nome");
     expect(chave(ORG_A, "raio")).toBe("arredondado");
     expect(chave(ORG_A, "barra_lateral")).toBe("escura");
+    expect(chave(ORG_A, "densidade")).toBe("compacta");
     expect(chave(ORG_A, "neutros")).toBe("frio");
     expect(chave(ORG_A, "logo_path")).toBe("x/logo.png");
     expect(chave(ORG_A, "logo_dark_path")).toBe("x/dark.png");

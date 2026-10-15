@@ -67,6 +67,12 @@ const PARES: Array<{
     simbolo: "BARRAS_LATERAIS_DA_MARCA",
   },
   {
+    tabela: "platform_branding",
+    coluna: "densidade",
+    arquivo: "lib/branding/schema.ts",
+    simbolo: "DENSIDADES_DA_MARCA",
+  },
+  {
     tabela: "ad_platform_connections",
     coluna: "google_api",
     arquivo: "lib/plataformas-de-anuncio/types.ts",

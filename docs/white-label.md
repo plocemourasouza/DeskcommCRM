@@ -18,9 +18,9 @@ A cor é **derivada**, não aplicada crua: de um hex saem onze tons nos dois tem
 
 **E o ícone do aplicativo e do navegador.** Logo abaixo do logo, esse campo recebe uma imagem quadrada — PNG ou JPG, até 512 KB, de preferência 512×512 ou maior. A mesma imagem aparece na aba de todas as telas, inclusive o login, e no aplicativo instalado. O manifest anuncia PNGs de 192×192 e 512×512, renderizados no servidor a partir do arquivo limitado no Storage; nenhum endereço arbitrário é buscado. Sem arquivo válido, mantém o símbolo do produto ou a inicial sobre a cor da marca. Remover o arquivo volta a esse desenho. O ícone é da instalação, não de cada organização; trocar de organização não renomeia o aplicativo. Navegadores podem demorar para atualizar um app já instalado; remover o aplicativo e instalá-lo novamente permite conferir a nova marca.
 
-### Cantos e barra lateral
+### Cantos, barra lateral e densidade
 
-Dois ajustes de aparência, nas duas telas de marca: a da instalação (`/admin/marca`, para quem administra a instalação) e a da organização (`Configurações → Marca`, para o admin da organização). Os dois seguem a mesma ordem: **a escolha da organização vence a da instalação, e a da instalação vence o padrão do sistema.**
+Três ajustes de aparência, nas duas telas de marca: a da instalação (`/admin/marca`, para quem administra a instalação) e a da organização (`Configurações → Marca`, para o admin da organização). Os dois seguem a mesma ordem: **a escolha da organização vence a da instalação, e a da instalação vence o padrão do sistema.**
 
 **Cantos** definem o arredondamento de botões, campos e cartões em todo o sistema:
 
@@ -32,6 +32,14 @@ Dois ajustes de aparência, nas duas telas de marca: a da instalação (`/admin/
 
 - **Padrão** — a barra acompanha o tema da página, como sempre.
 - **Sempre escura** — a barra fica escura mesmo com o tema claro. Ela aproveita a cor de destaque da marca na versão para fundo escuro e os tons neutros cinza ou frio. No tema escuro, a barra já é escura e a escolha não muda nada.
+
+**Densidade** define quanto espaço têm botões, campos, linhas de tabela e itens do menu lateral:
+
+- **Aerada** — o visual de sempre, e a escolha inicial.
+- **Equilibrada** — um pouco mais de informação por tela.
+- **Compacta** — linhas e campos mais baixos, para quem trabalha com muitos dados.
+
+A densidade vale só em computador (ponteiro de mouse) e a partir da largura de tela grande: no celular e no tablet o alvo de toque de 44 px não é decisão de marca e não muda. As alturas exatas ficam em `app/globals.css`, nas variáveis `--controle-h`, `--campo-h`, `--linha-h` e afins.
 
 Na organização, cada campo tem a opção **Usar o padrão da instalação**, que devolve aquele campo à escolha da instalação. Não é preciso reiniciar nada: a mudança vale no próximo carregamento de tela. Se você não mexer em nada, o sistema continua exatamente como estava.
 
@@ -118,7 +126,7 @@ Sendo direto, para você não descobrir na frente do cliente. Cada linha traz a 
 - **Domínio por organização.** Uma instalação, um domínio. Não há coluna de domínio no schema, o desvio por host no `proxy.ts` é um NOOP declarado (existe só como documentação da topologia pretendida), e no Edge não há banco para consultar antes de decidir a quem aquele host pertence. Cliente que exige o próprio domínio pede **instalação dedicada**.
 - **Fonte.** A tipografia é a mesma em toda instalação. `next/font` resolve em tempo de **build**, e a imagem que a sua VPS baixa já vem construída — um seletor de fonte no painel salvaria um valor que nada leria. (A fonte é a Atkinson Hyperlegible, escolhida pelo Braille Institute por legibilidade; trocá-la não muda percepção de marca e piora a leitura de quem passa o dia no sistema.)
 - **Cores livres.** A sua marca move o **accent** — o que é ação, destaque e foco — e não há cor escolhida à mão para cada elemento. O fundo da página muda só pelos tons neutros (quente, cinza ou frio) e o par claro/escuro é do design system. A cor da barra do navegador é a do produto em toda marca, porque a marca não move o fundo.
-- **Densidade e espaçamento.** A distância entre elementos e o tamanho dos controles são os do design system. Não há seletor de densidade.
+- **Espaçamento.** A distância entre elementos (margens e vãos) é a do design system. A altura dos controles, das linhas de tabela e dos itens do menu é a **Densidade**, descrita acima.
 - **Login por organização.** O login é da instalação, pelo motivo da seção acima. Os cantos da instalação valem também no login; os da organização só depois de entrar, e a barra lateral existe só dentro do sistema.
 - **O relatório de LGPD do titular não leva a sua marca — e isso é de propósito.** Ver a seção própria abaixo.
 - **O alarme de orçamento de IA** ainda sai com a nossa marca. É o único vazamento conhecido, e ele fica: hoje esse alarme não tem agendamento nenhum ligado, então consertar a marca dele não mudaria nada que alguém veja. Sai quando o alarme ganhar cron de verdade.

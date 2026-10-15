@@ -1,5 +1,5 @@
 -- manifest: **Aparencia da marca: raio dos cantos (suave, padrao, arredondado) e barra lateral (padrao, escura).** Colunas platform_branding.raio e .barra_lateral (CHECK de conjunto, default padrao = visual de hoje) e validacao + preservacao de settings.branding.raio/.barra_lateral em fn_definir_marca_da_organizacao.
--- 0671: aparencia da marca (platform_branding.raio/.barra_lateral + chaves na RPC da organizacao)
+-- 0674: aparencia da marca (platform_branding.raio/.barra_lateral + chaves na RPC da organizacao)
 --
 -- Aditiva e idempotente; linhas existentes ficam 'padrao'. Espelhada no apendice do baseline.sql.
 

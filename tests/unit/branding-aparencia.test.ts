@@ -8,9 +8,12 @@ import { REGUA_DO_PRODUTO } from "@/lib/branding/regua-do-produto";
 import { camadaDaInstalacao, resolverMarca } from "@/lib/branding/resolve";
 import {
   BARRAS_LATERAIS_DA_MARCA,
+  DENSIDADES_DA_MARCA,
   RAIOS_DA_MARCA,
   barraLateralDeTexto,
   barraLateralEscolhida,
+  densidadeDeTexto,
+  densidadeEscolhida,
   raioDeTexto,
   raioEscolhido,
 } from "@/lib/branding/schema";
@@ -28,6 +31,18 @@ describe("vocabularios", () => {
   it("sao fechados e o padrao e o primeiro/historico", () => {
     expect(RAIOS_DA_MARCA).toEqual(["suave", "padrao", "arredondado"]);
     expect(BARRAS_LATERAIS_DA_MARCA).toEqual(["padrao", "escura"]);
+    expect(DENSIDADES_DA_MARCA).toEqual(["aerada", "equilibrada", "compacta"]);
+  });
+
+  it("densidadeDeTexto: vocabulario passa, o resto vira aerada", () => {
+    for (const v of DENSIDADES_DA_MARCA) expect(densidadeDeTexto(v)).toBe(v);
+    for (const l of LIXO) expect(densidadeDeTexto(l)).toBe("aerada");
+    expect(densidadeDeTexto("padrao")).toBe("aerada");
+  });
+
+  it("densidadeEscolhida devolve null para o que nao e do vocabulario", () => {
+    expect(densidadeEscolhida("compacta")).toBe("compacta");
+    for (const l of LIXO) expect(densidadeEscolhida(l)).toBeNull();
   });
 
   it("raioDeTexto: vocabulario passa, o resto vira padrao", () => {
@@ -57,6 +72,37 @@ describe("resolverMarca — raio e barra lateral", () => {
     expect(m.barraLateral).toBe("padrao");
     expect(m.origens.raio).toBe("padrao");
     expect(m.origens.barraLateral).toBe("padrao");
+    expect(m.densidade).toBe("aerada");
+    expect(m.origens.densidade).toBe("padrao");
+  });
+
+  it("densidade: a instalacao escolhe; a organizacao vence; invalido herda; coluna ausente = aerada", () => {
+    const inst = resolverMarca([camadaDaInstalacao({ densidade: "compacta" })], REGUA_DO_PRODUTO);
+    expect(inst.densidade).toBe("compacta");
+    expect(inst.origens.densidade).toBe("banco");
+    const org = resolverMarcaDaOrganizacao(
+      { branding: { densidade: "equilibrada" } },
+      { densidade: "compacta" },
+      {},
+    );
+    expect(org.densidade).toBe("equilibrada");
+    expect(org.origens.densidade).toBe("organizacao");
+    const herda = resolverMarcaDaOrganizacao(
+      { branding: { densidade: "apertada" } },
+      { densidade: "compacta" },
+      {},
+    );
+    expect(herda.densidade).toBe("compacta");
+    expect(resolverMarcaDaOrganizacao(null, { app_name: "X" }, {}).densidade).toBe("aerada");
+    const lixo = resolverMarca([camadaDaInstalacao({ densidade: "enorme" })], REGUA_DO_PRODUTO);
+    expect(lixo.densidade).toBe("aerada");
+    expect(lixo.origens.densidade).toBe("padrao");
+  });
+
+  it("densidade nao mexe em raio nem neutros (campos independentes)", () => {
+    const m = resolverMarcaDaOrganizacao({ branding: { densidade: "compacta" } }, { raio: "suave" }, {});
+    expect(m.raio).toBe("suave");
+    expect(m.origens.raio).toBe("banco");
   });
 
   it("a instalacao escolhe", () => {
@@ -131,6 +177,12 @@ describe("marcaDaOrganizacaoDeSettings — raio e barra", () => {
     expect("raio" in ruim).toBe(false);
     expect("barra_lateral" in ruim).toBe(false);
   });
+
+  it("densidade: so quando e do vocabulario", () => {
+    expect(marcaDaOrganizacaoDeSettings({ branding: { densidade: "compacta" } })?.densidade).toBe("compacta");
+    const ruim = marcaDaOrganizacaoDeSettings({ branding: { densidade: "x" } }) ?? {};
+    expect("densidade" in ruim).toBe(false);
+  });
 });
 
 describe("schemas — raio e barra lateral", () => {
@@ -143,6 +195,18 @@ describe("schemas — raio e barra lateral", () => {
     expect(platformBrandingSchema.safeParse({ ...inst, barra_lateral: "azul" }).success).toBe(false);
     expect(platformBrandingSchema.safeParse({ ...inst, raio: null }).success).toBe(false);
     expect(platformBrandingSchema.safeParse(inst).success).toBe(true);
+  });
+
+  it("instalacao: densidade aceita o vocabulario, recusa o resto e null", () => {
+    expect(platformBrandingSchema.safeParse({ ...inst, densidade: "compacta" }).success).toBe(true);
+    expect(platformBrandingSchema.safeParse({ ...inst, densidade: "padrao" }).success).toBe(false);
+    expect(platformBrandingSchema.safeParse({ ...inst, densidade: null }).success).toBe(false);
+  });
+
+  it("organizacao: densidade valor, null (herde) ou ausente (nao mexa)", () => {
+    expect(marcaDaOrganizacaoSchema.safeParse({ ...org, densidade: "equilibrada" }).success).toBe(true);
+    expect(marcaDaOrganizacaoSchema.safeParse({ ...org, densidade: null }).success).toBe(true);
+    expect(marcaDaOrganizacaoSchema.safeParse({ ...org, densidade: "apertada" }).success).toBe(false);
   });
 
   it("organizacao: valor, null (herde) ou ausente (nao mexa)", () => {

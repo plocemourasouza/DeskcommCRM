@@ -90,4 +90,35 @@ describe("RootLayout — data-neutros", () => {
       expect(await raio()).toBe("suave");
     });
   });
+
+  describe("data-densidade", () => {
+    async function densidade(): Promise<unknown> {
+      const html = await RootLayout({ children: null });
+      return (html.props as Record<string, unknown>)["data-densidade"];
+    }
+
+    it("instalacao equilibrada / compacta: o <html> leva data-densidade", async () => {
+      estado.linha = { densidade: "equilibrada" };
+      expect(await densidade()).toBe("equilibrada");
+      estado.linha = { densidade: "compacta" };
+      expect(await densidade()).toBe("compacta");
+    });
+
+    it("aerada, linha ausente, valor desconhecido ou leitura que falha: sem atributo", async () => {
+      estado.linha = { densidade: "aerada" };
+      expect(await densidade()).toBeUndefined();
+      estado.linha = null;
+      expect(await densidade()).toBeUndefined();
+      estado.linha = { densidade: "apertada" };
+      expect(await densidade()).toBeUndefined();
+      estado.lanca = true;
+      expect(await densidade()).toBeUndefined();
+    });
+
+    it("convive com neutros e raio", async () => {
+      estado.linha = { neutros: "frio", raio: "suave", densidade: "compacta" };
+      expect(await atributo()).toBe("frio");
+      expect(await densidade()).toBe("compacta");
+    });
+  });
 });

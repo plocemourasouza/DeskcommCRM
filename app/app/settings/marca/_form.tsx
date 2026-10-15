@@ -31,6 +31,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PreviaDaAparencia } from "@/components/branding/PreviaDaAparencia";
 import { SeletorDeBarraLateral, type EscolhaDeBarraLateral } from "@/components/branding/SeletorDeBarraLateral";
+import { SeletorDeDensidade, type EscolhaDeDensidade } from "@/components/branding/SeletorDeDensidade";
 import { SeletorDeNeutros, type EscolhaDeNeutros } from "@/components/branding/SeletorDeNeutros";
 import { SeletorDeRaio, type EscolhaDeRaio } from "@/components/branding/SeletorDeRaio";
 import { cssDaMarca, ESCOPO_DA_ORGANIZACAO } from "@/lib/branding/css";
@@ -52,6 +53,8 @@ import {
 import {
   barraLateralDeTexto,
   barraLateralEscolhida,
+  densidadeDeTexto,
+  densidadeEscolhida,
   neutrosDeTexto,
   neutrosEscolhidos,
   raioDeTexto,
@@ -86,6 +89,7 @@ interface Props {
      */
     readonly raio: string | null;
     readonly barra_lateral: string | null;
+    readonly densidade: string | null;
   };
   /**
    * A linha da marca da INSTALAÇÃO — a camada logo abaixo desta. `raio` e
@@ -94,6 +98,7 @@ interface Props {
   readonly instalacao: LinhaDaInstalacao & {
     readonly raio: string | null;
     readonly barra_lateral: string | null;
+    readonly densidade: string | null;
   };
   /** O arquivo de instalação do servidor — o fundo da pilha. */
   readonly ambiente: {
@@ -174,8 +179,10 @@ export function FormularioDaMarcaDaOrganizacao({ gravada, instalacao, ambiente, 
   // Estado inicial = o gravado; o Salvar compara com ele para saber o que mudou.
   const raioGravado = raioEscolhido(gravada.raio);
   const barraGravada = barraLateralEscolhida(gravada.barra_lateral);
+  const densidadeGravada = densidadeEscolhida(gravada.densidade);
   const [raio, setRaio] = useState<EscolhaDeRaio>(raioGravado);
   const [barraLateral, setBarraLateral] = useState<EscolhaDeBarraLateral>(barraGravada);
+  const [densidade, setDensidade] = useState<EscolhaDeDensidade>(densidadeGravada);
   const [erroTecnico, setErroTecnico] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -212,6 +219,7 @@ export function FormularioDaMarcaDaOrganizacao({ gravada, instalacao, ambiente, 
             // `null` = herdar, igual aos neutros.
             raio,
             barra_lateral: barraLateral,
+            densidade,
             // GRAVADO, não digitado: o logo não é campo deste formulário — ele
             // já está no banco quando esta tela renderiza. Entra na prévia para
             // que o bloco "de onde vem cada coisa" possa responder sobre ele.
@@ -221,7 +229,17 @@ export function FormularioDaMarcaDaOrganizacao({ gravada, instalacao, ambiente, 
         ],
         REGUA_DO_PRODUTO,
       ),
-    [nomeLimpo, hexLimpo, hexEscuroLimpo, neutros, raio, barraLateral, gravada.logo_path, abaixo],
+    [
+      nomeLimpo,
+      hexLimpo,
+      hexEscuroLimpo,
+      neutros,
+      raio,
+      barraLateral,
+      densidade,
+      gravada.logo_path,
+      abaixo,
+    ],
   );
 
   // A MESMA serialização, com o MESMO escopo, que o layout de `/app` roda no
@@ -236,6 +254,7 @@ export function FormularioDaMarcaDaOrganizacao({ gravada, instalacao, ambiente, 
   const neutrosDaInstalacao = neutrosDeTexto(instalacao.neutros);
   const raioDaInstalacao = raioDeTexto(instalacao.raio);
   const barraDaInstalacao = barraLateralDeTexto(instalacao.barra_lateral);
+  const densidadeDaInstalacao = densidadeDeTexto(instalacao.densidade);
 
   const derivada = resolvida.cor?.derivada ?? null;
   /**
@@ -308,6 +327,7 @@ export function FormularioDaMarcaDaOrganizacao({ gravada, instalacao, ambiente, 
       // vai a chave que a pessoa mexeu; a RPC preserva a gravada das outras.
       ...(raio !== raioGravado ? { raio } : {}),
       ...(barraLateral !== barraGravada ? { barra_lateral: barraLateral } : {}),
+      ...(densidade !== densidadeGravada ? { densidade } : {}),
     });
     if (!lido.success) {
       toast.error(t("Confira os campos: algum valor não está no formato esperado."));
@@ -527,6 +547,10 @@ export function FormularioDaMarcaDaOrganizacao({ gravada, instalacao, ambiente, 
             campo={t("Menu lateral")}
             valor={origemEmPortugues(resolvida.origens.barraLateral, t)}
           />
+          <LinhaDeOrigem
+            campo={t("Densidade")}
+            valor={origemEmPortugues(resolvida.origens.densidade, t)}
+          />
         </div>
 
         {avisos.length > 0 ? (
@@ -570,7 +594,17 @@ export function FormularioDaMarcaDaOrganizacao({ gravada, instalacao, ambiente, 
           onChange={setBarraLateral}
           herdado={barraDaInstalacao}
         />
-        <PreviaDaAparencia raio={resolvida.raio} barraLateral={resolvida.barraLateral} />
+        <SeletorDeDensidade
+          id="org-densidade"
+          valor={densidade}
+          onChange={setDensidade}
+          herdado={densidadeDaInstalacao}
+        />
+        <PreviaDaAparencia
+          raio={resolvida.raio}
+          densidade={resolvida.densidade}
+          barraLateral={resolvida.barraLateral}
+        />
       </Card>
 
       <Card className="space-y-2 p-6">

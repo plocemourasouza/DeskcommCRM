@@ -41,13 +41,13 @@ function achar(no: ReactNode, nome: string): ReactElement | null {
 
 describe("Configurações › Marca (organização) — page.tsx", () => {
   it("passa raio e barra_lateral gravados e os da instalação", async () => {
-    estado.settings = { branding: { raio: "arredondado", barra_lateral: "escura" } };
-    estado.linha = { raio: "suave", barra_lateral: "padrao" };
+    estado.settings = { branding: { raio: "arredondado", barra_lateral: "escura", densidade: "compacta" } };
+    estado.linha = { raio: "suave", barra_lateral: "padrao", densidade: "equilibrada" };
     const { default: Pagina } = await import("@/app/app/settings/marca/page");
     const form = achar(await Pagina(), "FormularioDaMarcaDaOrganizacao");
     const props = form?.props as { gravada: Record<string, unknown>; instalacao: Record<string, unknown> };
-    expect(props.gravada).toMatchObject({ raio: "arredondado", barra_lateral: "escura" });
-    expect(props.instalacao).toMatchObject({ raio: "suave", barra_lateral: "padrao" });
+    expect(props.gravada).toMatchObject({ raio: "arredondado", barra_lateral: "escura", densidade: "compacta" });
+    expect(props.instalacao).toMatchObject({ raio: "suave", barra_lateral: "padrao", densidade: "equilibrada" });
   });
 
   it("sem nada gravado: null (herda), nunca undefined", async () => {
@@ -58,7 +58,9 @@ describe("Configurações › Marca (organização) — page.tsx", () => {
     const props = form?.props as { gravada: Record<string, unknown>; instalacao: Record<string, unknown> };
     expect(props.gravada.raio).toBeNull();
     expect(props.gravada.barra_lateral).toBeNull();
+    expect(props.gravada.densidade).toBeNull();
     expect(props.instalacao.raio).toBeNull();
     expect(props.instalacao.barra_lateral).toBeNull();
+    expect(props.instalacao.densidade).toBeNull();
   });
 });

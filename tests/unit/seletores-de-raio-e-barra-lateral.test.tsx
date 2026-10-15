@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 
 import { SeletorDeRaio } from "@/components/branding/SeletorDeRaio";
 import { SeletorDeBarraLateral } from "@/components/branding/SeletorDeBarraLateral";
+import { SeletorDeDensidade } from "@/components/branding/SeletorDeDensidade";
 
 afterEach(cleanup);
 
@@ -69,5 +70,44 @@ describe("SeletorDeBarraLateral", () => {
     expect(escura.getAttribute("data-theme")).toBe("dark");
     expect(padrao.hasAttribute("data-theme")).toBe(false);
     expect(container.innerHTML).not.toMatch(/#[0-9a-f]{3,8}\b|bg-black|bg-white/i);
+  });
+});
+
+describe("SeletorDeDensidade", () => {
+  it("instalação: três opções sem herdar; organização: quatro, e null marca herdar", () => {
+    render(<SeletorDeDensidade id="densidade" valor="aerada" onChange={() => {}} />);
+    expect(screen.getAllByRole("radio")).toHaveLength(3);
+    expect(screen.queryByLabelText(/Usar o padrão da instalação/)).toBeNull();
+    expect((screen.getByLabelText(/^Aerada/) as HTMLInputElement).checked).toBe(true);
+    cleanup();
+    render(<SeletorDeDensidade id="densidade" valor={null} onChange={() => {}} herdado="compacta" />);
+    expect(screen.getAllByRole("radio")).toHaveLength(4);
+    expect((screen.getByLabelText(/Usar o padrão da instalação/) as HTMLInputElement).checked).toBe(true);
+    expect(screen.getByText(/Hoje: Compacta/)).toBeInTheDocument();
+  });
+
+  it("emite o valor escolhido e null ao herdar", () => {
+    const onChange = vi.fn();
+    render(<SeletorDeDensidade id="densidade" valor="aerada" onChange={onChange} herdado="aerada" />);
+    fireEvent.click(screen.getByLabelText(/^Compacta/));
+    expect(onChange).toHaveBeenLastCalledWith("compacta");
+    fireEvent.click(screen.getByLabelText(/Usar o padrão da instalação/));
+    expect(onChange).toHaveBeenLastCalledWith(null);
+  });
+
+  it("a11y: grupo nomeado, radios do mesmo name, amostra decorativa com três barras na altura de linha da escolha", () => {
+    const { container } = render(<SeletorDeDensidade id="densidade" valor="aerada" onChange={() => {}} />);
+    expect(screen.getByRole("group", { name: /Densidade/ })).toBeInTheDocument();
+    expect(new Set(screen.getAllByRole("radio").map((r) => r.getAttribute("name")))).toEqual(new Set(["densidade"]));
+    const amostras = container.querySelectorAll<HTMLElement>("[data-amostra-da-densidade]");
+    expect(amostras).toHaveLength(3);
+    for (const a of amostras) {
+      expect(a.getAttribute("aria-hidden")).toBe("true");
+      expect(a.children).toHaveLength(3);
+    }
+    const alturas = (d: string) =>
+      [...container.querySelector(`[data-amostra-da-densidade="${d}"]`)!.children].map((c) => (c as HTMLElement).style.height);
+    expect(alturas("aerada")).toEqual(["20px", "20px", "20px"]); // linhaH 40 / 2
+    expect(alturas("compacta")).toEqual(["16px", "16px", "16px"]); // linhaH 32 / 2
   });
 });

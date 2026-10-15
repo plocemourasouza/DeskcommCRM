@@ -104,7 +104,7 @@ export function neutrosEscolhidos(valor: unknown): NeutrosDaMarca | null {
  * O raio dos cantos (`--radius-sm..xl`): `padrao` e o de sempre, `suave` aperta
  * (nunca chega a zero) e `arredondado` folga. Independe do tema. Vocabulario
  * fechado no CHECK `platform_branding_raio` e em `fn_definir_marca_da_organizacao`
- * (migration 0671); o invariante vocabulario-banco-x-typescript cobre a igualdade.
+ * (migration 0674); o invariante vocabulario-banco-x-typescript cobre a igualdade.
  */
 export const RAIOS_DA_MARCA = ["suave", "padrao", "arredondado"] as const;
 export type RaioDaMarca = (typeof RAIOS_DA_MARCA)[number];
@@ -146,7 +146,7 @@ export function raioEscolhido(valor: unknown): RaioDaMarca | null {
 
 /**
  * A barra lateral: `padrao` acompanha o tema, `escura` e sempre escura. CHECK
- * `platform_branding_barra_lateral` e a mesma guarda da funcao (migration 0671).
+ * `platform_branding_barra_lateral` e a mesma guarda da funcao (migration 0674).
  */
 export const BARRAS_LATERAIS_DA_MARCA = ["padrao", "escura"] as const;
 export type BarraLateralDaMarca = (typeof BARRAS_LATERAIS_DA_MARCA)[number];
@@ -160,6 +160,63 @@ export function barraLateralDeTexto(valor: unknown): BarraLateralDaMarca {
 export function barraLateralEscolhida(valor: unknown): BarraLateralDaMarca | null {
   return typeof valor === "string" && (BARRAS_LATERAIS_DA_MARCA as readonly string[]).includes(valor)
     ? (valor as BarraLateralDaMarca)
+    : null;
+}
+
+/**
+ * A densidade dos controles: `aerada` e o visual de hoje, `equilibrada` e
+ * `compacta` apertam a altura de botoes, campos, linhas de tabela e itens do menu
+ * lateral. Vocabulario fechado no CHECK `platform_branding_densidade` e em
+ * `fn_definir_marca_da_organizacao` (migration 0675); o invariante
+ * vocabulario-banco-x-typescript cobre a igualdade.
+ */
+export const DENSIDADES_DA_MARCA = ["aerada", "equilibrada", "compacta"] as const;
+export type DensidadeDaMarca = (typeof DENSIDADES_DA_MARCA)[number];
+
+/** Nome da custom property de cada medida da densidade (as que `app/globals.css` declara). */
+export const VARIAVEIS_DA_DENSIDADE = {
+  controleH: "--controle-h",
+  controleHSm: "--controle-h-sm",
+  campoH: "--campo-h",
+  linhaH: "--linha-h",
+  linhaPy: "--linha-py",
+  navPy: "--nav-py",
+} as const;
+export type MedidaDaDensidade = keyof typeof VARIAVEIS_DA_DENSIDADE;
+
+/**
+ * As medidas em px de cada escolha. Espelho de `app/globals.css` (`:root` e os
+ * `:root[data-densidade=...]` sob `@media (pointer: fine)`) para a PREVIA dos
+ * formularios. O piso do campo (36px) e 2 de borda + 16 de padding vertical + a
+ * linha de 14px: abaixo disso o texto do input e cortado. `aerada` e o pixel que os primitivos tinham antes das variaveis.
+ * `tests/unit/densidade-da-marca-x-globals.test.ts` reprova a divergencia.
+ */
+export const DENSIDADE_EM_PX: Record<DensidadeDaMarca, Record<MedidaDaDensidade, number>> = {
+  aerada: { controleH: 36, controleHSm: 32, campoH: 40, linhaH: 40, linhaPy: 8, navPy: 4 },
+  equilibrada: { controleH: 32, controleHSm: 28, campoH: 38, linhaH: 36, linhaPy: 6, navPy: 3 },
+  compacta: { controleH: 30, controleHSm: 26, campoH: 36, linhaH: 32, linhaPy: 4, navPy: 2 },
+};
+
+/** As custom properties da densidade, prontas para `style` (previa). */
+export function estiloDaDensidade(densidade: DensidadeDaMarca): Record<string, string> {
+  const medidas = DENSIDADE_EM_PX[densidade];
+  return Object.fromEntries(
+    (Object.keys(VARIAVEIS_DA_DENSIDADE) as MedidaDaDensidade[]).map((k) => [
+      VARIAVEIS_DA_DENSIDADE[k],
+      `${medidas[k]}px`,
+    ]),
+  );
+}
+
+/** Fora do vocabulario vira `aerada` e NUNCA lanca (roda no layout raiz). */
+export function densidadeDeTexto(valor: unknown): DensidadeDaMarca {
+  return densidadeEscolhida(valor) ?? "aerada";
+}
+
+/** O valor so quando ele e do vocabulario; `null` quando a fonte nao escolheu. */
+export function densidadeEscolhida(valor: unknown): DensidadeDaMarca | null {
+  return typeof valor === "string" && (DENSIDADES_DA_MARCA as readonly string[]).includes(valor)
+    ? (valor as DensidadeDaMarca)
     : null;
 }
 

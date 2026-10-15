@@ -52,8 +52,8 @@ function acharOnde(no: ReactNode, casa: (el: ReactElement) => boolean): ReactEle
   return acharOnde(el.props.children, casa);
 }
 
-const BASE = { name: "Deskcomm", logoUrl: null, cor: null, raio: "padrao", barraLateral: "padrao" };
-const PADRAO_ORIGENS = { nome: "p", logoUrl: "p", cor: "p", raio: "padrao", barraLateral: "padrao" };
+const BASE = { name: "Deskcomm", logoUrl: null, cor: null, raio: "padrao", barraLateral: "padrao", densidade: "aerada" };
+const PADRAO_ORIGENS = { nome: "p", logoUrl: "p", cor: "p", raio: "padrao", barraLateral: "padrao", densidade: "padrao" };
 
 /**
  * /app so liga o override quando a ORGANIZACAO escolheu: sem escolha, o atributo
@@ -69,7 +69,7 @@ describe("layout de /app — aparencia da organizacao", () => {
     estado.marca = { ...BASE, neutros: "frio", origens: { ...PADRAO_ORIGENS, neutros: "organizacao" } };
     const { default: AppLayout } = await import("@/app/app/layout");
     const arvore = await AppLayout({ children: null });
-    expect(achar(arvore, AparenciaDaOrganizacao)?.props).toMatchObject({ aparencia: { neutros: "frio", raio: "padrao" } });
+    expect(achar(arvore, AparenciaDaOrganizacao)?.props).toMatchObject({ aparencia: { neutros: "frio", raio: "padrao", densidade: "aerada" } });
   });
 
   it("organizacao escolheu: o HTML do servidor ja leva o script que troca antes da pintura", async () => {
@@ -80,11 +80,11 @@ describe("layout de /app — aparencia da organizacao", () => {
     const script = acharOnde(arvore, (el) => el.type === "script");
     const html = (script?.props as { dangerouslySetInnerHTML?: { __html: string } } | undefined)
       ?.dangerouslySetInnerHTML?.__html;
-    expect(html).toBe(scriptDaAparencia({ neutros: "frio", raio: "padrao" }));
+    expect(html).toBe(scriptDaAparencia({ neutros: "frio", raio: "padrao", densidade: "aerada" }));
     // A limpeza devolve a da INSTALACAO, nao o atributo que o script ja trocou.
     expect(achar(arvore, AparenciaDaOrganizacao)?.props).toMatchObject({
-      aparencia: { neutros: "frio", raio: "padrao" },
-      instalacao: { neutros: "cinza", raio: "padrao" },
+      aparencia: { neutros: "frio", raio: "padrao", densidade: "aerada" },
+      instalacao: { neutros: "cinza", raio: "padrao", densidade: "aerada" },
     });
   });
 
@@ -109,12 +109,31 @@ describe("layout de /app — aparencia da organizacao", () => {
     const script = acharOnde(arvore, (el) => el.type === "script");
     const html = (script?.props as { dangerouslySetInnerHTML?: { __html: string } } | undefined)
       ?.dangerouslySetInnerHTML?.__html;
-    expect(html).toBe(scriptDaAparencia({ neutros: "cinza", raio: "suave" }));
+    expect(html).toBe(scriptDaAparencia({ neutros: "cinza", raio: "suave", densidade: "aerada" }));
     expect(achar(arvore, AparenciaDaOrganizacao)?.props).toMatchObject({
-      aparencia: { neutros: "cinza", raio: "suave" },
-      instalacao: { neutros: "cinza", raio: "arredondado" },
+      aparencia: { neutros: "cinza", raio: "suave", densidade: "aerada" },
+      instalacao: { neutros: "cinza", raio: "arredondado", densidade: "aerada" },
     });
   });
+  it("so a DENSIDADE veio da organizacao: monta, e o script leva densidade, raio e neutros em vigor", async () => {
+    estado.marca = {
+      ...BASE,
+      densidade: "compacta",
+      origens: { ...PADRAO_ORIGENS, densidade: "organizacao" },
+    };
+    estado.instalacao = { densidade: "equilibrada" };
+    const { default: AppLayout } = await import("@/app/app/layout");
+    const arvore = await AppLayout({ children: null });
+    const script = acharOnde(arvore, (el) => el.type === "script");
+    const html = (script?.props as { dangerouslySetInnerHTML?: { __html: string } } | undefined)
+      ?.dangerouslySetInnerHTML?.__html;
+    expect(html).toBe(scriptDaAparencia({ neutros: "quente", raio: "padrao", densidade: "compacta" }));
+    expect(achar(arvore, AparenciaDaOrganizacao)?.props).toMatchObject({
+      aparencia: { densidade: "compacta" },
+      instalacao: { densidade: "equilibrada" },
+    });
+  });
+
   it("barra lateral: o valor RESOLVIDO (escura) chega ao AppShell", async () => {
     estado.marca = { ...BASE, barraLateral: "escura", origens: { ...PADRAO_ORIGENS, barraLateral: "organizacao" } };
     const { default: AppLayout } = await import("@/app/app/layout");

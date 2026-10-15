@@ -322,7 +322,7 @@ async function MarcaDosClientComponents({ children }: { children: React.ReactNod
 }
 
 /**
- * A aparencia (neutros e raio) da INSTALACAO, para os atributos do `<html>`.
+ * A aparencia (neutros, raio e densidade) da INSTALACAO, para os atributos do `<html>`.
  * Nunca lanca: um throw aqui e o documento inteiro em 500, e a pior consequencia
  * de nao saber a aparencia e a de sempre (`quente`/`padrao`, que nao escrevem
  * atributo).
@@ -330,15 +330,17 @@ async function MarcaDosClientComponents({ children }: { children: React.ReactNod
 async function aparenciaDaInstalacao(): Promise<{
   neutros: "cinza" | "frio" | null;
   raio: "suave" | "arredondado" | null;
+  densidade: "equilibrada" | "compacta" | null;
 }> {
   try {
     const { marca } = await marcaResolvida();
     return {
       neutros: marca.neutros === "quente" ? null : marca.neutros,
       raio: marca.raio === "padrao" ? null : marca.raio,
+      densidade: marca.densidade === "aerada" ? null : marca.densidade,
     };
   } catch {
-    return { neutros: null, raio: null };
+    return { neutros: null, raio: null, densidade: null };
   }
 }
 
@@ -347,13 +349,14 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   // proposito: o CSS de marca nao pode declarar `--color-bg`. Aqui so se liga o
   // atributo. A organizacao que sobrepoe a escolha o troca em `/app` (ver
   // `AparenciaDaOrganizacao`), porque so la a organizacao e conhecida.
-  const { neutros, raio } = await aparenciaDaInstalacao();
+  const { neutros, raio, densidade } = await aparenciaDaInstalacao();
   return (
     <html
       lang="pt-BR"
       data-theme="light"
       {...(neutros ? { "data-neutros": neutros } : {})}
       {...(raio ? { "data-raio": raio } : {})}
+      {...(densidade ? { "data-densidade": densidade } : {})}
       suppressHydrationWarning
       className={`${atkinson.variable} ${plexMono.variable}`}
     >

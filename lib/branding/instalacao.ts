@@ -104,15 +104,22 @@ export type SementeDoAmbiente = {
  * 0155; tratá-la diferente agora criaria duas regras para o mesmo caso.
  */
 const COLUNAS =
-  "app_name, logo_url, logo_path, logo_dark_path, favicon_path, accent_hex, accent_dark_hex, neutros, raio, barra_lateral, show_powered_by, seeded_from_env, fallback_at, fallback_reason";
+  "app_name, logo_url, logo_path, logo_dark_path, favicon_path, accent_hex, accent_dark_hex, neutros, raio, barra_lateral, densidade, show_powered_by, seeded_from_env, fallback_at, fallback_reason";
 
 /**
- * As colunas de ANTES da 0671 (raio e barra lateral). Código novo sobre banco
+ * As colunas de ANTES da 0674 (raio e barra lateral). Código novo sobre banco
  * que ainda não aplicou a migration recebe `42703` na leitura acima — e perder a
  * marca inteira por duas colunas de aparência seria desproporcional. `lerLinha`
  * tenta de novo com esta lista: o resolvedor trata a ausência como `padrao`.
  */
-const COLUNAS_ANTES_DA_0671 = COLUNAS.replace(" raio, barra_lateral,", "");
+const COLUNAS_ANTES_DA_0671 = COLUNAS.replace(" raio, barra_lateral, densidade,", "");
+
+/**
+ * As colunas de ANTES da 0675 (densidade): banco que já tem raio e barra lateral
+ * mas ainda não a densidade. Tentada ANTES da lista da 0674, para que faltar uma
+ * coluna não leve embora as duas que existem.
+ */
+const COLUNAS_ANTES_DA_0674 = COLUNAS.replace(" densidade,", "");
 
 /**
  * Códigos de recusa — os que significam "a cor configurada NÃO pintou".
@@ -408,8 +415,15 @@ async function lerLinha(): Promise<LinhaDaMarca | null | "erro"> {
   const lida = await lerLinhaCom(COLUNAS);
   if (lida !== "coluna_ausente") return lida;
   avisarUmaVez(
-    "leitura|0671",
-    "marca da instalação: raio e barra lateral ainda não existem no banco (migration 0671); valem os padrões",
+    "leitura|0675",
+    "marca da instalação: a densidade ainda não existe no banco (migration 0675); vale o padrão",
+    {},
+  );
+  const semDensidade = await lerLinhaCom(COLUNAS_ANTES_DA_0674);
+  if (semDensidade !== "coluna_ausente") return semDensidade;
+  avisarUmaVez(
+    "leitura|0674",
+    "marca da instalação: raio e barra lateral ainda não existem no banco (migration 0674); valem os padrões",
     {},
   );
   const antiga = await lerLinhaCom(COLUNAS_ANTES_DA_0671);
@@ -436,7 +450,7 @@ async function lerLinhaCom(
       .abortSignal(new AbortController().signal)
       .maybeSingle();
     if (error) {
-      if (error.code === "42703" && colunas === COLUNAS) return "coluna_ausente";
+      if (error.code === "42703" && colunas !== COLUNAS_ANTES_DA_0671) return "coluna_ausente";
       avisarUmaVez(
         `leitura|${error.code ?? "?"}`,
         "marca da instalação: não deu para ler do banco; vale o .env",

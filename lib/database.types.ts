@@ -8649,6 +8649,7 @@ export type Database = {
           accent_hex: string | null
           app_name: string | null
           barra_lateral: string
+          densidade: string
           fallback_at: string | null
           fallback_reason: string | null
           id: number
@@ -8666,6 +8667,7 @@ export type Database = {
           accent_hex?: string | null
           app_name?: string | null
           barra_lateral?: string
+          densidade?: string
           fallback_at?: string | null
           fallback_reason?: string | null
           id?: number
@@ -8683,6 +8685,7 @@ export type Database = {
           accent_hex?: string | null
           app_name?: string | null
           barra_lateral?: string
+          densidade?: string
           fallback_at?: string | null
           fallback_reason?: string | null
           id?: number

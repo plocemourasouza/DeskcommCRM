@@ -10,7 +10,13 @@ import { AppShell } from "./_components/AppShell";
 import { EstiloDaMarcaDaOrganizacao } from "./_components/EstiloDaMarcaDaOrganizacao";
 import { EstiloDoTemaDaExtensao } from "./_components/EstiloDoTemaDaExtensao";
 import { AparenciaDaOrganizacao } from "./_components/AparenciaDaOrganizacao";
-import { barraLateralDeTexto, neutrosDeTexto, raioDeTexto, type BarraLateralDaMarca } from "@/lib/branding/schema";
+import {
+  barraLateralDeTexto,
+  densidadeDeTexto,
+  neutrosDeTexto,
+  raioDeTexto,
+  type BarraLateralDaMarca,
+} from "@/lib/branding/schema";
 import { scriptDaAparencia, type AparenciaDoHtml } from "@/lib/branding/script-da-aparencia";
 import { MfaEnrollGate } from "@/components/auth/MfaEnrollGate";
 import { cssDaMarca, ESCOPO_DA_ORGANIZACAO } from "@/lib/branding/css";
@@ -65,11 +71,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
    * e não aqui: a precedência é regra do produto, não detalhe deste layout.
    */
   let cssDaOrganizacao: string | null = null;
-  // So quando a ORGANIZACAO escolheu neutros OU raio: sem escolha, o <html> da
+  // So quando a ORGANIZACAO escolheu neutros, raio OU densidade: sem escolha, o <html> da
   // instalacao ja vale. O valor em vigor dos dois eixos vai junto (um eixo herdado
   // vale o da instalacao), e `instalacao` e para onde o cleanup devolve o <html>.
   let aparenciaDaOrganizacao: AparenciaDoHtml | null = null;
-  let aparenciaDaInstalacao: AparenciaDoHtml = { neutros: "quente", raio: "padrao" };
+  let aparenciaDaInstalacao: AparenciaDoHtml = {
+    neutros: "quente",
+    raio: "padrao",
+    densidade: "aerada",
+  };
   // A barra lateral em vigor (organização > instalação > padrão). Não é atributo
   // do <html>: desce por prop ao AppShell, que escurece só a subárvore da barra.
   let barraLateral: BarraLateralDaMarca = "padrao";
@@ -189,11 +199,20 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     // resolução devolve a cor da instalação — e reemiti-la aqui, escopada no
     // `<body>`, seria repetir no documento um bloco que já vale pela raiz. Além
     // de bytes, custaria a única pergunta que a presença do bloco responde.
-    if (marca.origens?.neutros === "organizacao" || marca.origens?.raio === "organizacao") {
-      aparenciaDaOrganizacao = { neutros: marca.neutros, raio: raioDeTexto(marca.raio) };
+    if (
+      marca.origens?.neutros === "organizacao" ||
+      marca.origens?.raio === "organizacao" ||
+      marca.origens?.densidade === "organizacao"
+    ) {
+      aparenciaDaOrganizacao = {
+        neutros: marca.neutros,
+        raio: raioDeTexto(marca.raio),
+        densidade: densidadeDeTexto(marca.densidade),
+      };
       aparenciaDaInstalacao = {
         neutros: neutrosDeTexto(linhaDaInstalacao?.neutros),
         raio: raioDeTexto(linhaDaInstalacao?.raio),
+        densidade: densidadeDeTexto(linhaDaInstalacao?.densidade),
       };
     }
 

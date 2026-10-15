@@ -31,6 +31,7 @@ const INSTALACAO = {
   neutros: null,
   raio: "suave",
   barra_lateral: "escura",
+  densidade: "compacta",
 };
 
 function pintarOrg(gravada: Partial<Parameters<typeof FormularioDaMarcaDaOrganizacao>[0]["gravada"]> = {}) {
@@ -44,6 +45,7 @@ function pintarOrg(gravada: Partial<Parameters<typeof FormularioDaMarcaDaOrganiz
         neutros: null,
         raio: null,
         barra_lateral: null,
+        densidade: null,
         ...gravada,
       }}
       instalacao={INSTALACAO}
@@ -85,9 +87,9 @@ describe("formulário da organização — cantos e menu lateral", () => {
   it("'Usar o padrão da instalação' envia null (limpa a escolha gravada)", async () => {
     pintarOrg({ raio: "arredondado", barra_lateral: "escura" });
     const herdar = screen.getAllByLabelText(/Usar o padrão da instalação/);
-    // neutros, cantos, menu lateral: os dois últimos
+    // neutros, cantos, menu lateral, densidade: cantos e menu lateral
+    fireEvent.click(herdar[herdar.length - 3]!);
     fireEvent.click(herdar[herdar.length - 2]!);
-    fireEvent.click(herdar[herdar.length - 1]!);
     await salvar();
     const enviado = salvarOrg.mock.calls[0]![0] as Record<string, unknown>;
     expect(enviado.raio).toBeNull();
@@ -123,6 +125,83 @@ describe("formulário da organização — cantos e menu lateral", () => {
   });
 });
 
+describe("formulário da organização — densidade", () => {
+  it("intocada: o Salvar NÃO leva densidade (a RPC preserva a gravada)", async () => {
+    pintarOrg({ densidade: "equilibrada" });
+    await salvar();
+    expect("densidade" in (salvarOrg.mock.calls[0]![0] as Record<string, unknown>)).toBe(false);
+  });
+
+  it("escolher um valor envia só a densidade", async () => {
+    pintarOrg();
+    fireEvent.click(screen.getByLabelText(/^Equilibrada/));
+    await salvar();
+    const enviado = salvarOrg.mock.calls[0]![0] as Record<string, unknown>;
+    expect(enviado.densidade).toBe("equilibrada");
+    expect("raio" in enviado).toBe(false);
+  });
+
+  it("'Usar o padrão da instalação' envia null", async () => {
+    pintarOrg({ densidade: "compacta" });
+    const herdar = screen.getAllByLabelText(/Usar o padrão da instalação/);
+    fireEvent.click(herdar[herdar.length - 1]!); // neutros, cantos, menu lateral, densidade: o último
+    await salvar();
+    expect((salvarOrg.mock.calls[0]![0] as Record<string, unknown>).densidade).toBeNull();
+  });
+
+  it("a prévia leva as variáveis da densidade escolhida, antes de salvar (e a herdada, se nada foi escolhido)", () => {
+    const { container } = pintarOrg();
+    const previa = () => container.querySelector<HTMLElement>("[data-previa-da-densidade]")!;
+    expect(previa().getAttribute("data-previa-da-densidade")).toBe("compacta"); // herdada
+    expect(previa().style.getPropertyValue("--controle-h")).toBe("30px");
+    fireEvent.click(screen.getByLabelText(/^Aerada/));
+    expect(previa().style.getPropertyValue("--controle-h")).toBe("36px");
+    expect(previa().style.getPropertyValue("--campo-h")).toBe("40px");
+    expect(previa().style.getPropertyValue("--linha-py")).toBe("8px");
+  });
+
+  it("'De onde vem cada coisa' responde sobre a densidade", () => {
+    pintarOrg({ densidade: "compacta" });
+    expect(screen.getByText("Densidade", { selector: "span" })).toBeInTheDocument();
+  });
+});
+
+describe("formulário da instalação — densidade", () => {
+  function pintar() {
+    return render(
+      <FormularioDaMarca
+        gravada={{
+          app_name: null, logo_url: null, logo_path: null, accent_hex: null, accent_dark_hex: null,
+          neutros: "quente", raio: "padrao", barra_lateral: "padrao", densidade: "aerada", show_powered_by: true,
+        }}
+        nomeEmVigor="Deskcomm"
+        logoEmVigor={null}
+        logoDoAmbiente={null}
+        origens={{ nome: "padrao", logoUrl: "padrao", cor: "padrao" }}
+        definidoNestaTela={false}
+        fallbackEm={null}
+        fallbackMotivo={null}
+      />,
+    );
+  }
+
+  it("três opções, sem herdar, aerada marcada", () => {
+    pintar();
+    expect((screen.getByLabelText(/^Aerada/) as HTMLInputElement).checked).toBe(true);
+    expect(screen.getByLabelText(/^Compacta/)).toBeInTheDocument();
+  });
+
+  it("o Salvar leva a densidade escolhida; a prévia acompanha", async () => {
+    const { container } = pintar();
+    fireEvent.click(screen.getByLabelText(/^Compacta/));
+    expect(
+      container.querySelector<HTMLElement>("[data-previa-da-densidade]")!.style.getPropertyValue("--controle-h"),
+    ).toBe("30px");
+    await salvar();
+    expect(salvarInstalacao.mock.calls[0]![0]).toMatchObject({ densidade: "compacta" });
+  });
+});
+
 describe("formulário da instalação — cantos e menu lateral", () => {
   function pintarInstalacao() {
     return render(
@@ -136,6 +215,7 @@ describe("formulário da instalação — cantos e menu lateral", () => {
           neutros: "quente",
           raio: "padrao",
           barra_lateral: "padrao",
+          densidade: "aerada",
           show_powered_by: true,
         }}
         nomeEmVigor="Deskcomm"

@@ -58,11 +58,11 @@ const buttonVariants = cva(
       // globalmente pro app inteiro em telas grandes infla a densidade sem
       // necessidade nenhuma. `lg` já nascia com 44px e não precisou mudar.
       size: {
-        sm: "h-11 px-3 text-xs lg:h-8",
-        default: "h-11 px-4 text-sm lg:h-9",
-        md: "h-11 px-4 text-sm lg:h-9",
+        sm: "h-11 px-3 text-xs lg:h-(--controle-h-sm)",
+        default: "h-11 px-4 text-sm lg:h-(--controle-h)",
+        md: "h-11 px-4 text-sm lg:h-(--controle-h)",
         lg: "h-11 px-6 text-sm",
-        icon: "h-11 w-11 lg:h-9 lg:w-9",
+        icon: "h-11 w-11 lg:h-(--controle-h) lg:w-(--controle-h)",
       },
     },
     defaultVariants: {
