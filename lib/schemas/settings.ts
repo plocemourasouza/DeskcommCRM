@@ -9,7 +9,13 @@
 import { z } from "zod";
 
 import { ehHexValido } from "@/lib/branding/rampa";
-import { BARRAS_LATERAIS_DA_MARCA, NEUTROS_DA_MARCA, RAIOS_DA_MARCA } from "@/lib/branding/schema";
+import {
+  BARRAS_LATERAIS_DA_MARCA,
+  DENSIDADES_DA_MARCA,
+  FONTES_DA_MARCA,
+  NEUTROS_DA_MARCA,
+  RAIOS_DA_MARCA,
+} from "@/lib/branding/schema";
 import { IDIOMAS } from "@/lib/i18n/idiomas";
 import { MOEDAS_SERVIDAS } from "@/lib/money";
 
@@ -334,10 +340,14 @@ export const platformBrandingSchema = z.object({
    * valor), porque a coluna e `not null` — nao existe "apague", so "escolha".
    */
   neutros: z.enum(NEUTROS_DA_MARCA).optional(),
-  /** O raio dos cantos (migration 0671). Opcional pelo mesmo motivo: coluna `not null`. */
+  /** O raio dos cantos (migration 0674). Opcional pelo mesmo motivo: coluna `not null`. */
   raio: z.enum(RAIOS_DA_MARCA).optional(),
-  /** A barra lateral (migration 0671). Opcional pelo mesmo motivo. */
+  /** A barra lateral (migration 0674). Opcional pelo mesmo motivo. */
   barra_lateral: z.enum(BARRAS_LATERAIS_DA_MARCA).optional(),
+  /** A densidade (migration 0675). Opcional pelo mesmo motivo: coluna `not null`. */
+  densidade: z.enum(DENSIDADES_DA_MARCA).optional(),
+  /** A fonte (migration 0676). Opcional pelo mesmo motivo: coluna `not null`. */
+  fonte: z.enum(FONTES_DA_MARCA).optional(),
 });
 export type PlatformBrandingInput = z.infer<typeof platformBrandingSchema>;
 
@@ -380,13 +390,17 @@ export const marcaDaOrganizacaoSchema = z.object({
    */
   neutros: z.enum(NEUTROS_DA_MARCA).nullable(),
   /**
-   * O raio e a barra lateral desta organizacao (migration 0671). TRES estados,
+   * O raio e a barra lateral desta organizacao (migration 0674). TRES estados,
    * ao contrario dos irmaos: valor = escolhe, `null` = "herde da instalacao"
    * (a chave sai do jsonb) e AUSENTE = "nao mexa" — a RPC preserva a chave
    * gravada. Salvar so o nome nunca apaga o que o formulario nao enviou.
    */
   raio: z.enum(RAIOS_DA_MARCA).nullable().optional(),
   barra_lateral: z.enum(BARRAS_LATERAIS_DA_MARCA).nullable().optional(),
+  /** A densidade desta organizacao (0675): mesmos tres estados do raio. */
+  densidade: z.enum(DENSIDADES_DA_MARCA).nullable().optional(),
+  /** A fonte desta organizacao (0676): mesmos tres estados do raio. */
+  fonte: z.enum(FONTES_DA_MARCA).nullable().optional(),
 });
 export type MarcaDaOrganizacaoInput = z.infer<typeof marcaDaOrganizacaoSchema>;
 

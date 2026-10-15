@@ -11,20 +11,24 @@ import { AparenciaDaOrganizacao } from "@/app/app/_components/AparenciaDaOrganiz
  */
 describe("AparenciaDaOrganizacao", () => {
   const raiz = document.documentElement;
-  const QUENTE = { neutros: "quente", raio: "padrao" } as const;
+  const QUENTE = { neutros: "quente", raio: "padrao", densidade: "aerada", fonte: "atkinson" } as const;
 
   beforeEach(() => {
     raiz.removeAttribute("data-neutros");
     raiz.removeAttribute("data-raio");
+    raiz.removeAttribute("data-densidade");
+    raiz.removeAttribute("data-fonte");
   });
   afterEach(() => {
     cleanup();
     raiz.removeAttribute("data-neutros");
     raiz.removeAttribute("data-raio");
+    raiz.removeAttribute("data-densidade");
+    raiz.removeAttribute("data-fonte");
   });
 
   it("aplica a escolha da organizacao", () => {
-    render(<AparenciaDaOrganizacao aparencia={{ neutros: "frio", raio: "suave" }} instalacao={QUENTE} />);
+    render(<AparenciaDaOrganizacao aparencia={{ neutros: "frio", raio: "suave", densidade: "aerada", fonte: "atkinson" }} instalacao={QUENTE} />);
     expect(raiz.getAttribute("data-neutros")).toBe("frio");
     expect(raiz.getAttribute("data-raio")).toBe("suave");
   });
@@ -34,8 +38,8 @@ describe("AparenciaDaOrganizacao", () => {
     raiz.setAttribute("data-raio", "arredondado");
     const { unmount } = render(
       <AparenciaDaOrganizacao
-        aparencia={{ neutros: "frio", raio: "suave" }}
-        instalacao={{ neutros: "cinza", raio: "arredondado" }}
+        aparencia={{ neutros: "frio", raio: "suave", densidade: "aerada", fonte: "atkinson" }}
+        instalacao={{ neutros: "cinza", raio: "arredondado", densidade: "aerada", fonte: "atkinson" }}
       />,
     );
     expect(raiz.getAttribute("data-neutros")).toBe("frio");
@@ -49,7 +53,7 @@ describe("AparenciaDaOrganizacao", () => {
     raiz.setAttribute("data-neutros", "frio");
     raiz.setAttribute("data-raio", "suave");
     const { unmount } = render(
-      <AparenciaDaOrganizacao aparencia={QUENTE} instalacao={{ neutros: "frio", raio: "suave" }} />,
+      <AparenciaDaOrganizacao aparencia={QUENTE} instalacao={{ neutros: "frio", raio: "suave", densidade: "aerada", fonte: "atkinson" }} />,
     );
     expect(raiz.hasAttribute("data-neutros")).toBe(false);
     expect(raiz.hasAttribute("data-raio")).toBe(false);
@@ -60,7 +64,7 @@ describe("AparenciaDaOrganizacao", () => {
 
   it("desmontar sem atributo anterior deixa o <html> sem atributo", () => {
     const { unmount } = render(
-      <AparenciaDaOrganizacao aparencia={{ neutros: "cinza", raio: "arredondado" }} instalacao={QUENTE} />,
+      <AparenciaDaOrganizacao aparencia={{ neutros: "cinza", raio: "arredondado", densidade: "aerada", fonte: "atkinson" }} instalacao={QUENTE} />,
     );
     unmount();
     expect(raiz.hasAttribute("data-neutros")).toBe(false);
@@ -75,8 +79,8 @@ describe("AparenciaDaOrganizacao", () => {
     raiz.setAttribute("data-raio", "suave");
     const { unmount } = render(
       <AparenciaDaOrganizacao
-        aparencia={{ neutros: "frio", raio: "suave" }}
-        instalacao={{ neutros: "cinza", raio: "arredondado" }}
+        aparencia={{ neutros: "frio", raio: "suave", densidade: "aerada", fonte: "atkinson" }}
+        instalacao={{ neutros: "cinza", raio: "arredondado", densidade: "aerada", fonte: "atkinson" }}
       />,
     );
     unmount();
@@ -86,10 +90,47 @@ describe("AparenciaDaOrganizacao", () => {
 
   it("valor fora do vocabulario e tratado como padrao (nunca escreve lixo no <html>)", () => {
     const { unmount } = render(
-      <AparenciaDaOrganizacao aparencia={{ neutros: "verde" as never, raio: "x" as never }} instalacao={QUENTE} />,
+      <AparenciaDaOrganizacao aparencia={{ neutros: "verde" as never, raio: "x" as never, densidade: "y" as never, fonte: "atkinson" }} instalacao={QUENTE} />,
     );
     expect(raiz.hasAttribute("data-neutros")).toBe(false);
     expect(raiz.hasAttribute("data-raio")).toBe(false);
     unmount();
+  });
+
+  it("densidade: liga data-densidade, aerada REMOVE, e o cleanup devolve a da instalacao", () => {
+    raiz.setAttribute("data-densidade", "equilibrada");
+    const { unmount } = render(
+      <AparenciaDaOrganizacao
+        aparencia={{ neutros: "quente", raio: "padrao", densidade: "compacta", fonte: "atkinson" }}
+        instalacao={{ neutros: "quente", raio: "padrao", densidade: "equilibrada", fonte: "atkinson" }}
+      />,
+    );
+    expect(raiz.getAttribute("data-densidade")).toBe("compacta");
+    unmount();
+    expect(raiz.getAttribute("data-densidade")).toBe("equilibrada");
+    const segunda = render(<AparenciaDaOrganizacao aparencia={QUENTE} instalacao={QUENTE} />);
+    expect(raiz.hasAttribute("data-densidade")).toBe(false);
+    segunda.unmount();
+  });
+
+  it("fonte: liga data-fonte, atkinson REMOVE, valor de fora do vocabulario REMOVE, e o cleanup devolve a da instalacao", () => {
+    raiz.setAttribute("data-fonte", "manrope");
+    const { unmount } = render(
+      <AparenciaDaOrganizacao
+        aparencia={{ ...QUENTE, fonte: "fraunces" }}
+        instalacao={{ ...QUENTE, fonte: "manrope" }}
+      />,
+    );
+    expect(raiz.getAttribute("data-fonte")).toBe("fraunces");
+    unmount();
+    expect(raiz.getAttribute("data-fonte")).toBe("manrope");
+    const segunda = render(<AparenciaDaOrganizacao aparencia={QUENTE} instalacao={QUENTE} />);
+    expect(raiz.hasAttribute("data-fonte")).toBe(false);
+    segunda.unmount();
+    const lixo = render(
+      <AparenciaDaOrganizacao aparencia={{ ...QUENTE, fonte: "comic" as never }} instalacao={QUENTE} />,
+    );
+    expect(raiz.hasAttribute("data-fonte")).toBe(false);
+    lixo.unmount();
   });
 });

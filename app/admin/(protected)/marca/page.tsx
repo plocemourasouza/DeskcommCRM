@@ -10,7 +10,13 @@ import { marcaDaInstalacao } from "@/lib/branding/instalacao";
 import { logoDaCamada } from "@/lib/branding/logo";
 import { REGUA_DO_PRODUTO } from "@/lib/branding/regua-do-produto";
 import { camadaDaInstalacao, camadaDoAmbiente, resolverMarca } from "@/lib/branding/resolve";
-import { barraLateralDeTexto, neutrosDeTexto, raioDeTexto } from "@/lib/branding/schema";
+import {
+  barraLateralDeTexto,
+  densidadeDeTexto,
+  fonteDeTexto,
+  neutrosDeTexto,
+  raioDeTexto,
+} from "@/lib/branding/schema";
 import { env } from "@/lib/env";
 import { tagDeIdioma } from "@/lib/i18n/datas";
 import { normalizarIdioma } from "@/lib/i18n/idiomas";
@@ -108,6 +114,8 @@ export default async function Page() {
           neutros: neutrosDeTexto(linha?.neutros),
           raio: raioDeTexto(linha?.raio),
           barra_lateral: barraLateralDeTexto(linha?.barra_lateral),
+          densidade: densidadeDeTexto(linha?.densidade),
+          fonte: fonteDeTexto(linha?.fonte),
           // `true` é o default da coluna: sem linha ainda, é o valor que o
           // `upsert` gravaria de qualquer forma.
           show_powered_by: linha?.show_powered_by ?? true,

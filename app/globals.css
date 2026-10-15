@@ -128,6 +128,26 @@
   --density-px: 20px;
   --density-py: 16px;
 
+  /* Densidade dos controles — os defaults são os pixels que os primitivos tinham
+     ANTES das variáveis (`aerada` = o visual de hoje, byte a byte). Quem consome:
+     button (`lg:h-9`/`lg:h-8`), input (`h-10`), select (`h-9`), table (head `h-10`,
+     célula `p-2`) e os itens do menu lateral (`py-1`). Os overrides `equilibrada` e
+     `compacta` estão mais abaixo, sob `@media (pointer: fine)`. */
+  --controle-h: 36px;
+  --controle-h-sm: 32px;
+  --campo-h: 40px;
+  --linha-h: 40px;
+  --linha-py: 8px;
+  --nav-py: 4px;
+
+  /* Fonte da interface — UMA custom property decide a família de todo o sistema:
+     `body` e `font-sans` (via `--font-sans` do @theme) leem `--font-ui`. O default
+     é a pilha que o `body` tinha antes dela (Atkinson, byte a byte); cada fonte
+     escolhível a redefine em `:root[data-fonte="<id>"]`, mais abaixo. */
+  --font-ui:
+    var(--font-atkinson), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+
   /* Motion — os quatro pares canônicos de `docs/design-system/07-motion-language.md`.
      Os nomes daqui são os de lá: `ease-out` = `ease-out-fast` (hover, micro-feedback),
      `ease-in-out` = `ease-base` (fade, cor), `ease-out-slow` = página/modal/gaveta,
@@ -510,6 +530,49 @@
   --color-neutral-950: #0b0b0b;
 }
 
+/* ─────────────────────────────────────────────────────────────────────────
+   Fonte da interface — as seis além da Atkinson (que é o :root, e o default).
+
+   Liga o atributo `data-fonte` no <html> (app/layout.tsx; /app o troca por
+   organização). Cada bloco só redefine `--font-ui`: a família (`--fonte-*`) é
+   declarada por `app/fontes-da-marca.ts` com `preload: false`, então o navegador
+   só baixa o arquivo da que estiver em uso. As pilhas espelham `pilhaDaFonte` em
+   lib/branding/schema.ts — `tests/unit/fonte-da-marca-x-globals.test.ts`
+   reprova a divergência. Serifadas fecham em `serif`.
+   ───────────────────────────────────────────────────────────────────────── */
+
+:root[data-fonte="manrope"] {
+  --font-ui:
+    var(--fonte-manrope), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+}
+
+:root[data-fonte="jakarta"] {
+  --font-ui:
+    var(--fonte-jakarta), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+}
+
+:root[data-fonte="plex-sans"] {
+  --font-ui:
+    var(--fonte-plex-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+}
+
+:root[data-fonte="bricolage"] {
+  --font-ui:
+    var(--fonte-bricolage), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+}
+
+:root[data-fonte="fraunces"] {
+  --font-ui: var(--fonte-fraunces), ui-serif, Georgia, Cambria, "Times New Roman", serif;
+}
+
+:root[data-fonte="source-serif"] {
+  --font-ui: var(--fonte-source-serif), ui-serif, Georgia, Cambria, "Times New Roman", serif;
+}
+
 /* Subárvore escura sob página clara (barra lateral escura): o compound acima só casa o
    <html>; esta é a forma descendente, (0,2,0) contra o (0,1,0) do tema escuro genérico.
    Mesmos tokens do bloco acima — `branding-barra-escura` exige a paridade. */
@@ -608,6 +671,39 @@
   --radius-md: 12px;
   --radius-lg: 16px;
   --radius-xl: 24px;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Densidade — `equilibrada` e `compacta` (a `aerada` é o :root, e o default).
+
+   SÓ com ponteiro fino. Celular e tablet mantêm os tamanhos de `aerada`: o piso
+   de 44px do alvo de toque não é decisão de marca. Os primitivos já guardam o
+   piso por breakpoint (`h-11 lg:h-(--controle-h)`, `min-h-11 lg:min-h-0`), então
+   estas variáveis só valem do `lg` para cima — numa janela estreita de desktop
+   a densidade escolhida não aparece, e é o mesmo comportamento de antes.
+   Liga o atributo `data-densidade` no <html> (app/layout.tsx; /app o troca por
+   organização). Os valores espelham `DENSIDADE_EM_PX` em lib/branding/schema.ts
+   — `tests/unit/densidade-da-marca-x-globals.test.ts` reprova a divergência.
+   ───────────────────────────────────────────────────────────────────────── */
+
+@media (pointer: fine) {
+  :root[data-densidade="equilibrada"] {
+    --controle-h: 32px;
+    --controle-h-sm: 28px;
+    --campo-h: 38px;
+    --linha-h: 36px;
+    --linha-py: 6px;
+    --nav-py: 3px;
+  }
+
+  :root[data-densidade="compacta"] {
+    --controle-h: 30px;
+    --controle-h-sm: 26px;
+    --campo-h: 36px;
+    --linha-h: 32px;
+    --linha-py: 4px;
+    --nav-py: 2px;
+  }
 }
 
 /* Subárvore escura sob página clara (barra lateral escura): o compound acima só casa o
@@ -741,8 +837,7 @@
   --color-card-foreground: var(--color-text);
 
   /* Tipografia */
-  --font-sans:
-    var(--font-atkinson), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-sans: var(--font-ui);
   --font-mono: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
   /* Espaçamento. Os valores são px LITERAIS (`--space-6` = 24px), não rem — e
@@ -978,16 +1073,7 @@
     overflow-x: clip;
     background-color: var(--color-bg);
     color: var(--color-text);
-    font-family:
-      var(--font-atkinson),
-      ui-sans-serif,
-      system-ui,
-      -apple-system,
-      "Segoe UI",
-      Roboto,
-      "Helvetica Neue",
-      Arial,
-      sans-serif;
+    font-family: var(--font-ui);
     font-feature-settings:
       "rlig" 1,
       "calt" 1;

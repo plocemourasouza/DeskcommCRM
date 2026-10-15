@@ -37,9 +37,13 @@ import {
   esquemaDaCorDaMarca,
   FORMATO_ATUAL,
   barraLateralEscolhida,
+  densidadeEscolhida,
+  fonteEscolhida,
   neutrosEscolhidos,
   raioEscolhido,
   type BarraLateralDaMarca,
+  type DensidadeDaMarca,
+  type FonteDaMarca,
   type NeutrosDaMarca,
   type RaioDaMarca,
   type PapelDaSemente,
@@ -108,6 +112,10 @@ export type CamadaDeMarca = {
   readonly raio?: RaioDaMarca | null;
   /** A barra lateral desta camada; mesma regra. */
   readonly barraLateral?: BarraLateralDaMarca | null;
+  /** A densidade desta camada; mesma regra. */
+  readonly densidade?: DensidadeDaMarca | null;
+  /** A fonte desta camada; mesma regra. */
+  readonly fonte?: FonteDaMarca | null;
 };
 
 export type CorResolvida = {
@@ -134,6 +142,10 @@ export type MarcaResolvida = Branding & {
   readonly raio: RaioDaMarca;
   /** A barra lateral em vigor (`padrao` quando nenhuma camada escolheu). */
   readonly barraLateral: BarraLateralDaMarca;
+  /** A densidade em vigor (`aerada` quando nenhuma camada escolheu). */
+  readonly densidade: DensidadeDaMarca;
+  /** A fonte em vigor (`atkinson` quando nenhuma camada escolheu). */
+  readonly fonte: FonteDaMarca;
   /** De qual camada veio cada campo — o que torna a precedência auditável. */
   readonly origens: {
     readonly nome: string;
@@ -143,6 +155,8 @@ export type MarcaResolvida = Branding & {
     readonly neutros: string;
     readonly raio: string;
     readonly barraLateral: string;
+    readonly densidade: string;
+    readonly fonte: string;
     /** Só existe quando a MESMA camada que venceu a cor definiu a do escuro. */
     readonly corEscura?: string;
   };
@@ -524,6 +538,26 @@ export function resolverMarca(camadas: readonly CamadaDeMarca[], regua: Regua): 
       break;
     }
   }
+  let densidade: DensidadeDaMarca = "aerada";
+  let origemDaDensidade = PADRAO;
+  for (const camada of camadas) {
+    const escolhida = densidadeEscolhida(camada.densidade);
+    if (escolhida) {
+      densidade = escolhida;
+      origemDaDensidade = camada.origem;
+      break;
+    }
+  }
+  let fonte: FonteDaMarca = "atkinson";
+  let origemDaFonte = PADRAO;
+  for (const camada of camadas) {
+    const escolhida = fonteEscolhida(camada.fonte);
+    if (escolhida) {
+      fonte = escolhida;
+      origemDaFonte = camada.origem;
+      break;
+    }
+  }
   // A cor e medida CONTRA os neutros que vao aparecer: o contraste do accent sobre
   // o fundo `frio` nao e o do `quente`. So a regua do PRODUTO ganha o preset — uma
   // regua injetada (teste, previa de outra regua) e do chamador e fica como veio.
@@ -551,6 +585,8 @@ export function resolverMarca(camadas: readonly CamadaDeMarca[], regua: Regua): 
     neutros,
     raio,
     barraLateral,
+    densidade,
+    fonte,
     origens: {
       nome: nome?.origem ?? PADRAO,
       logoUrl: logo?.origem ?? PADRAO,
@@ -559,6 +595,8 @@ export function resolverMarca(camadas: readonly CamadaDeMarca[], regua: Regua): 
       neutros: origemDosNeutros,
       raio: origemDoRaio,
       barraLateral: origemDaBarra,
+      densidade: origemDaDensidade,
+      fonte: origemDaFonte,
       ...(cor?.corEscura ? { corEscura: origemDaCor } : {}),
     },
     motivos,
@@ -608,10 +646,14 @@ export type LinhaDaInstalacao = {
   readonly accent_dark_hex?: string | null;
   /** A paleta de neutros (migration 0650). Linha anterior a coluna: ausente = `quente`. */
   readonly neutros?: string | null;
-  /** O raio dos cantos (migration 0671). Linha anterior a coluna: ausente = `padrao`. */
+  /** O raio dos cantos (migration 0674). Linha anterior a coluna: ausente = `padrao`. */
   readonly raio?: string | null;
-  /** A barra lateral (migration 0671). Linha anterior a coluna: ausente = `padrao`. */
+  /** A barra lateral (migration 0674). Linha anterior a coluna: ausente = `padrao`. */
   readonly barra_lateral?: string | null;
+  /** A densidade (migration 0675). Linha anterior a coluna: ausente = `aerada`. */
+  readonly densidade?: string | null;
+  /** A fonte (migration 0676). Linha anterior a coluna: ausente = `atkinson`. */
+  readonly fonte?: string | null;
 };
 
 /**
@@ -640,6 +682,8 @@ export function camadaDaInstalacao(linha: LinhaDaInstalacao | null): CamadaDeMar
   const neutros = neutrosEscolhidos(linha.neutros);
   const raio = raioEscolhido(linha.raio);
   const barraLateral = barraLateralEscolhida(linha.barra_lateral);
+  const densidade = densidadeEscolhida(linha.densidade);
+  const fonte = fonteEscolhida(linha.fonte);
   // Mesma regra do `.env`: campo vazio é ausência de configuração, não cor com
   // defeito. Sem isto, uma linha semeada de um `.env` sem cor emitiria
   // `cor_ausente` em toda instalação de fábrica — e aviso no caso normal ensina
@@ -653,6 +697,8 @@ export function camadaDaInstalacao(linha: LinhaDaInstalacao | null): CamadaDeMar
       ...(neutros ? { neutros } : {}),
       ...(raio ? { raio } : {}),
       ...(barraLateral ? { barraLateral } : {}),
+      ...(densidade ? { densidade } : {}),
+      ...(fonte ? { fonte } : {}),
     };
   }
   return {
@@ -665,6 +711,8 @@ export function camadaDaInstalacao(linha: LinhaDaInstalacao | null): CamadaDeMar
     ...(neutros ? { neutros } : {}),
       ...(raio ? { raio } : {}),
       ...(barraLateral ? { barraLateral } : {}),
+      ...(densidade ? { densidade } : {}),
+      ...(fonte ? { fonte } : {}),
   };
 }
 
@@ -732,6 +780,10 @@ export type MarcaDaOrganizacao = {
   readonly raio?: string | null;
   /** A barra lateral desta organizacao; ausente = herda da instalacao. */
   readonly barra_lateral?: string | null;
+  /** A densidade desta organizacao; ausente = herda da instalacao. */
+  readonly densidade?: string | null;
+  /** A fonte desta organizacao; ausente = herda da instalacao. */
+  readonly fonte?: string | null;
 };
 
 /**
@@ -769,6 +821,8 @@ export function camadaDaOrganizacao(marca: MarcaDaOrganizacao | null): CamadaDeM
   const neutros = neutrosEscolhidos(marca.neutros);
   const raio = raioEscolhido(marca.raio);
   const barraLateral = barraLateralEscolhida(marca.barra_lateral);
+  const densidade = densidadeEscolhida(marca.densidade);
+  const fonte = fonteEscolhida(marca.fonte);
   if (hex.length === 0)
     return {
       origem: "organizacao",
@@ -778,6 +832,8 @@ export function camadaDaOrganizacao(marca: MarcaDaOrganizacao | null): CamadaDeM
       ...(neutros ? { neutros } : {}),
       ...(raio ? { raio } : {}),
       ...(barraLateral ? { barraLateral } : {}),
+      ...(densidade ? { densidade } : {}),
+      ...(fonte ? { fonte } : {}),
     };
   return {
     origem: "organizacao",
@@ -789,5 +845,7 @@ export function camadaDaOrganizacao(marca: MarcaDaOrganizacao | null): CamadaDeM
     ...(neutros ? { neutros } : {}),
       ...(raio ? { raio } : {}),
       ...(barraLateral ? { barraLateral } : {}),
+      ...(densidade ? { densidade } : {}),
+      ...(fonte ? { fonte } : {}),
   };
 }

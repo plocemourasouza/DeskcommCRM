@@ -130,7 +130,9 @@ export async function updateMarcaDaOrganizacao(
     // Ausente (`undefined`) NAO limpa: "nao mexa" nao pode apagar o que a tela
     // nao enviou. So o `null` explicito, que e "herde", conta como vazio.
     parsed.data.raio === null &&
-    parsed.data.barra_lateral === null;
+    parsed.data.barra_lateral === null &&
+    parsed.data.densidade === null &&
+    parsed.data.fonte === null;
   const marca = limpar
     ? null
     : {
@@ -149,13 +151,17 @@ export async function updateMarcaDaOrganizacao(
         // `null` = herdar: a chave NAO vai. A RPC recusa `neutros` que nao seja
         // string do vocabulario, entao um `null` explicito estouraria 22023.
         ...(parsed.data.neutros ? { neutros: parsed.data.neutros } : {}),
-        // raio e barra lateral (0671), tres estados: valor grava; `null` VAI como
+        // raio e barra lateral (0674), tres estados: valor grava; `null` VAI como
         // `null` (a RPC apaga a chave = herdar); ausente NAO vai (a RPC preserva
         // a gravada). Ao contrario de `neutros`, o `null` e aceito pela funcao.
         ...(parsed.data.raio !== undefined ? { raio: parsed.data.raio } : {}),
         ...(parsed.data.barra_lateral !== undefined
           ? { barra_lateral: parsed.data.barra_lateral }
           : {}),
+        // densidade (0675): os mesmos tres estados do raio.
+        ...(parsed.data.densidade !== undefined ? { densidade: parsed.data.densidade } : {}),
+        // fonte (0676): os mesmos tres estados do raio.
+        ...(parsed.data.fonte !== undefined ? { fonte: parsed.data.fonte } : {}),
         updated_by: authUser.id,
         updated_at: new Date().toISOString(),
       };
@@ -213,6 +219,8 @@ export async function updateMarcaDaOrganizacao(
       neutros_definido: parsed.data.neutros !== null,
       raio_definido: (parsed.data.raio ?? null) !== null,
       barra_lateral_definida: (parsed.data.barra_lateral ?? null) !== null,
+      densidade_definida: (parsed.data.densidade ?? null) !== null,
+      fonte_definida: (parsed.data.fonte ?? null) !== null,
     },
   });
 

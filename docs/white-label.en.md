@@ -1,4 +1,4 @@
-<!-- traduzido-de: docs/white-label.md@e862cd45e445 -->
+<!-- traduzido-de: docs/white-label.md@f47aab48e6ea -->
 
 [🇧🇷 Português](white-label.md) · 🇺🇸 English · [🇪🇸 Español](white-label.es.md)
 
@@ -19,6 +19,39 @@ The color is **derived**, not applied raw: one hex yields eleven shades in both 
 **The logo too.** On the same screen you **upload the file** — PNG or JPG, up to 512 KB. It goes to your own installation's storage and takes effect right away, with no restart and without you hosting an image anywhere. Fixed height, free width, so that artwork of any proportion is not distorted; with no logo, the name shows up as text.
 
 **And the application and browser icon.** Below the logo, this field accepts a square PNG or JPG up to 512 KB, preferably 512×512 or larger. The same image identifies browser tabs, including login, and the installed app. The manifest supplies 192×192 and 512×512 PNGs, rendered from the bounded installation file in Storage; arbitrary URLs are never fetched. Without a valid file, the product symbol or brand initial remains. Removing the file restores that drawing. This is installation branding, not per-organization branding. Browsers may cache an existing installation; reinstall the app to check a new icon.
+
+### Corners, sidebar, density and font
+
+Four appearance settings, on both brand screens: the installation one (`/admin/marca`, for whoever administers the installation) and the organization one (`Settings → Brand`, for the organization admin). Both follow the same order: **the organization's choice beats the installation's, and the installation's beats the system default.**
+
+**Corners** set how rounded buttons, fields and cards are across the system:
+
+- **Soft** — nearly square corners, a more sober look.
+- **Default** — the look it has always had, and the initial choice.
+- **Rounded** — well-rounded corners, a lighter look.
+
+**Sidebar** sets the color of the navigation menu:
+
+- **Default** — the sidebar follows the page theme, as always.
+- **Always dark** — the sidebar stays dark even in the light theme. It uses the brand accent in its dark-background version and the gray or cool neutral tones. In the dark theme the sidebar is already dark and the choice changes nothing.
+
+**Density** sets how much room buttons, fields, table rows and sidebar items have:
+
+- **Airy** — the look it has always had, and the initial choice.
+- **Balanced** — a bit more information per screen.
+- **Compact** — lower rows and fields, for people who work with a lot of data.
+
+Density applies only on computers (mouse pointer) at large screen widths: on phones and tablets the 44 px touch target is not a brand decision and does not change. The exact heights live in `app/globals.css`, in the `--controle-h`, `--campo-h`, `--linha-h` variables and the like.
+
+**Font** sets the typeface of the whole system — screens, tables and forms:
+
+- **Atkinson Hyperlegible** — the one it has always had, designed by the Braille Institute to be easy to read, and the initial choice.
+- **Manrope**, **Plus Jakarta Sans**, **IBM Plex Sans** and **Bricolage Grotesque** — sans-serif, each with its own character.
+- **Fraunces** and **Source Serif 4** — serif, with a more editorial tone.
+
+All seven are licensed under the SIL Open Font License 1.1: free for commercial use, and they may ship with the product (the license text is in `app/fonts/OFL.txt`). The files ship inside the image — nothing is fetched from an external service. Only Atkinson is preloaded; the browser downloads one of the others only when someone picks it, so an installation that keeps the default pays nothing for the other six. The font for code and tabular numbers (IBM Plex Mono) does not change. Each option on the screen shows a sample sentence in its own font, and the preview shows the choice before saving.
+
+In the organization, each field has the **Use the installation default** option, which returns that field to the installation's choice. Nothing needs restarting: the change applies on the next screen load. If you touch nothing, the system stays exactly as it was.
 
 ### Custom CSS
 
@@ -101,7 +134,10 @@ This does not make the dedicated installation obsolete — see the comparison be
 Straight to the point, so that you do not find out in front of the client. Each line carries the measured reason, not the excuse:
 
 - **Domain per organization.** One installation, one domain. There is no domain column in the schema, the host-based branching in `proxy.ts` is a declared NOOP (it exists only as documentation of the intended topology), and at the Edge there is no database to query before deciding whom that host belongs to. A client who demands their own domain is asking for a **dedicated installation**.
-- **Font.** Typography is the same in every installation. `next/font` resolves at **build** time, and the image your VPS downloads already arrives built — a font picker in the panel would save a value that nothing would read. (The font is Atkinson Hyperlegible, chosen by the Braille Institute for legibility; swapping it does not change brand perception and makes reading worse for whoever spends the day inside the system.)
+- **Your own font.** The choice is among the seven families on the list; uploading a font file in the panel does not exist. `next/font` resolves at **build** time, and the image your VPS downloads already arrives built — an upload field would save a file that nothing would read. Adding a family to the list is a code change (an OFL file in `app/fonts/` plus the vocabulary), not a panel change.
+- **Free colors.** Your brand moves the **accent** — what is action, highlight and focus — and there is no hand-picked color for each element. The page background changes only through the neutral tones (warm, gray or cool), and the light/dark pair belongs to the design system. The browser bar color is the product's in every brand, because the brand does not move the background.
+- **Spacing.** The distance between elements (margins and gaps) is the design system's. The height of controls, table rows and menu items is the **Density**, described above.
+- **Per-organization login.** Login belongs to the installation, for the reason in the section above. The installation's corners also apply on the login; the organization's only after signing in, and the sidebar exists only inside the system.
 - **Theme.** The light/dark pair belongs to the design system. Your brand moves the **accent** — what is action, highlight and focus — and deliberately does **not** move the page background: the background is the same under every brand, and that is why the browser bar color is too.
 - **The LGPD data-subject report does not carry your brand — and that is on purpose.** See its own section below.
 - **The AI budget alarm** still goes out with our brand. It is the only known leak, and it stays: today that alarm has no schedule wired to it at all, so fixing its brand would change nothing anyone sees. It goes out when the alarm gets a real cron.

@@ -62,6 +62,16 @@ pyftsubset 'AtkinsonHyperlegibleNext[wght].ttf' --layout-features='*' --flavor=w
 A fonte não tem `ss01` (só `tnum`, `pnum`, `frac`, `ccmp`, `locl`); o `body`
 não o pede mais. Sem face itálica: `font-synthesis: style` mantém o oblíquo sintético (itálico semântico) e proíbe negrito falso.
 
+## Quem usa
+
+- **Atkinson Hyperlegible** (padrão) e **IBM Plex Mono**: `app/layout.tsx`, pré-carregadas.
+- **Manrope, Plus Jakarta Sans, IBM Plex Sans, Bricolage Grotesque, Fraunces, Source Serif 4**:
+  escolhíveis pela marca (Marca › Fonte). Declaradas em `app/fontes-da-marca.ts` com
+  `preload: false` — o navegador só baixa o arquivo da família que estiver em uso.
+  Acrescentar uma família é mudança de código: arquivo OFL aqui, entrada em `FONTES_DA_MARCA`
+  (`lib/branding/schema.ts`), CHECK e RPC em migration, bloco `:root[data-fonte]` em `globals.css`.
+- **JetBrains Mono**: só o laboratório de design (`app/design`).
+
 ## Licença
 
 Todas as famílias são distribuídas sob a SIL Open Font License 1.1 — texto e

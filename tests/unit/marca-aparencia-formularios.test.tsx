@@ -31,6 +31,8 @@ const INSTALACAO = {
   neutros: null,
   raio: "suave",
   barra_lateral: "escura",
+  densidade: "compacta",
+  fonte: "manrope",
 };
 
 function pintarOrg(gravada: Partial<Parameters<typeof FormularioDaMarcaDaOrganizacao>[0]["gravada"]> = {}) {
@@ -45,6 +47,8 @@ function pintarOrg(gravada: Partial<Parameters<typeof FormularioDaMarcaDaOrganiz
         neutros: null,
         raio: null,
         barra_lateral: null,
+        densidade: null,
+        fonte: null,
         ...gravada,
       }}
       instalacao={INSTALACAO}
@@ -86,9 +90,9 @@ describe("formulário da organização — cantos e menu lateral", () => {
   it("'Usar o padrão da instalação' envia null (limpa a escolha gravada)", async () => {
     pintarOrg({ raio: "arredondado", barra_lateral: "escura" });
     const herdar = screen.getAllByLabelText(/Usar o padrão da instalação/);
-    // neutros, cantos, menu lateral: os dois últimos
-    fireEvent.click(herdar[herdar.length - 2]!);
-    fireEvent.click(herdar[herdar.length - 1]!);
+    // neutros, cantos, menu lateral, densidade, fonte: cantos e menu lateral
+    fireEvent.click(herdar[herdar.length - 4]!);
+    fireEvent.click(herdar[herdar.length - 3]!);
     await salvar();
     const enviado = salvarOrg.mock.calls[0]![0] as Record<string, unknown>;
     expect(enviado.raio).toBeNull();
@@ -124,6 +128,161 @@ describe("formulário da organização — cantos e menu lateral", () => {
   });
 });
 
+describe("formulário da organização — densidade", () => {
+  it("intocada: o Salvar NÃO leva densidade (a RPC preserva a gravada)", async () => {
+    pintarOrg({ densidade: "equilibrada" });
+    await salvar();
+    expect("densidade" in (salvarOrg.mock.calls[0]![0] as Record<string, unknown>)).toBe(false);
+  });
+
+  it("escolher um valor envia só a densidade", async () => {
+    pintarOrg();
+    fireEvent.click(screen.getByLabelText(/^Equilibrada/));
+    await salvar();
+    const enviado = salvarOrg.mock.calls[0]![0] as Record<string, unknown>;
+    expect(enviado.densidade).toBe("equilibrada");
+    expect("raio" in enviado).toBe(false);
+  });
+
+  it("'Usar o padrão da instalação' envia null", async () => {
+    pintarOrg({ densidade: "compacta" });
+    const herdar = screen.getAllByLabelText(/Usar o padrão da instalação/);
+    fireEvent.click(herdar[herdar.length - 2]!); // neutros, cantos, menu lateral, densidade, fonte: o penúltimo
+    await salvar();
+    expect((salvarOrg.mock.calls[0]![0] as Record<string, unknown>).densidade).toBeNull();
+  });
+
+  it("a prévia leva as variáveis da densidade escolhida, antes de salvar (e a herdada, se nada foi escolhido)", () => {
+    const { container } = pintarOrg();
+    const previa = () => container.querySelector<HTMLElement>("[data-previa-da-densidade]")!;
+    expect(previa().getAttribute("data-previa-da-densidade")).toBe("compacta"); // herdada
+    expect(previa().style.getPropertyValue("--controle-h")).toBe("30px");
+    fireEvent.click(screen.getByLabelText(/^Aerada/));
+    expect(previa().style.getPropertyValue("--controle-h")).toBe("36px");
+    expect(previa().style.getPropertyValue("--campo-h")).toBe("40px");
+    expect(previa().style.getPropertyValue("--linha-py")).toBe("8px");
+  });
+
+  it("'De onde vem cada coisa' responde sobre a densidade", () => {
+    pintarOrg({ densidade: "compacta" });
+    expect(screen.getByText("Densidade", { selector: "span" })).toBeInTheDocument();
+  });
+});
+
+describe("formulário da instalação — densidade", () => {
+  function pintar() {
+    return render(
+      <FormularioDaMarca
+        gravada={{
+          app_name: null, logo_url: null, logo_path: null, accent_hex: null, accent_dark_hex: null,
+          neutros: "quente", raio: "padrao", barra_lateral: "padrao", densidade: "aerada", fonte: "atkinson", show_powered_by: true,
+        }}
+        nomeEmVigor="Deskcomm"
+        logoEmVigor={null}
+        logoDoAmbiente={null}
+        origens={{ nome: "padrao", logoUrl: "padrao", cor: "padrao" }}
+        definidoNestaTela={false}
+        fallbackEm={null}
+        fallbackMotivo={null}
+      />,
+    );
+  }
+
+  it("três opções, sem herdar, aerada marcada", () => {
+    pintar();
+    expect((screen.getByLabelText(/^Aerada/) as HTMLInputElement).checked).toBe(true);
+    expect(screen.getByLabelText(/^Compacta/)).toBeInTheDocument();
+  });
+
+  it("o Salvar leva a densidade escolhida; a prévia acompanha", async () => {
+    const { container } = pintar();
+    fireEvent.click(screen.getByLabelText(/^Compacta/));
+    expect(
+      container.querySelector<HTMLElement>("[data-previa-da-densidade]")!.style.getPropertyValue("--controle-h"),
+    ).toBe("30px");
+    await salvar();
+    expect(salvarInstalacao.mock.calls[0]![0]).toMatchObject({ densidade: "compacta" });
+  });
+});
+
+describe("formulário da organização — fonte", () => {
+  it("intocada: o Salvar NÃO leva fonte (a RPC preserva a gravada)", async () => {
+    pintarOrg({ fonte: "fraunces" });
+    await salvar();
+    expect("fonte" in (salvarOrg.mock.calls[0]![0] as Record<string, unknown>)).toBe(false);
+  });
+
+  it("escolher um valor envia só a fonte", async () => {
+    pintarOrg();
+    fireEvent.click(screen.getByLabelText(/^Fraunces/));
+    await salvar();
+    const enviado = salvarOrg.mock.calls[0]![0] as Record<string, unknown>;
+    expect(enviado.fonte).toBe("fraunces");
+    expect("densidade" in enviado).toBe(false);
+  });
+
+  it("'Usar o padrão da instalação' envia null", async () => {
+    pintarOrg({ fonte: "fraunces" });
+    const herdar = screen.getAllByLabelText(/Usar o padrão da instalação/);
+    fireEvent.click(herdar[herdar.length - 1]!); // a fonte é o último seletor
+    await salvar();
+    expect((salvarOrg.mock.calls[0]![0] as Record<string, unknown>).fonte).toBeNull();
+  });
+
+  it("a prévia usa a fonte escolhida antes de salvar (e a herdada, se nada foi escolhido)", () => {
+    const { container } = pintarOrg();
+    const previa = () => container.querySelector<HTMLElement>("[data-previa-da-fonte]")!;
+    expect(previa().getAttribute("data-previa-da-fonte")).toBe("manrope"); // herdada
+    expect(previa().style.getPropertyValue("--font-ui")).toContain("var(--fonte-manrope)");
+    fireEvent.click(screen.getByLabelText(/^Fraunces/));
+    expect(previa().getAttribute("data-previa-da-fonte")).toBe("fraunces");
+    expect(previa().style.getPropertyValue("--font-ui")).toContain("var(--fonte-fraunces)");
+    expect(previa().style.getPropertyValue("--font-ui")).toContain("serif");
+  });
+
+  it("'De onde vem cada coisa' responde sobre a fonte", () => {
+    pintarOrg({ fonte: "fraunces" });
+    expect(screen.getByText("Fonte", { selector: "span" })).toBeInTheDocument();
+  });
+});
+
+describe("formulário da instalação — fonte", () => {
+  function pintar() {
+    return render(
+      <FormularioDaMarca
+        gravada={{
+          app_name: null, logo_url: null, logo_path: null, accent_hex: null, accent_dark_hex: null,
+          neutros: "quente", raio: "padrao", barra_lateral: "padrao", densidade: "aerada", fonte: "atkinson", show_powered_by: true,
+        }}
+        nomeEmVigor="Deskcomm"
+        logoEmVigor={null}
+        logoDoAmbiente={null}
+        origens={{ nome: "padrao", logoUrl: "padrao", cor: "padrao" }}
+        definidoNestaTela={false}
+        fallbackEm={null}
+        fallbackMotivo={null}
+      />,
+    );
+  }
+
+  it("sete opções, sem herdar, Atkinson marcada", () => {
+    pintar();
+    expect((screen.getByLabelText(/^Atkinson Hyperlegible/) as HTMLInputElement).checked).toBe(true);
+    expect(screen.getByLabelText(/^Source Serif 4/)).toBeInTheDocument();
+    expect(screen.getAllByRole("radio").filter((r) => r.getAttribute("name") === "fonte")).toHaveLength(7);
+  });
+
+  it("o Salvar leva a fonte escolhida; a prévia acompanha", async () => {
+    const { container } = pintar();
+    fireEvent.click(screen.getByLabelText(/^Plus Jakarta Sans/));
+    expect(
+      container.querySelector<HTMLElement>("[data-previa-da-fonte]")!.style.getPropertyValue("--font-ui"),
+    ).toContain("var(--fonte-jakarta)");
+    await salvar();
+    expect(salvarInstalacao.mock.calls[0]![0]).toMatchObject({ fonte: "jakarta" });
+  });
+});
+
 describe("formulário da instalação — cantos e menu lateral", () => {
   function pintarInstalacao() {
     return render(
@@ -137,6 +296,8 @@ describe("formulário da instalação — cantos e menu lateral", () => {
           neutros: "quente",
           raio: "padrao",
           barra_lateral: "padrao",
+          densidade: "aerada",
+          fonte: "atkinson",
           show_powered_by: true,
         }}
         nomeEmVigor="Deskcomm"

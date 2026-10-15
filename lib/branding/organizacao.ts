@@ -35,7 +35,13 @@
  */
 
 import { REGUA_DO_PRODUTO } from "./regua-do-produto";
-import { barraLateralEscolhida, neutrosEscolhidos, raioEscolhido } from "./schema";
+import {
+  barraLateralEscolhida,
+  densidadeEscolhida,
+  fonteEscolhida,
+  neutrosEscolhidos,
+  raioEscolhido,
+} from "./schema";
 import {
   camadaDaInstalacao,
   camadaDaOrganizacao,
@@ -97,6 +103,10 @@ export function marcaDaOrganizacaoDeSettings(settings: unknown): MarcaDaOrganiza
     ...(barraLateralEscolhida(envelope.barra_lateral)
       ? { barra_lateral: barraLateralEscolhida(envelope.barra_lateral) }
       : {}),
+    ...(densidadeEscolhida(envelope.densidade)
+      ? { densidade: densidadeEscolhida(envelope.densidade) }
+      : {}),
+    ...(fonteEscolhida(envelope.fonte) ? { fonte: fonteEscolhida(envelope.fonte) } : {}),
   };
 }
 

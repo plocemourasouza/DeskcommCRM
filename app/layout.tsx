@@ -15,6 +15,7 @@ import {
   type LinhaDaMarca,
 } from "@/lib/branding/instalacao";
 import { REGUA_DO_PRODUTO } from "@/lib/branding/regua-do-produto";
+import type { FonteDaMarca } from "@/lib/branding/schema";
 import {
   camadaDaInstalacao,
   camadaDoAmbiente,
@@ -24,6 +25,7 @@ import {
 import { env } from "@/lib/env";
 import { logger } from "@/lib/logger";
 import { ThemeProvider } from "@/lib/theme";
+import { CLASSES_DAS_FONTES_DA_MARCA } from "./fontes-da-marca";
 import { Providers } from "./providers";
 import { PublicEnvScript } from "./public-env-script";
 import "./globals.css";
@@ -34,6 +36,9 @@ import "./globals.css";
 // faixa de pesos, font-medium (500) caía em 400 e font-semibold (600) em 700.
 // A família passa a se chamar como a variável JS ("atkinson"),
 // então use sempre a custom property (--font-atkinson), nunca o nome da fonte.
+//
+// Só estas duas são pré-carregadas. As outras seis (fonte escolhível pela marca)
+// moram em `./fontes-da-marca` com `preload: false` — ver o cabeçalho de lá.
 const atkinson = localFont({
   src: "./fonts/atkinson-hyperlegible-next-200-800-latin-latin-ext.woff2",
   weight: "200 800",
@@ -315,7 +320,7 @@ async function MarcaDosClientComponents({ children }: { children: React.ReactNod
 }
 
 /**
- * A aparencia (neutros e raio) da INSTALACAO, para os atributos do `<html>`.
+ * A aparencia (neutros, raio, densidade e fonte) da INSTALACAO, para os atributos do `<html>`.
  * Nunca lanca: um throw aqui e o documento inteiro em 500, e a pior consequencia
  * de nao saber a aparencia e a de sempre (`quente`/`padrao`, que nao escrevem
  * atributo).
@@ -323,15 +328,19 @@ async function MarcaDosClientComponents({ children }: { children: React.ReactNod
 async function aparenciaDaInstalacao(): Promise<{
   neutros: "cinza" | "frio" | null;
   raio: "suave" | "arredondado" | null;
+  densidade: "equilibrada" | "compacta" | null;
+  fonte: Exclude<FonteDaMarca, "atkinson"> | null;
 }> {
   try {
     const { marca } = await marcaResolvida();
     return {
       neutros: marca.neutros === "quente" ? null : marca.neutros,
       raio: marca.raio === "padrao" ? null : marca.raio,
+      densidade: marca.densidade === "aerada" ? null : marca.densidade,
+      fonte: marca.fonte === "atkinson" ? null : marca.fonte,
     };
   } catch {
-    return { neutros: null, raio: null };
+    return { neutros: null, raio: null, densidade: null, fonte: null };
   }
 }
 
@@ -340,15 +349,17 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   // proposito: o CSS de marca nao pode declarar `--color-bg`. Aqui so se liga o
   // atributo. A organizacao que sobrepoe a escolha o troca em `/app` (ver
   // `AparenciaDaOrganizacao`), porque so la a organizacao e conhecida.
-  const { neutros, raio } = await aparenciaDaInstalacao();
+  const { neutros, raio, densidade, fonte } = await aparenciaDaInstalacao();
   return (
     <html
       lang="pt-BR"
       data-theme="light"
       {...(neutros ? { "data-neutros": neutros } : {})}
       {...(raio ? { "data-raio": raio } : {})}
+      {...(densidade ? { "data-densidade": densidade } : {})}
+      {...(fonte ? { "data-fonte": fonte } : {})}
       suppressHydrationWarning
-      className={`${atkinson.variable} ${plexMono.variable}`}
+      className={`${atkinson.variable} ${plexMono.variable} ${CLASSES_DAS_FONTES_DA_MARCA}`}
     >
       <head>
         {/* Primeiro de tudo: a cor da instalação, antes do CSS e do script de tema. */}

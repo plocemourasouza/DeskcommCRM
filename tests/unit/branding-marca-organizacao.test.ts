@@ -154,7 +154,7 @@ describe("precedência entre os três andares", () => {
 
   it("sem organização e sem instalação, sobra o `.env` — a pilha inteira desce", () => {
     const marca = resolverMarcaDaOrganizacao(null, null, AMBIENTE);
-    expect(marca.origens).toEqual({ nome: "env", logoUrl: "padrao", cor: "env", neutros: "padrao", raio: "padrao", barraLateral: "padrao" });
+    expect(marca.origens).toEqual({ nome: "env", logoUrl: "padrao", cor: "env", neutros: "padrao", raio: "padrao", barraLateral: "padrao", densidade: "padrao", fonte: "padrao" });
     expect(marca.cor?.semente).toBe("#123456");
   });
 
@@ -167,13 +167,13 @@ describe("precedência entre os três andares", () => {
       INSTALACAO,
       AMBIENTE,
     );
-    expect(tudo.origens).toEqual({ nome: "organizacao", logoUrl: "banco", cor: "organizacao", neutros: "padrao", raio: "padrao", barraLateral: "padrao" });
+    expect(tudo.origens).toEqual({ nome: "organizacao", logoUrl: "banco", cor: "organizacao", neutros: "padrao", raio: "padrao", barraLateral: "padrao", densidade: "padrao", fonte: "padrao" });
     expect(tudo.name).toBe("Loja da Ana");
     expect(tudo.cor?.semente).toBe("#b3261e");
 
     // Tirando o andar de cima, quem assume é o do meio — e não o de baixo.
     const semOrg = resolverMarcaDaOrganizacao(null, INSTALACAO, AMBIENTE);
-    expect(semOrg.origens).toEqual({ nome: "banco", logoUrl: "banco", cor: "banco", neutros: "padrao", raio: "padrao", barraLateral: "padrao" });
+    expect(semOrg.origens).toEqual({ nome: "banco", logoUrl: "banco", cor: "banco", neutros: "padrao", raio: "padrao", barraLateral: "padrao", densidade: "padrao", fonte: "padrao" });
     expect(semOrg.cor?.semente).toBe("#2563eb");
   });
 });
