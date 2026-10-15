@@ -6,14 +6,16 @@ import { AmostraDaBarra } from "@/components/branding/SeletorDeBarraLateral";
 import { useT } from "@/hooks/i18n/useT";
 import {
   estiloDaDensidade,
+  estiloDaFonte,
   estiloDoRaio,
   type BarraLateralDaMarca,
   type DensidadeDaMarca,
+  type FonteDaMarca,
   type RaioDaMarca,
 } from "@/lib/branding/schema";
 
 /**
- * A prévia dos cantos, da densidade e do menu lateral ANTES de salvar.
+ * A prévia dos cantos, da densidade, da fonte e do menu lateral ANTES de salvar.
  *
  * Os blocos de raio do `globals.css` são `:root[data-raio=...]` e a prévia não
  * vive na raiz, então o raio escolhido entra como as quatro custom properties
@@ -22,15 +24,18 @@ import {
  * A densidade entra do mesmo jeito (`estiloDaDensidade`, de `DENSIDADE_EM_PX`):
  * as amostras usam `h-(--controle-h)` & cia., as mesmas variáveis dos
  * primitivos, então o botão e o campo da prévia têm a altura que a escolha dá.
- * Só formas decorativas — nada aqui é controle, e nada recebe foco.
+ * A fonte também: `--font-ui` inline (`estiloDaFonte`), que o `font-sans` do texto
+ * de amostra lê. Só formas decorativas — nada aqui é controle, e nada recebe foco.
  */
 export function PreviaDaAparencia({
   raio,
   densidade,
+  fonte,
   barraLateral,
 }: {
   readonly raio: RaioDaMarca;
   readonly densidade: DensidadeDaMarca;
+  readonly fonte: FonteDaMarca;
   readonly barraLateral: BarraLateralDaMarca;
 }) {
   const t = useT();
@@ -45,6 +50,15 @@ export function PreviaDaAparencia({
           aria-hidden="true"
           className="flex flex-1 flex-wrap items-center gap-3"
         >
+          {/* A fonte entra como `--font-ui` inline: `font-sans` nos filhos a lê. */}
+          <div
+            data-previa-da-fonte={fonte}
+            style={estiloDaFonte(fonte)}
+            className="basis-full font-sans"
+          >
+            <p className="text-base font-semibold text-text">{t("Quem atende bem, vende melhor.")}</p>
+            <p className="text-sm text-text-muted">Aa Bb Cc 0123456789</p>
+          </div>
           <span data-amostra-botao className="h-(--controle-h) w-24 rounded-md bg-accent" />
           <span
             data-amostra-campo

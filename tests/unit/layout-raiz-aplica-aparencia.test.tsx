@@ -121,4 +121,34 @@ describe("RootLayout — data-neutros", () => {
       expect(await densidade()).toBe("compacta");
     });
   });
+
+  describe("data-fonte", () => {
+    async function fonte(): Promise<unknown> {
+      const html = await RootLayout({ children: null });
+      return (html.props as Record<string, unknown>)["data-fonte"];
+    }
+
+    it("instalacao com qualquer fonte que nao a padrao: o <html> leva data-fonte", async () => {
+      for (const f of ["manrope", "jakarta", "plex-sans", "bricolage", "fraunces", "source-serif"]) {
+        estado.linha = { fonte: f };
+        expect(await fonte()).toBe(f);
+      }
+    });
+
+    it("atkinson, linha ausente, valor desconhecido ou leitura que falha: sem atributo", async () => {
+      estado.linha = { fonte: "atkinson" };
+      expect(await fonte()).toBeUndefined();
+      estado.linha = null;
+      expect(await fonte()).toBeUndefined();
+      estado.linha = { fonte: "comic" };
+      expect(await fonte()).toBeUndefined();
+      estado.lanca = true;
+      expect(await fonte()).toBeUndefined();
+    });
+
+    it("convive com densidade", async () => {
+      estado.linha = { densidade: "compacta", fonte: "fraunces" };
+      expect(await fonte()).toBe("fraunces");
+    });
+  });
 });

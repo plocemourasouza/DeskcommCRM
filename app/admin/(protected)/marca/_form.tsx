@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { PreviaDaAparencia } from "@/components/branding/PreviaDaAparencia";
 import { SeletorDeBarraLateral } from "@/components/branding/SeletorDeBarraLateral";
 import { SeletorDeDensidade } from "@/components/branding/SeletorDeDensidade";
+import { SeletorDeFonte } from "@/components/branding/SeletorDeFonte";
 import { SeletorDeNeutros } from "@/components/branding/SeletorDeNeutros";
 import { SeletorDeRaio } from "@/components/branding/SeletorDeRaio";
 import { cssDaMarca } from "@/lib/branding/css";
@@ -24,6 +25,7 @@ import {
   envelopeDeSemente,
   type BarraLateralDaMarca,
   type DensidadeDaMarca,
+  type FonteDaMarca,
   type NeutrosDaMarca,
   type RaioDaMarca,
 } from "@/lib/branding/schema";
@@ -54,6 +56,7 @@ export interface MarcaGravada {
   /** O menu lateral gravado (`padrao` quando a coluna ainda não existe). */
   readonly barra_lateral: BarraLateralDaMarca;
   readonly densidade: DensidadeDaMarca;
+  readonly fonte: FonteDaMarca;
   readonly show_powered_by: boolean;
 }
 
@@ -111,6 +114,7 @@ export function FormularioDaMarca({
   const [raio, setRaio] = useState<RaioDaMarca>(gravada.raio);
   const [barraLateral, setBarraLateral] = useState<BarraLateralDaMarca>(gravada.barra_lateral);
   const [densidade, setDensidade] = useState<DensidadeDaMarca>(gravada.densidade);
+  const [fonte, setFonte] = useState<FonteDaMarca>(gravada.fonte);
   const [erroTecnico, setErroTecnico] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -141,6 +145,7 @@ export function FormularioDaMarca({
             raio,
             barraLateral,
             densidade,
+            fonte,
             cor: hexLimpo.length > 0 ? envelopeDeSemente(hexLimpo) : undefined,
             // O par (#2482): a segunda semente entra pelo MESMO envelope e a
             // mesma validação — o preview mostra o que o servidor vai emitir.
@@ -150,7 +155,7 @@ export function FormularioDaMarca({
         ],
         REGUA_DO_PRODUTO,
       ),
-    [hexLimpo, hexEscuroLimpo, neutros, raio, barraLateral, densidade],
+    [hexLimpo, hexEscuroLimpo, neutros, raio, barraLateral, densidade, fonte],
   );
 
   // A mesma serialização que decide se a cor chega ao `<style>` da página —
@@ -251,6 +256,7 @@ export function FormularioDaMarca({
       raio,
       barra_lateral: barraLateral,
       densidade,
+      fonte,
     };
 
     const lido = platformBrandingSchema.safeParse(candidato);
@@ -462,9 +468,11 @@ export function FormularioDaMarca({
           valor={densidade}
           onChange={(v) => setDensidade(v ?? "aerada")}
         />
+        <SeletorDeFonte id="fonte" valor={fonte} onChange={(v) => setFonte(v ?? "atkinson")} />
         <PreviaDaAparencia
           raio={resolvida.raio}
           densidade={resolvida.densidade}
+          fonte={resolvida.fonte}
           barraLateral={resolvida.barraLateral}
         />
       </Card>

@@ -18,9 +18,9 @@ A cor é **derivada**, não aplicada crua: de um hex saem onze tons nos dois tem
 
 **E o ícone do aplicativo e do navegador.** Logo abaixo do logo, esse campo recebe uma imagem quadrada — PNG ou JPG, até 512 KB, de preferência 512×512 ou maior. A mesma imagem aparece na aba de todas as telas, inclusive o login, e no aplicativo instalado. O manifest anuncia PNGs de 192×192 e 512×512, renderizados no servidor a partir do arquivo limitado no Storage; nenhum endereço arbitrário é buscado. Sem arquivo válido, mantém o símbolo do produto ou a inicial sobre a cor da marca. Remover o arquivo volta a esse desenho. O ícone é da instalação, não de cada organização; trocar de organização não renomeia o aplicativo. Navegadores podem demorar para atualizar um app já instalado; remover o aplicativo e instalá-lo novamente permite conferir a nova marca.
 
-### Cantos, barra lateral e densidade
+### Cantos, barra lateral, densidade e fonte
 
-Três ajustes de aparência, nas duas telas de marca: a da instalação (`/admin/marca`, para quem administra a instalação) e a da organização (`Configurações → Marca`, para o admin da organização). Os dois seguem a mesma ordem: **a escolha da organização vence a da instalação, e a da instalação vence o padrão do sistema.**
+Quatro ajustes de aparência, nas duas telas de marca: a da instalação (`/admin/marca`, para quem administra a instalação) e a da organização (`Configurações → Marca`, para o admin da organização). Os dois seguem a mesma ordem: **a escolha da organização vence a da instalação, e a da instalação vence o padrão do sistema.**
 
 **Cantos** definem o arredondamento de botões, campos e cartões em todo o sistema:
 
@@ -40,6 +40,14 @@ Três ajustes de aparência, nas duas telas de marca: a da instalação (`/admin
 - **Compacta** — linhas e campos mais baixos, para quem trabalha com muitos dados.
 
 A densidade vale só em computador (ponteiro de mouse) e a partir da largura de tela grande: no celular e no tablet o alvo de toque de 44 px não é decisão de marca e não muda. As alturas exatas ficam em `app/globals.css`, nas variáveis `--controle-h`, `--campo-h`, `--linha-h` e afins.
+
+**Fonte** define a família de letra de todo o sistema — telas, tabelas e formulários:
+
+- **Atkinson Hyperlegible** — a de sempre, desenhada pelo Braille Institute para ser fácil de ler, e a escolha inicial.
+- **Manrope**, **Plus Jakarta Sans**, **IBM Plex Sans** e **Bricolage Grotesque** — sem serifa, cada uma com um desenho próprio.
+- **Fraunces** e **Source Serif 4** — com serifa, um tom mais editorial.
+
+As sete são licenciadas em SIL Open Font License 1.1: uso comercial livre, e podem acompanhar o produto (o texto da licença está em `app/fonts/OFL.txt`). Os arquivos vão dentro da imagem — nada é buscado de serviço externo. Só a Atkinson é pré-carregada; o navegador baixa o arquivo de uma das outras apenas quando alguém a escolhe, então quem fica no padrão não paga nada pelas seis restantes. A fonte do código e dos números tabulares (IBM Plex Mono) não muda. Cada opção da tela mostra uma frase de exemplo na própria fonte, e a prévia mostra a escolha antes de salvar.
 
 Na organização, cada campo tem a opção **Usar o padrão da instalação**, que devolve aquele campo à escolha da instalação. Não é preciso reiniciar nada: a mudança vale no próximo carregamento de tela. Se você não mexer em nada, o sistema continua exatamente como estava.
 
@@ -124,7 +132,7 @@ Isso não torna a instalação dedicada obsoleta — ver a comparação abaixo, 
 Sendo direto, para você não descobrir na frente do cliente. Cada linha traz a razão medida, não a desculpa:
 
 - **Domínio por organização.** Uma instalação, um domínio. Não há coluna de domínio no schema, o desvio por host no `proxy.ts` é um NOOP declarado (existe só como documentação da topologia pretendida), e no Edge não há banco para consultar antes de decidir a quem aquele host pertence. Cliente que exige o próprio domínio pede **instalação dedicada**.
-- **Fonte.** A tipografia é a mesma em toda instalação. `next/font` resolve em tempo de **build**, e a imagem que a sua VPS baixa já vem construída — um seletor de fonte no painel salvaria um valor que nada leria. (A fonte é a Atkinson Hyperlegible, escolhida pelo Braille Institute por legibilidade; trocá-la não muda percepção de marca e piora a leitura de quem passa o dia no sistema.)
+- **Fonte própria.** A escolha é entre as sete famílias da lista; subir um arquivo de fonte no painel não existe. `next/font` resolve em tempo de **build**, e a imagem que a sua VPS baixa já vem construída — um campo de envio salvaria um arquivo que nada leria. Acrescentar uma família à lista é mudança de código (um arquivo OFL em `app/fonts/` e o vocabulário), não de painel.
 - **Cores livres.** A sua marca move o **accent** — o que é ação, destaque e foco — e não há cor escolhida à mão para cada elemento. O fundo da página muda só pelos tons neutros (quente, cinza ou frio) e o par claro/escuro é do design system. A cor da barra do navegador é a do produto em toda marca, porque a marca não move o fundo.
 - **Espaçamento.** A distância entre elementos (margens e vãos) é a do design system. A altura dos controles, das linhas de tabela e dos itens do menu é a **Densidade**, descrita acima.
 - **Login por organização.** O login é da instalação, pelo motivo da seção acima. Os cantos da instalação valem também no login; os da organização só depois de entrar, e a barra lateral existe só dentro do sistema.

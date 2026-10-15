@@ -13,6 +13,7 @@ import { AparenciaDaOrganizacao } from "./_components/AparenciaDaOrganizacao";
 import {
   barraLateralDeTexto,
   densidadeDeTexto,
+  fonteDeTexto,
   neutrosDeTexto,
   raioDeTexto,
   type BarraLateralDaMarca,
@@ -71,7 +72,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
    * e não aqui: a precedência é regra do produto, não detalhe deste layout.
    */
   let cssDaOrganizacao: string | null = null;
-  // So quando a ORGANIZACAO escolheu neutros, raio OU densidade: sem escolha, o <html> da
+  // So quando a ORGANIZACAO escolheu neutros, raio, densidade OU fonte: sem escolha, o <html> da
   // instalacao ja vale. O valor em vigor dos dois eixos vai junto (um eixo herdado
   // vale o da instalacao), e `instalacao` e para onde o cleanup devolve o <html>.
   let aparenciaDaOrganizacao: AparenciaDoHtml | null = null;
@@ -79,6 +80,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     neutros: "quente",
     raio: "padrao",
     densidade: "aerada",
+    fonte: "atkinson",
   };
   // A barra lateral em vigor (organização > instalação > padrão). Não é atributo
   // do <html>: desce por prop ao AppShell, que escurece só a subárvore da barra.
@@ -202,17 +204,20 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     if (
       marca.origens?.neutros === "organizacao" ||
       marca.origens?.raio === "organizacao" ||
-      marca.origens?.densidade === "organizacao"
+      marca.origens?.densidade === "organizacao" ||
+      marca.origens?.fonte === "organizacao"
     ) {
       aparenciaDaOrganizacao = {
         neutros: marca.neutros,
         raio: raioDeTexto(marca.raio),
         densidade: densidadeDeTexto(marca.densidade),
+        fonte: fonteDeTexto(marca.fonte),
       };
       aparenciaDaInstalacao = {
         neutros: neutrosDeTexto(linhaDaInstalacao?.neutros),
         raio: raioDeTexto(linhaDaInstalacao?.raio),
         densidade: densidadeDeTexto(linhaDaInstalacao?.densidade),
+        fonte: fonteDeTexto(linhaDaInstalacao?.fonte),
       };
     }
 

@@ -16,41 +16,42 @@ describe("scriptDaAparencia", () => {
     raiz.removeAttribute("data-neutros");
     raiz.removeAttribute("data-raio");
     raiz.removeAttribute("data-densidade");
+    raiz.removeAttribute("data-fonte");
   };
 
   afterEach(limpar);
 
   it("liga a escolha da organizacao no <html>", () => {
     raiz.setAttribute("data-neutros", "cinza");
-    rodar(scriptDaAparencia({ neutros: "frio", raio: "padrao", densidade: "aerada" }));
+    rodar(scriptDaAparencia({ neutros: "frio", raio: "padrao", densidade: "aerada", fonte: "atkinson" }));
     expect(raiz.getAttribute("data-neutros")).toBe("frio");
   });
 
   it("quente REMOVE o atributo (quente e a ausencia, nao um bloco)", () => {
     raiz.setAttribute("data-neutros", "frio");
-    rodar(scriptDaAparencia({ neutros: "quente", raio: "padrao", densidade: "aerada" }));
+    rodar(scriptDaAparencia({ neutros: "quente", raio: "padrao", densidade: "aerada", fonte: "atkinson" }));
     expect(raiz.hasAttribute("data-neutros")).toBe(false);
   });
 
   it.each(["suave", "arredondado"] as const)("raio %s liga data-raio", (raio) => {
-    rodar(scriptDaAparencia({ neutros: "quente", raio, densidade: "aerada" }));
+    rodar(scriptDaAparencia({ neutros: "quente", raio, densidade: "aerada", fonte: "atkinson" }));
     expect(raiz.getAttribute("data-raio")).toBe(raio);
   });
 
   it("raio padrao REMOVE o atributo", () => {
     raiz.setAttribute("data-raio", "suave");
-    rodar(scriptDaAparencia({ neutros: "quente", raio: "padrao", densidade: "aerada" }));
+    rodar(scriptDaAparencia({ neutros: "quente", raio: "padrao", densidade: "aerada", fonte: "atkinson" }));
     expect(raiz.hasAttribute("data-raio")).toBe(false);
   });
 
   it.each(["equilibrada", "compacta"] as const)("densidade %s liga data-densidade", (densidade) => {
-    rodar(scriptDaAparencia({ neutros: "quente", raio: "padrao", densidade }));
+    rodar(scriptDaAparencia({ neutros: "quente", raio: "padrao", densidade, fonte: "atkinson" }));
     expect(raiz.getAttribute("data-densidade")).toBe(densidade);
   });
 
   it("densidade aerada (ou ausente) REMOVE o atributo", () => {
     raiz.setAttribute("data-densidade", "compacta");
-    rodar(scriptDaAparencia({ neutros: "quente", raio: "padrao", densidade: "aerada" }));
+    rodar(scriptDaAparencia({ neutros: "quente", raio: "padrao", densidade: "aerada", fonte: "atkinson" }));
     expect(raiz.hasAttribute("data-densidade")).toBe(false);
     raiz.setAttribute("data-densidade", "compacta");
     rodar(scriptDaAparencia({ neutros: "quente", raio: "padrao" } as never));
@@ -58,15 +59,45 @@ describe("scriptDaAparencia", () => {
   });
 
   it("densidade fora do vocabulario nunca chega ao script", () => {
-    const js = scriptDaAparencia({ neutros: "quente", raio: "padrao", densidade: 'x");alert(3);("' as never });
+    const js = scriptDaAparencia({ neutros: "quente", raio: "padrao", densidade: 'x");alert(3);("' as never, fonte: "atkinson" });
     expect(js).not.toContain("alert");
+  });
+
+  it.each(["manrope", "jakarta", "plex-sans", "bricolage", "fraunces", "source-serif"] as const)(
+    "fonte %s liga data-fonte",
+    (fonte) => {
+      rodar(scriptDaAparencia({ neutros: "quente", raio: "padrao", densidade: "aerada", fonte }));
+      expect(raiz.getAttribute("data-fonte")).toBe(fonte);
+    },
+  );
+
+  it("fonte atkinson (ou ausente) REMOVE o atributo", () => {
+    raiz.setAttribute("data-fonte", "fraunces");
+    rodar(scriptDaAparencia({ neutros: "quente", raio: "padrao", densidade: "aerada", fonte: "atkinson" }));
+    expect(raiz.hasAttribute("data-fonte")).toBe(false);
+    raiz.setAttribute("data-fonte", "fraunces");
+    rodar(scriptDaAparencia({ neutros: "quente", raio: "padrao", densidade: "aerada" } as never));
+    expect(raiz.hasAttribute("data-fonte")).toBe(false);
+  });
+
+  it("fonte fora do vocabulario nunca chega ao script", () => {
+    const js = scriptDaAparencia({
+      neutros: "quente",
+      raio: "padrao",
+      densidade: "aerada",
+      fonte: 'x");alert(4);("' as never,
+    });
+    expect(js).not.toContain("alert");
+    raiz.setAttribute("data-fonte", "fraunces");
+    rodar(js);
+    expect(raiz.hasAttribute("data-fonte")).toBe(false);
   });
 
   it("todas as combinacoes aplicam os DOIS atributos", () => {
     for (const neutros of ["quente", "cinza", "frio"] as const) {
       for (const raio of ["suave", "padrao", "arredondado"] as const) {
         limpar();
-        rodar(scriptDaAparencia({ neutros, raio, densidade: "aerada" }));
+        rodar(scriptDaAparencia({ neutros, raio, densidade: "aerada", fonte: "atkinson" }));
         expect(raiz.getAttribute("data-neutros")).toBe(neutros === "quente" ? null : neutros);
         expect(raiz.getAttribute("data-raio")).toBe(raio === "padrao" ? null : raio);
       }
@@ -78,6 +109,7 @@ describe("scriptDaAparencia", () => {
       neutros: 'frio");alert(1);("' as never,
       raio: 'x");alert(2);("' as never,
       densidade: "aerada",
+      fonte: "atkinson",
     });
     expect(js).not.toContain("alert");
     raiz.setAttribute("data-neutros", "cinza");
@@ -90,7 +122,7 @@ describe("scriptDaAparencia", () => {
   it("nao contem </script> nem depende de nada alem do documento", () => {
     for (const n of ["quente", "cinza", "frio"] as const) {
       for (const r of ["suave", "padrao", "arredondado"] as const) {
-        expect(scriptDaAparencia({ neutros: n, raio: r, densidade: "compacta" })).not.toMatch(/<\/script/i);
+        expect(scriptDaAparencia({ neutros: n, raio: r, densidade: "compacta", fonte: "atkinson" })).not.toMatch(/<\/script/i);
       }
     }
   });

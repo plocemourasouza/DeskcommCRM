@@ -32,6 +32,7 @@ import { Label } from "@/components/ui/label";
 import { PreviaDaAparencia } from "@/components/branding/PreviaDaAparencia";
 import { SeletorDeBarraLateral, type EscolhaDeBarraLateral } from "@/components/branding/SeletorDeBarraLateral";
 import { SeletorDeDensidade, type EscolhaDeDensidade } from "@/components/branding/SeletorDeDensidade";
+import { SeletorDeFonte, type EscolhaDeFonte } from "@/components/branding/SeletorDeFonte";
 import { SeletorDeNeutros, type EscolhaDeNeutros } from "@/components/branding/SeletorDeNeutros";
 import { SeletorDeRaio, type EscolhaDeRaio } from "@/components/branding/SeletorDeRaio";
 import { cssDaMarca, ESCOPO_DA_ORGANIZACAO } from "@/lib/branding/css";
@@ -55,6 +56,8 @@ import {
   barraLateralEscolhida,
   densidadeDeTexto,
   densidadeEscolhida,
+  fonteDeTexto,
+  fonteEscolhida,
   neutrosDeTexto,
   neutrosEscolhidos,
   raioDeTexto,
@@ -90,6 +93,7 @@ interface Props {
     readonly raio: string | null;
     readonly barra_lateral: string | null;
     readonly densidade: string | null;
+    readonly fonte: string | null;
   };
   /**
    * A linha da marca da INSTALAÇÃO — a camada logo abaixo desta. `raio` e
@@ -99,6 +103,7 @@ interface Props {
     readonly raio: string | null;
     readonly barra_lateral: string | null;
     readonly densidade: string | null;
+    readonly fonte: string | null;
   };
   /** O arquivo de instalação do servidor — o fundo da pilha. */
   readonly ambiente: {
@@ -180,9 +185,11 @@ export function FormularioDaMarcaDaOrganizacao({ gravada, instalacao, ambiente, 
   const raioGravado = raioEscolhido(gravada.raio);
   const barraGravada = barraLateralEscolhida(gravada.barra_lateral);
   const densidadeGravada = densidadeEscolhida(gravada.densidade);
+  const fonteGravada = fonteEscolhida(gravada.fonte);
   const [raio, setRaio] = useState<EscolhaDeRaio>(raioGravado);
   const [barraLateral, setBarraLateral] = useState<EscolhaDeBarraLateral>(barraGravada);
   const [densidade, setDensidade] = useState<EscolhaDeDensidade>(densidadeGravada);
+  const [fonte, setFonte] = useState<EscolhaDeFonte>(fonteGravada);
   const [erroTecnico, setErroTecnico] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -220,6 +227,7 @@ export function FormularioDaMarcaDaOrganizacao({ gravada, instalacao, ambiente, 
             raio,
             barra_lateral: barraLateral,
             densidade,
+            fonte,
             // GRAVADO, não digitado: o logo não é campo deste formulário — ele
             // já está no banco quando esta tela renderiza. Entra na prévia para
             // que o bloco "de onde vem cada coisa" possa responder sobre ele.
@@ -237,6 +245,7 @@ export function FormularioDaMarcaDaOrganizacao({ gravada, instalacao, ambiente, 
       raio,
       barraLateral,
       densidade,
+      fonte,
       gravada.logo_path,
       abaixo,
     ],
@@ -255,6 +264,7 @@ export function FormularioDaMarcaDaOrganizacao({ gravada, instalacao, ambiente, 
   const raioDaInstalacao = raioDeTexto(instalacao.raio);
   const barraDaInstalacao = barraLateralDeTexto(instalacao.barra_lateral);
   const densidadeDaInstalacao = densidadeDeTexto(instalacao.densidade);
+  const fonteDaInstalacao = fonteDeTexto(instalacao.fonte);
 
   const derivada = resolvida.cor?.derivada ?? null;
   /**
@@ -328,6 +338,7 @@ export function FormularioDaMarcaDaOrganizacao({ gravada, instalacao, ambiente, 
       ...(raio !== raioGravado ? { raio } : {}),
       ...(barraLateral !== barraGravada ? { barra_lateral: barraLateral } : {}),
       ...(densidade !== densidadeGravada ? { densidade } : {}),
+      ...(fonte !== fonteGravada ? { fonte } : {}),
     });
     if (!lido.success) {
       toast.error(t("Confira os campos: algum valor não está no formato esperado."));
@@ -551,6 +562,7 @@ export function FormularioDaMarcaDaOrganizacao({ gravada, instalacao, ambiente, 
             campo={t("Densidade")}
             valor={origemEmPortugues(resolvida.origens.densidade, t)}
           />
+          <LinhaDeOrigem campo={t("Fonte")} valor={origemEmPortugues(resolvida.origens.fonte, t)} />
         </div>
 
         {avisos.length > 0 ? (
@@ -600,9 +612,16 @@ export function FormularioDaMarcaDaOrganizacao({ gravada, instalacao, ambiente, 
           onChange={setDensidade}
           herdado={densidadeDaInstalacao}
         />
+        <SeletorDeFonte
+          id="org-fonte"
+          valor={fonte}
+          onChange={setFonte}
+          herdado={fonteDaInstalacao}
+        />
         <PreviaDaAparencia
           raio={resolvida.raio}
           densidade={resolvida.densidade}
+          fonte={resolvida.fonte}
           barraLateral={resolvida.barraLateral}
         />
       </Card>

@@ -220,6 +220,85 @@ export function densidadeEscolhida(valor: unknown): DensidadeDaMarca | null {
     : null;
 }
 
+/**
+ * A fonte da interface: `atkinson` e a de sempre (e o default do banco), as
+ * outras seis sao familias OFL versionadas em `app/fonts/`. Vocabulario fechado
+ * no CHECK `platform_branding_fonte` e em `fn_definir_marca_da_organizacao`
+ * (migration 0676); o invariante vocabulario-banco-x-typescript cobre a
+ * igualdade. O primeiro item e o padrao.
+ */
+export const FONTES_DA_MARCA = [
+  "atkinson",
+  "manrope",
+  "jakarta",
+  "plex-sans",
+  "bricolage",
+  "fraunces",
+  "source-serif",
+] as const;
+export type FonteDaMarca = (typeof FONTES_DA_MARCA)[number];
+
+/** O nome da familia como a pessoa o conhece (nome proprio: nao se traduz). */
+export const NOMES_DAS_FONTES: Record<FonteDaMarca, string> = {
+  atkinson: "Atkinson Hyperlegible",
+  manrope: "Manrope",
+  jakarta: "Plus Jakarta Sans",
+  "plex-sans": "IBM Plex Sans",
+  bricolage: "Bricolage Grotesque",
+  fraunces: "Fraunces",
+  "source-serif": "Source Serif 4",
+};
+
+/** As familias com serifa: fecham a pilha em `serif` em vez de `sans-serif`. */
+export const SERIFADAS_DA_MARCA: readonly FonteDaMarca[] = ["fraunces", "source-serif"];
+
+/**
+ * A custom property que o `next/font` define no `<html>` para cada familia
+ * (`app/layout.tsx` para a Atkinson, `app/fontes-da-marca.ts` para as outras).
+ * Os nomes sao dos arquivos de fonte: `globals.css` os cita em `:root[data-fonte]`.
+ */
+export const VARIAVEL_DA_FONTE: Record<FonteDaMarca, string> = {
+  atkinson: "--font-atkinson",
+  manrope: "--fonte-manrope",
+  jakarta: "--fonte-jakarta",
+  "plex-sans": "--fonte-plex-sans",
+  bricolage: "--fonte-bricolage",
+  fraunces: "--fonte-fraunces",
+  "source-serif": "--fonte-source-serif",
+};
+
+const FALLBACK_SANS =
+  'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
+const FALLBACK_SERIF = 'ui-serif, Georgia, Cambria, "Times New Roman", serif';
+
+/**
+ * A pilha `font-family` de cada escolha. Espelho de `app/globals.css` (`--font-ui`
+ * no `:root` e nos `:root[data-fonte=...]`) para a PREVIA e as amostras dos
+ * formularios; `tests/unit/fonte-da-marca-x-globals.test.ts` reprova a divergencia.
+ * A da Atkinson e, byte a byte, o `font-family` que o `body` tinha antes.
+ */
+export function pilhaDaFonte(fonte: FonteDaMarca): string {
+  const fallback = SERIFADAS_DA_MARCA.includes(fonte) ? FALLBACK_SERIF : FALLBACK_SANS;
+  return `var(${VARIAVEL_DA_FONTE[fonte]}), ${fallback}`;
+}
+
+/** `--font-ui` pronto para `style` (previa e amostras): `font-sans` nos filhos a le. */
+export function estiloDaFonte(fonte: FonteDaMarca): Record<string, string> {
+  return { "--font-ui": pilhaDaFonte(fonte) };
+}
+
+/** Fora do vocabulario vira `atkinson` e NUNCA lanca (roda no layout raiz). */
+export function fonteDeTexto(valor: unknown): FonteDaMarca {
+  return fonteEscolhida(valor) ?? "atkinson";
+}
+
+/** O valor so quando ele e do vocabulario; `null` quando a fonte nao escolheu. */
+export function fonteEscolhida(valor: unknown): FonteDaMarca | null {
+  return typeof valor === "string" && (FONTES_DA_MARCA as readonly string[]).includes(valor)
+    ? (valor as FonteDaMarca)
+    : null;
+}
+
 export const CAMINHO_DA_SEMENTE = "semente_hex";
 
 export const esquemaDaCorDaMarca = z

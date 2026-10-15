@@ -131,7 +131,8 @@ export async function updateMarcaDaOrganizacao(
     // nao enviou. So o `null` explicito, que e "herde", conta como vazio.
     parsed.data.raio === null &&
     parsed.data.barra_lateral === null &&
-    parsed.data.densidade === null;
+    parsed.data.densidade === null &&
+    parsed.data.fonte === null;
   const marca = limpar
     ? null
     : {
@@ -159,6 +160,8 @@ export async function updateMarcaDaOrganizacao(
           : {}),
         // densidade (0675): os mesmos tres estados do raio.
         ...(parsed.data.densidade !== undefined ? { densidade: parsed.data.densidade } : {}),
+        // fonte (0676): os mesmos tres estados do raio.
+        ...(parsed.data.fonte !== undefined ? { fonte: parsed.data.fonte } : {}),
         updated_by: authUser.id,
         updated_at: new Date().toISOString(),
       };
@@ -217,6 +220,7 @@ export async function updateMarcaDaOrganizacao(
       raio_definido: (parsed.data.raio ?? null) !== null,
       barra_lateral_definida: (parsed.data.barra_lateral ?? null) !== null,
       densidade_definida: (parsed.data.densidade ?? null) !== null,
+      fonte_definida: (parsed.data.fonte ?? null) !== null,
     },
   });
 

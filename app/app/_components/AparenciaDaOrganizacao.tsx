@@ -2,11 +2,11 @@
 
 import { useLayoutEffect } from "react";
 
-import { densidadeDeTexto, neutrosDeTexto, raioDeTexto } from "@/lib/branding/schema";
+import { densidadeDeTexto, fonteDeTexto, neutrosDeTexto, raioDeTexto } from "@/lib/branding/schema";
 import type { AparenciaDoHtml } from "@/lib/branding/script-da-aparencia";
 
 /**
- * Liga a aparencia ESCOLHIDA PELA ORGANIZACAO (neutros, raio e densidade) no `<html>`
+ * Liga a aparencia ESCOLHIDA PELA ORGANIZACAO (neutros, raio, densidade e fonte) no `<html>`
  * enquanto a subarvore de `/app` existe.
  *
  * Por que atributo no `<html>` e nao um bloco escopado como a cor: o preset
@@ -29,30 +29,39 @@ export function AparenciaDaOrganizacao({
   readonly aparencia: AparenciaDoHtml;
   readonly instalacao: AparenciaDoHtml;
 }) {
-  const { neutros, raio, densidade } = aparencia;
-  const { neutros: neutrosBase, raio: raioBase, densidade: densidadeBase } = instalacao;
+  const { neutros, raio, densidade, fonte } = aparencia;
+  const {
+    neutros: neutrosBase,
+    raio: raioBase,
+    densidade: densidadeBase,
+    fonte: fonteBase,
+  } = instalacao;
   useLayoutEffect(() => {
     const html = document.documentElement;
     aplicar(html, {
       neutros: neutrosDeTexto(neutros),
       raio: raioDeTexto(raio),
       densidade: densidadeDeTexto(densidade),
+      fonte: fonteDeTexto(fonte),
     });
     return () =>
       aplicar(html, {
         neutros: neutrosDeTexto(neutrosBase),
         raio: raioDeTexto(raioBase),
         densidade: densidadeDeTexto(densidadeBase),
+        fonte: fonteDeTexto(fonteBase),
       });
-  }, [neutros, raio, densidade, neutrosBase, raioBase, densidadeBase]);
+  }, [neutros, raio, densidade, fonte, neutrosBase, raioBase, densidadeBase, fonteBase]);
   return null;
 }
 
-function aplicar(html: HTMLElement, { neutros, raio, densidade }: AparenciaDoHtml): void {
+function aplicar(html: HTMLElement, { neutros, raio, densidade, fonte }: AparenciaDoHtml): void {
   if (neutros === "quente") html.removeAttribute("data-neutros");
   else html.setAttribute("data-neutros", neutros);
   if (raio === "padrao") html.removeAttribute("data-raio");
   else html.setAttribute("data-raio", raio);
   if (densidade === "aerada") html.removeAttribute("data-densidade");
   else html.setAttribute("data-densidade", densidade);
+  if (fonte === "atkinson") html.removeAttribute("data-fonte");
+  else html.setAttribute("data-fonte", fonte);
 }

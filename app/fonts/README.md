@@ -42,6 +42,16 @@ UA='Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:40.0) Gecko/20100101 Firefo
 curl -sA "$UA" 'https://fonts.googleapis.com/css?family=Atkinson+Hyperlegible:400,700|IBM+Plex+Mono:400,500&subset=latin,latin-ext&display=swap'
 ```
 
+## Quem usa
+
+- **Atkinson Hyperlegible** (padrão) e **IBM Plex Mono**: `app/layout.tsx`, pré-carregadas.
+- **Manrope, Plus Jakarta Sans, IBM Plex Sans, Bricolage Grotesque, Fraunces, Source Serif 4**:
+  escolhíveis pela marca (Marca › Fonte). Declaradas em `app/fontes-da-marca.ts` com
+  `preload: false` — o navegador só baixa o arquivo da família que estiver em uso.
+  Acrescentar uma família é mudança de código: arquivo OFL aqui, entrada em `FONTES_DA_MARCA`
+  (`lib/branding/schema.ts`), CHECK e RPC em migration, bloco `:root[data-fonte]` em `globals.css`.
+- **JetBrains Mono**: só o laboratório de design (`app/design`).
+
 ## Licença
 
 Todas as famílias são distribuídas sob a SIL Open Font License 1.1 — texto e

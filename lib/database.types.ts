@@ -8652,6 +8652,7 @@ export type Database = {
           densidade: string
           fallback_at: string | null
           fallback_reason: string | null
+          fonte: string
           id: number
           logo_path: string | null
           logo_url: string | null
@@ -8670,6 +8671,7 @@ export type Database = {
           densidade?: string
           fallback_at?: string | null
           fallback_reason?: string | null
+          fonte?: string
           id?: number
           logo_path?: string | null
           logo_url?: string | null
@@ -8688,6 +8690,7 @@ export type Database = {
           densidade?: string
           fallback_at?: string | null
           fallback_reason?: string | null
+          fonte?: string
           id?: number
           logo_path?: string | null
           logo_url?: string | null

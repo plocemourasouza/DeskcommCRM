@@ -109,6 +109,7 @@ export async function updateBranding(
     ...(parsed.data.raio ? { raio: parsed.data.raio } : {}),
     ...(parsed.data.barra_lateral ? { barra_lateral: parsed.data.barra_lateral } : {}),
     ...(parsed.data.densidade ? { densidade: parsed.data.densidade } : {}),
+    ...(parsed.data.fonte ? { fonte: parsed.data.fonte } : {}),
     // A linha passa a ser HUMANA. É o que impede a semeadura do `.env` de
     // reescrever a escolha no render seguinte — inclusive quando a escolha foi
     // apagar tudo para voltar ao padrão do produto. Ver `precisaSemear`.
@@ -168,6 +169,7 @@ export async function updateBranding(
       ...(parsed.data.raio ? { raio: parsed.data.raio } : {}),
       ...(parsed.data.barra_lateral ? { barra_lateral: parsed.data.barra_lateral } : {}),
       ...(parsed.data.densidade ? { densidade: parsed.data.densidade } : {}),
+      ...(parsed.data.fonte ? { fonte: parsed.data.fonte } : {}),
     },
   });
 

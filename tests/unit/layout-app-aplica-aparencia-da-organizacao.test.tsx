@@ -52,8 +52,8 @@ function acharOnde(no: ReactNode, casa: (el: ReactElement) => boolean): ReactEle
   return acharOnde(el.props.children, casa);
 }
 
-const BASE = { name: "Deskcomm", logoUrl: null, cor: null, raio: "padrao", barraLateral: "padrao", densidade: "aerada" };
-const PADRAO_ORIGENS = { nome: "p", logoUrl: "p", cor: "p", raio: "padrao", barraLateral: "padrao", densidade: "padrao" };
+const BASE = { name: "Deskcomm", logoUrl: null, cor: null, raio: "padrao", barraLateral: "padrao", densidade: "aerada", fonte: "atkinson" };
+const PADRAO_ORIGENS = { nome: "p", logoUrl: "p", cor: "p", raio: "padrao", barraLateral: "padrao", densidade: "padrao", fonte: "padrao" };
 
 /**
  * /app so liga o override quando a ORGANIZACAO escolheu: sem escolha, o atributo
@@ -69,7 +69,7 @@ describe("layout de /app — aparencia da organizacao", () => {
     estado.marca = { ...BASE, neutros: "frio", origens: { ...PADRAO_ORIGENS, neutros: "organizacao" } };
     const { default: AppLayout } = await import("@/app/app/layout");
     const arvore = await AppLayout({ children: null });
-    expect(achar(arvore, AparenciaDaOrganizacao)?.props).toMatchObject({ aparencia: { neutros: "frio", raio: "padrao", densidade: "aerada" } });
+    expect(achar(arvore, AparenciaDaOrganizacao)?.props).toMatchObject({ aparencia: { neutros: "frio", raio: "padrao", densidade: "aerada", fonte: "atkinson" } });
   });
 
   it("organizacao escolheu: o HTML do servidor ja leva o script que troca antes da pintura", async () => {
@@ -80,11 +80,11 @@ describe("layout de /app — aparencia da organizacao", () => {
     const script = acharOnde(arvore, (el) => el.type === "script");
     const html = (script?.props as { dangerouslySetInnerHTML?: { __html: string } } | undefined)
       ?.dangerouslySetInnerHTML?.__html;
-    expect(html).toBe(scriptDaAparencia({ neutros: "frio", raio: "padrao", densidade: "aerada" }));
+    expect(html).toBe(scriptDaAparencia({ neutros: "frio", raio: "padrao", densidade: "aerada", fonte: "atkinson" }));
     // A limpeza devolve a da INSTALACAO, nao o atributo que o script ja trocou.
     expect(achar(arvore, AparenciaDaOrganizacao)?.props).toMatchObject({
-      aparencia: { neutros: "frio", raio: "padrao", densidade: "aerada" },
-      instalacao: { neutros: "cinza", raio: "padrao", densidade: "aerada" },
+      aparencia: { neutros: "frio", raio: "padrao", densidade: "aerada", fonte: "atkinson" },
+      instalacao: { neutros: "cinza", raio: "padrao", densidade: "aerada", fonte: "atkinson" },
     });
   });
 
@@ -109,17 +109,17 @@ describe("layout de /app — aparencia da organizacao", () => {
     const script = acharOnde(arvore, (el) => el.type === "script");
     const html = (script?.props as { dangerouslySetInnerHTML?: { __html: string } } | undefined)
       ?.dangerouslySetInnerHTML?.__html;
-    expect(html).toBe(scriptDaAparencia({ neutros: "cinza", raio: "suave", densidade: "aerada" }));
+    expect(html).toBe(scriptDaAparencia({ neutros: "cinza", raio: "suave", densidade: "aerada", fonte: "atkinson" }));
     expect(achar(arvore, AparenciaDaOrganizacao)?.props).toMatchObject({
-      aparencia: { neutros: "cinza", raio: "suave", densidade: "aerada" },
-      instalacao: { neutros: "cinza", raio: "arredondado", densidade: "aerada" },
+      aparencia: { neutros: "cinza", raio: "suave", densidade: "aerada", fonte: "atkinson" },
+      instalacao: { neutros: "cinza", raio: "arredondado", densidade: "aerada", fonte: "atkinson" },
     });
   });
   it("so a DENSIDADE veio da organizacao: monta, e o script leva densidade, raio e neutros em vigor", async () => {
     estado.marca = {
       ...BASE,
       densidade: "compacta",
-      origens: { ...PADRAO_ORIGENS, densidade: "organizacao" },
+      origens: { ...PADRAO_ORIGENS, densidade: "organizacao", fonte: "atkinson" },
     };
     estado.instalacao = { densidade: "equilibrada" };
     const { default: AppLayout } = await import("@/app/app/layout");
@@ -127,10 +127,27 @@ describe("layout de /app — aparencia da organizacao", () => {
     const script = acharOnde(arvore, (el) => el.type === "script");
     const html = (script?.props as { dangerouslySetInnerHTML?: { __html: string } } | undefined)
       ?.dangerouslySetInnerHTML?.__html;
-    expect(html).toBe(scriptDaAparencia({ neutros: "quente", raio: "padrao", densidade: "compacta" }));
+    expect(html).toBe(scriptDaAparencia({ neutros: "quente", raio: "padrao", densidade: "compacta", fonte: "atkinson" }));
     expect(achar(arvore, AparenciaDaOrganizacao)?.props).toMatchObject({
-      aparencia: { densidade: "compacta" },
-      instalacao: { densidade: "equilibrada" },
+      aparencia: { densidade: "compacta", fonte: "atkinson" },
+      instalacao: { densidade: "equilibrada", fonte: "atkinson" },
+    });
+  });
+
+  it("so a FONTE veio da organizacao: monta, e o script leva a fonte em vigor", async () => {
+    estado.marca = { ...BASE, fonte: "fraunces", origens: { ...PADRAO_ORIGENS, fonte: "organizacao" } };
+    estado.instalacao = { fonte: "manrope" };
+    const { default: AppLayout } = await import("@/app/app/layout");
+    const arvore = await AppLayout({ children: null });
+    const script = acharOnde(arvore, (el) => el.type === "script");
+    const html = (script?.props as { dangerouslySetInnerHTML?: { __html: string } } | undefined)
+      ?.dangerouslySetInnerHTML?.__html;
+    expect(html).toBe(
+      scriptDaAparencia({ neutros: "quente", raio: "padrao", densidade: "aerada", fonte: "fraunces" }),
+    );
+    expect(achar(arvore, AparenciaDaOrganizacao)?.props).toMatchObject({
+      aparencia: { fonte: "fraunces" },
+      instalacao: { fonte: "manrope" },
     });
   });
 

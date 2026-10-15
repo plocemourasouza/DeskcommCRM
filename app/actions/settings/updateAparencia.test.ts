@@ -75,6 +75,17 @@ describe("updateBranding — raio e barra lateral", () => {
     expect(r).toMatchObject({ ok: false, error: "validation_failed" });
   });
 
+  it("fonte: grava, e sem ela na entrada NAO toca a coluna", async () => {
+    await updateBranding({ ...INSTALACAO, fonte: "fraunces" });
+    expect(mocks.upsert.mock.calls[0]?.[0]).toMatchObject({ id: 1, fonte: "fraunces" });
+    expect(mocks.audit.mock.calls[0]?.[0].metadata).toMatchObject({ fonte: "fraunces" });
+    mocks.upsert.mockClear();
+    await updateBranding(INSTALACAO);
+    expect("fonte" in (mocks.upsert.mock.calls[0]?.[0] ?? {})).toBe(false);
+    const r = await updateBranding({ ...INSTALACAO, fonte: "comic" as never });
+    expect(r).toMatchObject({ ok: false, error: "validation_failed" });
+  });
+
   it("valor fora do vocabulario e recusado antes de tudo", async () => {
     const r = await updateBranding({ ...INSTALACAO, raio: "quadrado" as never });
     expect(r).toMatchObject({ ok: false, error: "validation_failed" });
@@ -123,9 +134,40 @@ describe("updateMarcaDaOrganizacao — raio e barra lateral", () => {
 
   it("tudo vazio, raio e barra explicitamente null: limpa a marca inteira", async () => {
     await updateMarcaDaOrganizacao({
-      app_name: null, accent_hex: null, accent_dark_hex: null, neutros: null, raio: null, barra_lateral: null, densidade: null,
+      app_name: null, accent_hex: null, accent_dark_hex: null, neutros: null, raio: null, barra_lateral: null, densidade: null, fonte: null,
     });
     expect(mocks.rpc.mock.calls[0]?.[1].p_marca).toBeNull();
+  });
+
+  it("densidade null mas fonte AUSENTE nao limpa: a fonte gravada e preservada", async () => {
+    await updateMarcaDaOrganizacao({
+      app_name: null, accent_hex: null, accent_dark_hex: null, neutros: null, raio: null, barra_lateral: null, densidade: null,
+    });
+    expect(mocks.rpc.mock.calls[0]?.[1].p_marca).not.toBeNull();
+    expect("fonte" in marca()).toBe(false);
+  });
+
+  it("fonte: valor grava, null vai EXPLICITO, ausente nao vai", async () => {
+    await updateMarcaDaOrganizacao({ ...ORG, fonte: "fraunces" });
+    expect(marca().fonte).toBe("fraunces");
+    mocks.rpc.mockClear();
+    await updateMarcaDaOrganizacao({ ...ORG, fonte: null });
+    expect("fonte" in marca()).toBe(true);
+    expect(marca().fonte).toBeNull();
+    mocks.rpc.mockClear();
+    await updateMarcaDaOrganizacao(ORG);
+    expect("fonte" in marca()).toBe(false);
+  });
+
+  it("so a fonte ja e uma marca", async () => {
+    await updateMarcaDaOrganizacao({ app_name: null, accent_hex: null, accent_dark_hex: null, neutros: null, fonte: "manrope" });
+    expect(marca()).toMatchObject({ fonte: "manrope" });
+  });
+
+  it("fonte fora do vocabulario e recusada antes da RPC", async () => {
+    const r = await updateMarcaDaOrganizacao({ ...ORG, fonte: "comic" as never });
+    expect(r).toMatchObject({ ok: false, error: "validation_failed" });
+    expect(mocks.rpc).not.toHaveBeenCalled();
   });
 
   it("raio e barra null mas densidade AUSENTE nao limpa: a densidade gravada e preservada", async () => {

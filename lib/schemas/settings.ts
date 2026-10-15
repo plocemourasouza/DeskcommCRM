@@ -12,6 +12,7 @@ import { ehHexValido } from "@/lib/branding/rampa";
 import {
   BARRAS_LATERAIS_DA_MARCA,
   DENSIDADES_DA_MARCA,
+  FONTES_DA_MARCA,
   NEUTROS_DA_MARCA,
   RAIOS_DA_MARCA,
 } from "@/lib/branding/schema";
@@ -345,6 +346,8 @@ export const platformBrandingSchema = z.object({
   barra_lateral: z.enum(BARRAS_LATERAIS_DA_MARCA).optional(),
   /** A densidade (migration 0675). Opcional pelo mesmo motivo: coluna `not null`. */
   densidade: z.enum(DENSIDADES_DA_MARCA).optional(),
+  /** A fonte (migration 0676). Opcional pelo mesmo motivo: coluna `not null`. */
+  fonte: z.enum(FONTES_DA_MARCA).optional(),
 });
 export type PlatformBrandingInput = z.infer<typeof platformBrandingSchema>;
 
@@ -396,6 +399,8 @@ export const marcaDaOrganizacaoSchema = z.object({
   barra_lateral: z.enum(BARRAS_LATERAIS_DA_MARCA).nullable().optional(),
   /** A densidade desta organizacao (0675): mesmos tres estados do raio. */
   densidade: z.enum(DENSIDADES_DA_MARCA).nullable().optional(),
+  /** A fonte desta organizacao (0676): mesmos tres estados do raio. */
+  fonte: z.enum(FONTES_DA_MARCA).nullable().optional(),
 });
 export type MarcaDaOrganizacaoInput = z.infer<typeof marcaDaOrganizacaoSchema>;
 

@@ -4,6 +4,8 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { SeletorDeRaio } from "@/components/branding/SeletorDeRaio";
 import { SeletorDeBarraLateral } from "@/components/branding/SeletorDeBarraLateral";
 import { SeletorDeDensidade } from "@/components/branding/SeletorDeDensidade";
+import { SeletorDeFonte } from "@/components/branding/SeletorDeFonte";
+import { FONTES_DA_MARCA, NOMES_DAS_FONTES, pilhaDaFonte } from "@/lib/branding/schema";
 
 afterEach(cleanup);
 
@@ -109,5 +111,41 @@ describe("SeletorDeDensidade", () => {
       [...container.querySelector(`[data-amostra-da-densidade="${d}"]`)!.children].map((c) => (c as HTMLElement).style.height);
     expect(alturas("aerada")).toEqual(["20px", "20px", "20px"]); // linhaH 40 / 2
     expect(alturas("compacta")).toEqual(["16px", "16px", "16px"]); // linhaH 32 / 2
+  });
+});
+
+describe("SeletorDeFonte", () => {
+  it("instalação: sete opções sem herdar; organização: oito, e null marca herdar", () => {
+    render(<SeletorDeFonte id="fonte" valor="atkinson" onChange={() => {}} />);
+    expect(screen.getAllByRole("radio")).toHaveLength(7);
+    expect(screen.queryByLabelText(/Usar o padrão da instalação/)).toBeNull();
+    expect((screen.getByLabelText(/^Atkinson Hyperlegible/) as HTMLInputElement).checked).toBe(true);
+    cleanup();
+    render(<SeletorDeFonte id="fonte" valor={null} onChange={() => {}} herdado="fraunces" />);
+    expect(screen.getAllByRole("radio")).toHaveLength(8);
+    expect((screen.getByLabelText(/Usar o padrão da instalação/) as HTMLInputElement).checked).toBe(true);
+    expect(screen.getByText(/Hoje: Fraunces/)).toBeInTheDocument();
+  });
+
+  it("emite o valor escolhido e null ao herdar", () => {
+    const onChange = vi.fn();
+    render(<SeletorDeFonte id="fonte" valor="atkinson" onChange={onChange} herdado="atkinson" />);
+    fireEvent.click(screen.getByLabelText(/^Manrope/));
+    expect(onChange).toHaveBeenLastCalledWith("manrope");
+    fireEvent.click(screen.getByLabelText(/Usar o padrão da instalação/));
+    expect(onChange).toHaveBeenLastCalledWith(null);
+  });
+
+  it("a11y: grupo nomeado, radios do mesmo name; cada amostra é decorativa e está NA fonte da opção", () => {
+    const { container } = render(<SeletorDeFonte id="fonte" valor="atkinson" onChange={() => {}} />);
+    expect(screen.getByRole("group", { name: /Fonte/ })).toBeInTheDocument();
+    expect(new Set(screen.getAllByRole("radio").map((r) => r.getAttribute("name")))).toEqual(new Set(["fonte"]));
+    for (const f of FONTES_DA_MARCA) {
+      const amostra = container.querySelector<HTMLElement>(`[data-amostra-da-fonte="${f}"]`)!;
+      expect(amostra, `sem amostra para ${f}`).not.toBeNull();
+      expect(amostra.getAttribute("aria-hidden")).toBe("true");
+      expect(amostra.style.getPropertyValue("--font-ui")).toBe(pilhaDaFonte(f));
+      expect(NOMES_DAS_FONTES[f].length).toBeGreaterThan(0);
+    }
   });
 });

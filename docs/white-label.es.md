@@ -1,4 +1,4 @@
-<!-- traduzido-de: docs/white-label.md@637561e856b3 -->
+<!-- traduzido-de: docs/white-label.md@f47aab48e6ea -->
 
 [🇧🇷 Português](white-label.md) · [🇺🇸 English](white-label.en.md) · 🇪🇸 Español
 
@@ -20,9 +20,9 @@ El color es **derivado**, no aplicado en crudo: de un hex salen once tonos en lo
 
 **Y el ícono de la aplicación y del navegador.** Debajo del logo, este campo acepta un PNG o JPG cuadrado de hasta 512 KB, preferiblemente 512×512 o mayor. La misma imagen aparece en las pestañas, incluido el acceso, y en la aplicación instalada. El manifiesto ofrece PNG de 192×192 y 512×512, renderizados desde el archivo limitado de la instalación en Storage; nunca se buscan URL arbitrarias. Sin archivo válido, conserva el símbolo del producto o la inicial de la marca. Quitar el archivo restaura ese dibujo. Es la marca de la instalación, no de cada organización. El navegador puede guardar una instalación anterior en caché; reinstala la aplicación para comprobar un nuevo ícono.
 
-### Esquinas, menú lateral y densidad
+### Esquinas, menú lateral, densidad y fuente
 
-Tres ajustes de apariencia, en las dos pantallas de marca: la de la instalación (`/admin/marca`, para quien administra la instalación) y la de la organización (`Configuración → Marca`, para el admin de la organización). Ambas siguen el mismo orden: **la elección de la organización vence a la de la instalación, y la de la instalación vence al valor predeterminado del sistema.**
+Cuatro ajustes de apariencia, en las dos pantallas de marca: la de la instalación (`/admin/marca`, para quien administra la instalación) y la de la organización (`Configuración → Marca`, para el admin de la organización). Ambas siguen el mismo orden: **la elección de la organización vence a la de la instalación, y la de la instalación vence al valor predeterminado del sistema.**
 
 **Esquinas** definen cuán redondeados son botones, campos y tarjetas en todo el sistema:
 
@@ -42,6 +42,14 @@ Tres ajustes de apariencia, en las dos pantallas de marca: la de la instalación
 - **Compacta** — filas y campos más bajos, para quien trabaja con muchos datos.
 
 La densidad vale solo en computadora (puntero de mouse) y en anchos de pantalla grandes: en el celular y la tablet el objetivo de toque de 44 px no es decisión de marca y no cambia. Las alturas exactas están en `app/globals.css`, en las variables `--controle-h`, `--campo-h`, `--linha-h` y similares.
+
+**Fuente** define la familia de letra de todo el sistema — pantallas, tablas y formularios:
+
+- **Atkinson Hyperlegible** — la de siempre, diseñada por el Braille Institute para ser fácil de leer, y la elección inicial.
+- **Manrope**, **Plus Jakarta Sans**, **IBM Plex Sans** y **Bricolage Grotesque** — sin serifas, cada una con un diseño propio.
+- **Fraunces** y **Source Serif 4** — con serifas, de tono más editorial.
+
+Las siete están licenciadas bajo la SIL Open Font License 1.1: uso comercial libre, y pueden acompañar al producto (el texto de la licencia está en `app/fonts/OFL.txt`). Los archivos van dentro de la imagen — no se busca nada en un servicio externo. Solo la Atkinson se precarga; el navegador descarga el archivo de una de las otras únicamente cuando alguien la elige, así que quien se queda con la predeterminada no paga nada por las otras seis. La fuente del código y de los números tabulares (IBM Plex Mono) no cambia. Cada opción de la pantalla muestra una frase de ejemplo en su propia fuente, y la vista previa muestra la elección antes de guardar.
 
 En la organización, cada campo tiene la opción **Usar el valor predeterminado de la instalación**, que devuelve ese campo a la elección de la instalación. No hay que reiniciar nada: el cambio vale en la próxima carga de pantalla. Si no tocas nada, el sistema sigue exactamente como estaba.
 
@@ -126,7 +134,7 @@ Esto no vuelve obsoleta la instalación dedicada — ver la comparación de abaj
 Directo, para que no lo descubras delante del cliente. Cada línea trae la razón medida, no la excusa:
 
 - **Dominio por organización.** Una instalación, un dominio. No hay columna de dominio en el esquema, la bifurcación por host en `proxy.ts` es un NOOP declarado (existe solo como documentación de la topología pretendida), y en el Edge no hay base de datos que consultar antes de decidir a quién pertenece ese host. El cliente que exige su propio dominio pide **instalación dedicada**.
-- **Tipografía.** La tipografía es la misma en toda instalación. `next/font` resuelve en tiempo de **build**, y la imagen que baja tu VPS ya viene construida — un selector de fuente en el panel guardaría un valor que nadie leería. (La fuente es la Atkinson Hyperlegible, elegida por el Braille Institute por legibilidad; cambiarla no altera la percepción de marca y empeora la lectura de quien pasa el día dentro del sistema.)
+- **Fuente propia.** La elección es entre las siete familias de la lista; subir un archivo de fuente en el panel no existe. `next/font` resuelve en tiempo de **build**, y la imagen que baja tu VPS ya viene construida — un campo de carga guardaría un archivo que nadie leería. Agregar una familia a la lista es un cambio de código (un archivo OFL en `app/fonts/` y el vocabulario), no de panel.
 - **Colores libres.** Tu marca mueve el **acento** — lo que es acción, destaque y foco — y no hay un color elegido a mano para cada elemento. El fondo de la página cambia solo por los tonos neutros (cálido, gris o frío) y el par claro/oscuro es del design system. El color de la barra del navegador es el del producto en toda marca, porque la marca no mueve el fondo.
 - **Espaciado.** La distancia entre elementos (márgenes y huecos) es la del design system. La altura de los controles, de las filas de tabla y de los ítems del menú es la **Densidad**, descrita arriba.
 - **Login por organización.** El login es de la instalación, por el motivo de la sección anterior. Las esquinas de la instalación valen también en el login; las de la organización solo después de entrar, y el menú lateral existe solo dentro del sistema.

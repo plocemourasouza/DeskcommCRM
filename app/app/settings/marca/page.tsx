@@ -94,6 +94,7 @@ export default async function MarcaDaOrganizacaoPage() {
           raio: gravada?.raio ?? null,
           barra_lateral: gravada?.barra_lateral ?? null,
           densidade: gravada?.densidade ?? null,
+          fonte: gravada?.fonte ?? null,
         }}
         // As DUAS camadas de baixo descem para o formulário, e não uma resolução
         // já pronta: a prévia ao vivo remonta a pilha inteira a cada tecla, pelo
@@ -110,6 +111,7 @@ export default async function MarcaDaOrganizacaoPage() {
           raio: linha?.raio ?? null,
           barra_lateral: linha?.barra_lateral ?? null,
           densidade: linha?.densidade ?? null,
+          fonte: linha?.fonte ?? null,
         }}
         // Só os três campos de marca do ambiente, nunca o objeto `env` inteiro:
         // isto atravessa a fronteira para o navegador, e o que atravessa é o que
