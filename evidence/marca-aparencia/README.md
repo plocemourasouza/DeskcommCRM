@@ -1,4 +1,4 @@
-# Aparência da marca (cantos e barra lateral) — prova em tela
+# Aparência da marca (cantos, barra lateral, densidade e fonte) — prova em tela
 
 Lastro de `tests/e2e/marca-aparencia.spec.ts`, num build de produção com banco fresco aplicado do
 `baseline.sql` e os envios opcionais ausentes. Toda medida é de `getComputedStyle` /
@@ -23,3 +23,21 @@ Lastro de `tests/e2e/marca-aparencia.spec.ts`, num build de produção com banco
 - `flash.json` — medição quadro a quadro ao abrir `/app` com a empresa em **arredondado** sobre a
   instalação em **suave**: zero quadros com o raio da instalação; o atributo troca no parse, menos
   de 1 ms depois do da instalação, antes da primeira pintura.
+- `6-instalacao-equilibrada.png` — o dono escolhe densidade **equilibrada** em Admin › Marca: o HTML do
+  servidor já leva `data-densidade="equilibrada"`, o Button padrão (Salvar) mede 32px, o Input 38px e o
+  item ativo da barra lateral 26px.
+- `7-empresa-compacta.png` — a empresa escolhe **compacta** (vence a instalação): a prévia mede 30px/36px
+  antes de salvar; depois de salvar e recarregar, Button 30px, Input 36px e item da barra 24px (2px menos
+  que na equilibrada). "Usar o padrão da instalação" devolve 32px/38px.
+- `7-toque-compacta.png` — o mesmo ajuste com ponteiro de TOQUE (`hasTouch`, janela 1280px para isolar o
+  ponteiro do breakpoint): `(pointer: fine)` é falso, o atributo segue `compacta`, mas o controle volta a
+  36px/40px — a sobrescrita não vale e o alvo de toque não encolhe.
+- `densidade-medidas.json` — os números dos três casos acima, como medidos.
+- `8-fonte-fraunces.png` — a empresa escolhe **fraunces**: o corpo resolve `fraunces` primeiro e
+  `document.fonts` confirma a família carregada.
+- `fontes-baixadas.json` — woff2 realmente baixados num navegador de cache frio, login incluído. Com
+  Fraunces: Atkinson (a tela de login ainda é da instalação), Fraunces e Plex Mono. Com a escolha desfeita:
+  só Atkinson e Plex Mono — nenhuma das seis fontes extras.
+- `flash-densidade-fonte.json` — mesma medição quadro a quadro de `flash.json`, para empresa
+  **compacta + fraunces** sobre instalação **equilibrada + atkinson**: zero quadros com a densidade ou a
+  fonte da instalação; os atributos trocam no parse, menos de 1 ms depois dos da instalação.

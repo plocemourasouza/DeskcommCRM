@@ -1,8 +1,8 @@
 {
-  "fcp_ms": 96,
+  "fcp_ms": 112,
   "trocas": [
-    "suave@64.4ms",
-    "arredondado@65.0ms"
+    "suave@80.8ms",
+    "arredondado@81.4ms"
   ],
   "quadros_medidos": 295,
   "quadros_com_raio_errado": 0,
