@@ -4,13 +4,22 @@ import { headers } from "next/headers";
 
 import { audit } from "@/lib/audit";
 import { escritaDeAdminOuRecusa } from "@/lib/auth/escritaDeAdminOuRecusa";
-import { invalidarMarcaDaInstalacao } from "@/lib/branding/instalacao";
+import { invalidarMarcaDaInstalacao, marcaDaInstalacao } from "@/lib/branding/instalacao";
 import { normalizarHex } from "@/lib/branding/rampa";
+import { REGUA_DO_PRODUTO } from "@/lib/branding/regua-do-produto";
+import {
+  camadaDaInstalacao,
+  camadaDoAmbiente,
+  conferirCoresDaPilha,
+} from "@/lib/branding/resolve";
+import type { ReprovaDeCor } from "@/lib/branding/cores-do-tema";
+import { env } from "@/lib/env";
 import { platformBrandingSchema, type PlatformBrandingInput } from "@/lib/schemas/settings";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export type UpdateBrandingResult =
   | { ok: true }
+  | { ok: false; error: "cores_sem_contraste"; details: readonly ReprovaDeCor[] }
   | { ok: false; error: string; details?: unknown };
 
 /**
@@ -83,6 +92,32 @@ export async function updateBranding(
   if (!escrita.ok) return escrita;
   const { user: authUser } = escrita.ctx;
 
+  // A TRAVA de contraste das cores do tema (0677). A tela roda a mesma função e
+  // desabilita o Salvar, mas tela não é fronteira: um POST direto chega aqui.
+  //
+  // Mede a INSTALAÇÃO SOZINHA (esta linha como ficaria + o `.env` embaixo) e de
+  // propósito NÃO consulta as empresas: o revendedor não pode ser impedido de
+  // mudar o próprio fundo porque um cliente escolheu um texto que só se lê
+  // sobre o fundo de hoje. A empresa que ficar ilegível perde as cores DELA no
+  // render (`resolverMarca` deixa a camada de lado, com o motivo na tela dela).
+  if (parsed.data.cores !== undefined) {
+    const gravada = await marcaDaInstalacao();
+    const proposta = camadaDaInstalacao({
+      ...(gravada ?? {}),
+      accent_hex: parsed.data.accent_hex,
+      accent_dark_hex: parsed.data.accent_dark_hex,
+      ...(parsed.data.neutros ? { neutros: parsed.data.neutros } : {}),
+      cores: parsed.data.cores,
+    });
+    const trava = conferirCoresDaPilha(
+      [proposta, camadaDoAmbiente({ APP_ACCENT_HEX: env.APP_ACCENT_HEX })],
+      REGUA_DO_PRODUTO,
+    );
+    if (!trava.passa) {
+      return { ok: false, error: "cores_sem_contraste", details: trava.reprovas };
+    }
+  }
+
   const hdrs = await headers();
   const requestId = hdrs.get("x-request-id");
   const ip = hdrs.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
@@ -110,6 +145,8 @@ export async function updateBranding(
     ...(parsed.data.barra_lateral ? { barra_lateral: parsed.data.barra_lateral } : {}),
     ...(parsed.data.densidade ? { densidade: parsed.data.densidade } : {}),
     ...(parsed.data.fonte ? { fonte: parsed.data.fonte } : {}),
+    // Cores do tema (0677): ausente = não mexa; `{}` = volte tudo ao padrão.
+    ...(parsed.data.cores !== undefined ? { cores: parsed.data.cores } : {}),
     // A linha passa a ser HUMANA. É o que impede a semeadura do `.env` de
     // reescrever a escolha no render seguinte — inclusive quando a escolha foi
     // apagar tudo para voltar ao padrão do produto. Ver `precisaSemear`.
@@ -170,6 +207,15 @@ export async function updateBranding(
       ...(parsed.data.barra_lateral ? { barra_lateral: parsed.data.barra_lateral } : {}),
       ...(parsed.data.densidade ? { densidade: parsed.data.densidade } : {}),
       ...(parsed.data.fonte ? { fonte: parsed.data.fonte } : {}),
+      // Quais cores, por tema — nunca os valores (identidade, como o hex da marca).
+      ...(parsed.data.cores !== undefined
+        ? {
+            cores_definidas: {
+              claro: Object.keys(parsed.data.cores.claro ?? {}),
+              escuro: Object.keys(parsed.data.cores.escuro ?? {}),
+            },
+          }
+        : {}),
     },
   });
 

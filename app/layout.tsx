@@ -4,7 +4,7 @@ import { headers } from "next/headers";
 import { Toaster } from "sonner";
 import { coresDaBarraDoNavegador } from "@/lib/branding/barra-do-navegador";
 import { MarcaDaInstalacaoProvider } from "@/lib/branding/contexto";
-import { cssDaMarca } from "@/lib/branding/css";
+import { cssDaMarca, cssDasCores } from "@/lib/branding/css";
 import { iconeDaAba } from "@/lib/branding/icone";
 import { folhaPersonalizadaDaInstalacao } from "@/lib/branding/folha-personalizada";
 import { CABECALHO_SEM_CSS } from "@/lib/branding/sem-css-personalizado";
@@ -126,8 +126,14 @@ export async function generateMetadata(): Promise<Metadata> {
 
 /**
  * A cor da barra do navegador sai da RÉGUA, não de dois hexes redigitados aqui.
- * O porquê — inclusive por que isto NÃO deve virar `generateViewport()` lendo o
- * banco — está no cabeçalho de `lib/branding/barra-do-navegador.ts`.
+ *
+ * `generateViewport()` desde as cores do tema (migration 0677): a instalação
+ * pode escolher o `--color-bg`, então a barra deixou de ser "sempre a mesma
+ * constante" — a premissa que o cabeçalho de `lib/branding/barra-do-navegador.ts`
+ * registrava para NÃO ler o banco aqui caiu com a decisão de 2026-10-15. O custo
+ * é o de `marcaResolvida()`: a leitura é memoizada por TTL no módulo, a mesma que
+ * `generateMetadata` já paga — não uma consulta por requisição. Só a INSTALAÇÃO:
+ * este layout não sabe de qual empresa é quem olha.
  *
  * ─── As quatro linhas abaixo do `themeColor`, e por que não são enfeite ──────
  *
@@ -149,13 +155,16 @@ export async function generateMetadata(): Promise<Metadata> {
  * Nada de `maximumScale` nem `userScalable: false`: impedir o zoom é barreira
  * de acessibilidade, e quem lê a tela de perto precisa dele.
  */
-export const viewport: Viewport = {
-  themeColor: coresDaBarraDoNavegador(REGUA_DO_PRODUTO),
-  width: "device-width",
-  initialScale: 1,
-  viewportFit: "cover",
-  interactiveWidget: "resizes-content",
-};
+export async function generateViewport(): Promise<Viewport> {
+  const { marca } = await marcaResolvida();
+  return {
+    themeColor: coresDaBarraDoNavegador(REGUA_DO_PRODUTO, marca.cores),
+    width: "device-width",
+    initialScale: 1,
+    viewportFit: "cover",
+    interactiveWidget: "resizes-content",
+  };
+}
 
 // Inline FOUC-prevention. Conteúdo é string literal estática (zero input do usuário),
 // portanto seguro. Lê localStorage + prefers-color-scheme antes do primeiro paint.
@@ -210,7 +219,13 @@ async function EstiloDaMarca() {
   // componente que alguém pode mover.
   await headers();
   const { linha, marca } = await marcaResolvida();
-  const { css, motivos } = cssDaMarca(marca.cor);
+  const { css: cssDoAccent, motivos: motivosDoAccent } = cssDaMarca(marca.cor);
+  // As cores do tema (0677): já TRAVADAS pelo resolvedor — a camada que reprovou
+  // ficou de lado e o motivo está em `marca.motivos`. Mesmo `<style>`, um bloco
+  // a mais: o id continua respondendo "a instalação tem marca própria?".
+  const doTema = cssDasCores(marca.cores, "instalacao");
+  const css = [cssDoAccent, doTema.css].filter((c): c is string => c !== null).join("\n") || null;
+  const motivos = [...motivosDoAccent, ...doTema.motivos];
 
   // O ESTADO da recusa vai para o banco, não só para o log. Sem isto, o degrade
   // ("o produto ficou com a cor dele") é indistinguível de "a feature nunca foi

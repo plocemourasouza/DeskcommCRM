@@ -3,9 +3,10 @@
  * degraus, e faltar UMA coluna de aparência nunca leva as outras embora.
  *
  *   1. todas as colunas;
- *   2. sem `fonte` (banco na 0675, ainda sem a 0676);
- *   3. sem `fonte` e `densidade` (banco na 0674, ainda sem a 0675);
- *   4. sem `raio`, `barra_lateral`, `densidade` e `fonte` (banco anterior à 0674).
+ *   2. sem `cores` (banco na 0676, ainda sem a 0677);
+ *   3. sem `cores` e `fonte` (banco na 0675, ainda sem a 0676);
+ *   4. sem `cores`, `fonte` e `densidade` (banco na 0674, ainda sem a 0675);
+ *   5. sem `cores`, `raio`, `barra_lateral`, `densidade` e `fonte` (anterior à 0674).
  *
  * O dublê do cliente é o mesmo do `branding-memo-da-instalacao`: o que se mede
  * é a lista de colunas pedida em cada ida e o que sobra da linha.
@@ -65,43 +66,53 @@ beforeEach(() => {
 });
 
 describe("leitura da marca da instalação sobre banco sem as colunas novas", () => {
-  it("banco em dia: uma ida, com densidade e fonte", async () => {
+  it("banco em dia: uma ida, com densidade, fonte e cores", async () => {
     await ler();
     expect(banco.pedidos).toHaveLength(1);
     expect(banco.pedidos[0]).toContain("densidade");
     expect(banco.pedidos[0]).toContain("fonte");
+    expect(banco.pedidos[0]).toContain("cores");
   });
 
-  it("sem a coluna fonte (0675 sem 0676): segunda ida mantém raio, barra e densidade", async () => {
-    banco.ausentes = ["fonte"];
+  it("sem a coluna cores (0676 sem 0677): segunda ida mantém fonte, densidade, raio e barra", async () => {
+    banco.ausentes = ["cores"];
     const linha = await ler();
     expect(linha?.app_name).toBe("Revenda");
     expect(banco.pedidos).toHaveLength(2);
-    expect(banco.pedidos[1]).not.toContain("fonte");
-    expect(banco.pedidos[1]).toContain("raio, barra_lateral, densidade");
+    expect(banco.pedidos[1]).not.toContain("cores");
+    expect(banco.pedidos[1]).toContain("raio, barra_lateral, densidade, fonte");
   });
 
-  it("sem fonte e densidade (0674 sem 0675): terceira ida mantém raio e barra", async () => {
-    banco.ausentes = ["densidade", "fonte"];
+  it("sem cores e fonte (0675 sem 0676): terceira ida mantém raio, barra e densidade", async () => {
+    banco.ausentes = ["cores", "fonte"];
     const linha = await ler();
     expect(linha?.app_name).toBe("Revenda");
     expect(banco.pedidos).toHaveLength(3);
-    expect(banco.pedidos[2]).not.toMatch(/densidade|fonte/);
-    expect(banco.pedidos[2]).toContain("raio, barra_lateral");
+    expect(banco.pedidos[2]).not.toMatch(/fonte|cores/);
+    expect(banco.pedidos[2]).toContain("raio, barra_lateral, densidade");
   });
 
-  it("banco anterior à 0674: quarta ida sem nenhuma das quatro", async () => {
-    banco.ausentes = ["densidade", "raio", "barra_lateral", "fonte"];
+  it("sem cores, fonte e densidade (0674 sem 0675): quarta ida mantém raio e barra", async () => {
+    banco.ausentes = ["cores", "densidade", "fonte"];
     const linha = await ler();
     expect(linha?.app_name).toBe("Revenda");
     expect(banco.pedidos).toHaveLength(4);
-    expect(banco.pedidos[3]).not.toMatch(/densidade|raio|barra_lateral|fonte/);
+    expect(banco.pedidos[3]).not.toMatch(/densidade|fonte|cores/);
+    expect(banco.pedidos[3]).toContain("raio, barra_lateral");
+  });
+
+  it("banco anterior à 0674: quinta ida sem nenhuma das cinco", async () => {
+    banco.ausentes = ["cores", "densidade", "raio", "barra_lateral", "fonte"];
+    const linha = await ler();
+    expect(linha?.app_name).toBe("Revenda");
+    expect(banco.pedidos).toHaveLength(5);
+    expect(banco.pedidos[4]).not.toMatch(/densidade|raio|barra_lateral|fonte|cores/);
   });
 
   it("42703 de coluna que NÃO é de aparência não vira fallback silencioso infinito", async () => {
     banco.ausentes = ["app_name"];
     const linha = await ler();
     expect(linha).toBeNull();
-    expect(banco.pedidos).toHaveLength(4);
+    expect(banco.pedidos).toHaveLength(5);
   });
 });

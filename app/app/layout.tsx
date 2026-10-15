@@ -17,13 +17,14 @@ import {
   neutrosDeTexto,
   raioDeTexto,
   type BarraLateralDaMarca,
+  coresDoTemaEscolhidas,
 } from "@/lib/branding/schema";
 import { scriptDaAparencia, type AparenciaDoHtml } from "@/lib/branding/script-da-aparencia";
 import { MfaEnrollGate } from "@/components/auth/MfaEnrollGate";
-import { cssDaMarca, ESCOPO_DA_ORGANIZACAO } from "@/lib/branding/css";
+import { cssDaMarca, cssDasCores, ESCOPO_DA_ORGANIZACAO } from "@/lib/branding/css";
 import { cssDaExtensaoDeTema, linhaBrutaDeTema, temaAplicavel } from "@/lib/extensions/tema";
 import { marcaDaInstalacao } from "@/lib/branding/instalacao";
-import { resolverMarcaDaOrganizacao } from "@/lib/branding/organizacao";
+import { marcaDaOrganizacaoDeSettings, resolverMarcaDaOrganizacao } from "@/lib/branding/organizacao";
 import { env } from "@/lib/env";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { modulosLigados } from "@/lib/instalacao/modulos";
@@ -228,6 +229,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       // laço de retorno desta feature é a tela `/app/settings/marca`, que mostra
       // os motivos para quem pode consertá-los — o admin daquela organização.
       cssDaOrganizacao = cssDaMarca(marca.cor, ESCOPO_DA_ORGANIZACAO).css;
+    }
+    // As cores do tema da EMPRESA (0677), já travadas pelo resolvedor contra a
+    // instalação de hoje. Só as dela: a pilha resolvida inteira (com as da
+    // instalação embaixo) re-emitiria no `<body>` o que o `<html>` já pinta.
+    if (marca.origens.cores === "organizacao") {
+      const daEmpresa = marcaDaOrganizacaoDeSettings(orgRow?.settings);
+      const proprias = coresDoTemaEscolhidas(daEmpresa?.cores);
+      const doTema = proprias ? cssDasCores(proprias, "organizacao").css : null;
+      cssDaOrganizacao = [cssDaOrganizacao, doTema].filter((c): c is string => c !== null).join("\n") || null;
     }
 
     // O tema de extensão NUNCA derruba a casca — e por isso a leitura fica FORA

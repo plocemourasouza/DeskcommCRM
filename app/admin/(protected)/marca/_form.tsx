@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { updateBranding } from "@/app/actions/settings/updateBranding";
 import { CampoDeLogo } from "@/components/branding/CampoDeLogo";
 import { CampoDoIconeDaAba } from "@/components/branding/CampoDoIconeDaAba";
+import { EditorDeCoresDoTema } from "@/components/branding/EditorDeCoresDoTema";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,13 +18,15 @@ import { SeletorDeDensidade } from "@/components/branding/SeletorDeDensidade";
 import { SeletorDeFonte } from "@/components/branding/SeletorDeFonte";
 import { SeletorDeNeutros } from "@/components/branding/SeletorDeNeutros";
 import { SeletorDeRaio } from "@/components/branding/SeletorDeRaio";
+import { valoresEfetivos } from "@/lib/branding/cores-do-tema";
 import { cssDaMarca } from "@/lib/branding/css";
 import { ehHexValido, K, normalizarHex } from "@/lib/branding/rampa";
 import { REGUA_DO_PRODUTO } from "@/lib/branding/regua-do-produto";
-import { resolverMarca } from "@/lib/branding/resolve";
+import { camadaDoAmbiente, conferirCoresDaPilha, resolverMarca } from "@/lib/branding/resolve";
 import {
   envelopeDeSemente,
   type BarraLateralDaMarca,
+  type CoresDoTema,
   type DensidadeDaMarca,
   type FonteDaMarca,
   type NeutrosDaMarca,
@@ -57,6 +60,12 @@ export interface MarcaGravada {
   readonly barra_lateral: BarraLateralDaMarca;
   readonly densidade: DensidadeDaMarca;
   readonly fonte: FonteDaMarca;
+  /**
+   * As cores do tema gravadas (0677), `{}` sem nenhuma. OBRIGATÓRIO: a tela
+   * manda o objeto inteiro no Salvar, e uma página que esquecesse de passá-lo
+   * apagaria as cores no primeiro clique.
+   */
+  readonly cores: CoresDoTema;
   readonly show_powered_by: boolean;
 }
 
@@ -76,7 +85,14 @@ interface Props {
   readonly iconeDaAba?: string | null;
   /** O que apareceria SEM o arquivo subido — a URL colada no `.env`, se houver. */
   readonly logoDoAmbiente: string | null;
-  readonly origens: { readonly nome: string; readonly logoUrl: string; readonly cor: string };
+  readonly origens: {
+    readonly nome: string;
+    readonly logoUrl: string;
+    readonly cor: string;
+    readonly cores?: string;
+  };
+  /** A cor do arquivo de instalação (`APP_ACCENT_HEX`) — o fundo da pilha que a trava mede. */
+  readonly corDoAmbiente?: string;
   readonly definidoNestaTela: boolean;
   readonly fallbackEm: string | null;
   readonly fallbackMotivo: string | null;
@@ -88,6 +104,8 @@ const ERRO_EM_PORTUGUES: Record<string, string> = {
   validation_failed: "Algum campo não está no formato esperado.",
   unauthenticated: "Sua sessão expirou. Entre de novo para salvar.",
   forbidden_role: "Só quem administra a instalação pode mudar a marca.",
+  cores_sem_contraste:
+    "Alguma combinação de cores ficou difícil de ler. Veja a lista em \u201cCores do tema\u201d.",
 };
 
 /** Cinza médio para o seletor visual quando o campo ainda não tem cor válida. */
@@ -101,6 +119,7 @@ export function FormularioDaMarca({
   iconeDaAba,
   logoDoAmbiente,
   origens,
+  corDoAmbiente,
   definidoNestaTela,
   fallbackEm,
   fallbackMotivo,
@@ -115,6 +134,8 @@ export function FormularioDaMarca({
   const [barraLateral, setBarraLateral] = useState<BarraLateralDaMarca>(gravada.barra_lateral);
   const [densidade, setDensidade] = useState<DensidadeDaMarca>(gravada.densidade);
   const [fonte, setFonte] = useState<FonteDaMarca>(gravada.fonte);
+  const [cores, setCores] = useState<CoresDoTema>(gravada.cores);
+  const [coresValidas, setCoresValidas] = useState(true);
   const [erroTecnico, setErroTecnico] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -151,12 +172,39 @@ export function FormularioDaMarca({
             // mesma validação — o preview mostra o que o servidor vai emitir.
             corEscura:
               hexEscuroLimpo.length > 0 ? envelopeDeSemente(hexEscuroLimpo) : undefined,
+            cores,
           },
         ],
         REGUA_DO_PRODUTO,
       ),
-    [hexLimpo, hexEscuroLimpo, neutros, raio, barraLateral, densidade, fonte],
+    [hexLimpo, hexEscuroLimpo, neutros, raio, barraLateral, densidade, fonte, cores],
   );
+
+  // A TRAVA, ao vivo: a instalação SOZINHA (esta camada + o arquivo de
+  // instalação embaixo), a mesma pergunta que `updateBranding` faz no servidor.
+  // As empresas não entram: o revendedor não fica refém do texto de um cliente.
+  const conferenciaDasCores = useMemo(
+    () =>
+      conferirCoresDaPilha(
+        [
+          {
+            origem: "tela",
+            neutros,
+            cor: hexLimpo.length > 0 && ehHexValido(hexLimpo) ? envelopeDeSemente(hexLimpo) : undefined,
+            corEscura:
+              hexEscuroLimpo.length > 0 && ehHexValido(hexEscuroLimpo)
+                ? envelopeDeSemente(hexEscuroLimpo)
+                : undefined,
+            cores,
+          },
+          camadaDoAmbiente({ APP_ACCENT_HEX: corDoAmbiente }),
+        ],
+        REGUA_DO_PRODUTO,
+      ),
+    [hexLimpo, hexEscuroLimpo, neutros, cores, corDoAmbiente],
+  );
+  const coresDeFabrica = useMemo(() => valoresEfetivos(neutros, {}), [neutros]);
+  const coresEfetivas = useMemo(() => valoresEfetivos(neutros, cores), [neutros, cores]);
 
   // A mesma serialização que decide se a cor chega ao `<style>` da página —
   // rodada aqui para a tela poder dizer "esta cor não seria aplicada" ANTES de
@@ -257,6 +305,8 @@ export function FormularioDaMarca({
       barra_lateral: barraLateral,
       densidade,
       fonte,
+      // Cores do tema: o objeto inteiro, `{}` = volte tudo ao padrão.
+      cores,
     };
 
     const lido = platformBrandingSchema.safeParse(candidato);
@@ -477,6 +527,32 @@ export function FormularioDaMarca({
         />
       </Card>
 
+      <Card className="p-6">
+        <EditorDeCoresDoTema
+          id="cores-do-tema"
+          valor={cores}
+          onChange={(novas, validas) => {
+            setCores(novas);
+            setCoresValidas(validas);
+          }}
+          herdadas={coresDeFabrica}
+          origemDoHerdado={t("padrão do sistema")}
+          efetivas={coresEfetivas}
+          accent={
+            derivada && derivadaEscura
+              ? {
+                  claro: { accent: derivada.claro.accent, accentFg: derivada.claro.accentFg },
+                  escuro: {
+                    accent: derivadaEscura.escuro.accent,
+                    accentFg: derivadaEscura.escuro.accentFg,
+                  },
+                }
+              : null
+          }
+          conferencia={conferenciaDasCores}
+        />
+      </Card>
+
       {/*
         O logo em cartão PRÓPRIO, e não junto do nome: ele não passa pelo botão
         Salvar. Misturá-lo aos campos que passam ensinaria que o arquivo só vale
@@ -515,7 +591,16 @@ export function FormularioDaMarca({
         {erroTecnico ? (
           <span className="font-mono text-xs text-text-muted">{erroTecnico}</span>
         ) : null}
-        <Button type="submit" disabled={isPending || !hexValido || !hexEscuroValido}>
+        <Button
+          type="submit"
+          disabled={
+            isPending ||
+            !hexValido ||
+            !hexEscuroValido ||
+            !coresValidas ||
+            !conferenciaDasCores.passa
+          }
+        >
           {isPending ? t("Salvando…") : t("Salvar")}
         </Button>
       </div>

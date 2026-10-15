@@ -51,6 +51,24 @@ As sete são licenciadas em SIL Open Font License 1.1: uso comercial livre, e po
 
 Na organização, cada campo tem a opção **Usar o padrão da instalação**, que devolve aquele campo à escolha da instalação. Não é preciso reiniciar nada: a mudança vale no próximo carregamento de tela. Se você não mexer em nada, o sistema continua exatamente como estava.
 
+### Cores do tema
+
+Na seção **Cores do tema**, nas duas telas de marca, você escolhe as cores de base da tela, separadas para o modo claro e o escuro:
+
+- **Superfícies**: fundo da página, cartões e áreas em destaque.
+- **Textos**: texto principal, secundário e apagado.
+- **Bordas**: bordas e bordas fortes.
+- **Avisos**: as cores de sucesso, atenção, erro e informação, cada uma com o seu fundo e o seu texto.
+
+A escolha é livre, com uma trava: **o Salvar fica bloqueado enquanto alguma combinação ficar difícil de ler**, e a tela diz qual é e o que ajustar (por exemplo, "Texto secundário sobre Cartões (tema escuro): 3,1 de 4,5 — clareie texto secundário ou escureça cartões"). Os mínimos são os da WCAG: 4,5 para texto e 3,0 para cor de componente. A cor da marca também entra na conta. Quando você troca o fundo, o sistema volta a escolher o tom dos botões, do foco e da seleção sobre o fundo novo. Texto apagado e bordas ficam fora da trava, porque o próprio sistema os usa abaixo desse mínimo, como dica e divisória. A trava também aceita qualquer par que já esteja no nível do padrão do sistema: hoje, o texto secundário sobre as áreas em destaque no modo escuro fica em 4,4.
+
+A ordem é a mesma dos outros ajustes, **cor a cor**: a organização vence a instalação, a instalação vence o tom neutro escolhido (quente, cinza ou frio) e o padrão. Campo vazio herda. Na organização, o campo mostra a cor herdada, e **Voltar ao padrão** devolve aquela cor à da instalação. A cor vale também na barra lateral escura e no modo escuro. A barra do navegador acompanha o fundo escolhido na instalação.
+
+Duas regras para quem hospeda várias organizações:
+
+- **Mudar as cores da instalação nunca é bloqueado por uma organização.** A trava confere a instalação sozinha. Se a mudança deixar ilegível uma cor que uma organização escolheu, o sistema descarta as cores daquela organização e usa as da instalação. A tela de marca da organização avisa e mostra o que ajustar.
+- **Um tema de extensão ativado pela organização vence as cores do tema dela**, porque foi escolha explícita da própria organização. As cores da instalação continuam valendo fora do tema da extensão.
+
 ### CSS personalizado
 
 Na mesma página **Marca da instalação**, o administrador da instalação pode adicionar CSS para ajustes visuais finos no login e nas telas de todas as organizações. A folha vale globalmente, sem reiniciar o servidor, e pode ser removida apagando o conteúdo e salvando.
@@ -133,7 +151,7 @@ Sendo direto, para você não descobrir na frente do cliente. Cada linha traz a 
 
 - **Domínio por organização.** Uma instalação, um domínio. Não há coluna de domínio no schema, o desvio por host no `proxy.ts` é um NOOP declarado (existe só como documentação da topologia pretendida), e no Edge não há banco para consultar antes de decidir a quem aquele host pertence. Cliente que exige o próprio domínio pede **instalação dedicada**.
 - **Fonte própria.** A escolha é entre as sete famílias da lista; subir um arquivo de fonte no painel não existe. `next/font` resolve em tempo de **build**, e a imagem que a sua VPS baixa já vem construída — um campo de envio salvaria um arquivo que nada leria. Acrescentar uma família à lista é mudança de código (um arquivo OFL em `app/fonts/` e o vocabulário), não de painel.
-- **Cores livres.** A sua marca move o **accent** — o que é ação, destaque e foco — e não há cor escolhida à mão para cada elemento. O fundo da página muda só pelos tons neutros (quente, cinza ou frio) e o par claro/escuro é do design system. A cor da barra do navegador é a do produto em toda marca, porque a marca não move o fundo.
+- **Cor por componente.** As **Cores do tema** cobrem as variáveis de base (fundo, cartões, textos, bordas e avisos). Não há como escolher a cor de um botão ou de uma tela específica. A cor de destaque continua sendo derivada da cor da marca. A barra do navegador acompanha o fundo da **instalação**; na organização, ela fica com o fundo da instalação, porque o cabeçalho da página é montado antes de o sistema saber de qual organização a pessoa é.
 - **Espaçamento.** A distância entre elementos (margens e vãos) é a do design system. A altura dos controles, das linhas de tabela e dos itens do menu é a **Densidade**, descrita acima.
 - **Login por organização.** O login é da instalação, pelo motivo da seção acima. Os cantos da instalação valem também no login; os da organização só depois de entrar, e a barra lateral existe só dentro do sistema.
 - **O relatório de LGPD do titular não leva a sua marca — e isso é de propósito.** Ver a seção própria abaixo.

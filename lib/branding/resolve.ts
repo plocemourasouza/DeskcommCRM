@@ -31,17 +31,25 @@ import { derivarMarca, type CodigoDeMotivo, type Marca, type Regua, type Tema } 
 import { logoDaCamada } from "./logo";
 import { normalizarHex } from "./rampa";
 import {
+  conferirCores,
+  empilharCores,
+  reguaComCores,
+  type ConferenciaDasCores,
+} from "./cores-do-tema";
+import {
   ALGORITMO_ATUAL,
   ehPapelConhecido,
   envelopeDeSemente,
   esquemaDaCorDaMarca,
   FORMATO_ATUAL,
   barraLateralEscolhida,
+  coresDoTemaEscolhidas,
   densidadeEscolhida,
   fonteEscolhida,
   neutrosEscolhidos,
   raioEscolhido,
   type BarraLateralDaMarca,
+  type CoresDoTema,
   type DensidadeDaMarca,
   type FonteDaMarca,
   type NeutrosDaMarca,
@@ -61,7 +69,13 @@ export type CodigoDaResolucao =
   | "papel_nao_pinta"
   | "derivacao_falhou"
   /** A cor do TEMA ESCURO (#2482) é neutra: o escuro pinta com a escala do produto. */
-  | "cor_escura_acromatica";
+  | "cor_escura_acromatica"
+  /**
+   * As cores do tema de uma camada (0677) deixam algum par abaixo do piso sobre a
+   * pilha de HOJE — a instalação mudou por baixo da empresa. A camada perde as
+   * cores dela (as de baixo valem) e a tela diz por quê.
+   */
+  | "cores_sem_contraste";
 
 /**
  * Mesma disciplina do `Motivo` de `contraste.ts`: emite FORMA, nunca
@@ -116,6 +130,8 @@ export type CamadaDeMarca = {
   readonly densidade?: DensidadeDaMarca | null;
   /** A fonte desta camada; mesma regra. */
   readonly fonte?: FonteDaMarca | null;
+  /** As cores do tema escolhidas por ESTA camada (0677). Lidas defensivamente na resolução. */
+  readonly cores?: unknown;
 };
 
 export type CorResolvida = {
@@ -146,6 +162,11 @@ export type MarcaResolvida = Branding & {
   readonly densidade: DensidadeDaMarca;
   /** A fonte em vigor (`atkinson` quando nenhuma camada escolheu). */
   readonly fonte: FonteDaMarca;
+  /**
+   * As cores do tema em vigor (0677), por token, já empilhadas e já TRAVADAS:
+   * toda camada que sobrou aqui passou na trava de contraste. `{}` = o produto.
+   */
+  readonly cores: CoresDoTema;
   /** De qual camada veio cada campo — o que torna a precedência auditável. */
   readonly origens: {
     readonly nome: string;
@@ -157,6 +178,8 @@ export type MarcaResolvida = Branding & {
     readonly barraLateral: string;
     readonly densidade: string;
     readonly fonte: string;
+    /** A camada MAIS ALTA que contribuiu com alguma cor do tema (`padrao` sem nenhuma). */
+    readonly cores: string;
     /** Só existe quando a MESMA camada que venceu a cor definiu a do escuro. */
     readonly corEscura?: string;
   };
@@ -482,6 +505,117 @@ function resolverCor(
   }
 }
 
+/** A primeira camada (de cima) cuja cor pinta — o laço de sempre, contra uma régua. */
+function resolverACor(
+  camadas: readonly CamadaDeMarca[],
+  regua: Regua,
+): { cor: CorResolvida | null; origem: string; motivos: MotivoDaMarca[] } {
+  const motivos: MotivoDaMarca[] = [];
+  for (const camada of camadas) {
+    if (!("cor" in camada)) continue;
+    const tentativa = resolverCor(camada.cor, camada.origem, regua, camada.corEscura);
+    motivos.push(...tentativa.motivos);
+    if (tentativa.cor) return { cor: tentativa.cor, origem: camada.origem, motivos };
+  }
+  return { cor: null, origem: PADRAO, motivos };
+}
+
+/**
+ * As sementes que de fato pintam cada tema. `null` = nenhuma derivação pinta
+ * (sem cor, ou cor só de identidade): a tela fica com a escala do `globals.css`.
+ * Semente neutra NÃO vira `null`: ela deriva sobre a escala do produto e a
+ * caminhada ainda pode andar — é esse o pixel que `cssDaMarca` emite.
+ */
+function sementesQuePintam(cor: CorResolvida | null): {
+  claro: string | null;
+  escuro: string | null;
+} {
+  const claro = cor?.derivada ? cor.semente : null;
+  return { claro, escuro: cor?.corEscura ? cor.corEscura.semente : claro };
+}
+
+/**
+ * Empilha as cores do tema das camadas (a de cima vence token a token) passando
+ * a TRAVA de baixo para cima: cada camada só entra se a pilha COM ela continua
+ * legível. A que reprova é deixada de lado INTEIRA — nunca token a token, o que
+ * produziria uma combinação que ninguém escolheu — e anota o motivo.
+ *
+ * De baixo para cima porque a pergunta é "esta camada, sobre o que existe hoje
+ * embaixo dela, se lê?" — a mesma que a server action fez quando ela foi salva.
+ * Se a de baixo mudou depois, quem perde é a de cima (a empresa), nunca a
+ * instalação: o revendedor não fica refém das escolhas de um cliente.
+ *
+ * Nunca lança: `conferirCores` é pura e total, e o `try` é a rede para o caso
+ * de ela deixar de ser — este código roda no `app/layout.tsx`.
+ */
+function travarCores(
+  camadas: readonly CamadaDeMarca[],
+  regua: Regua,
+  neutros: NeutrosDaMarca,
+  sementes: { claro: string | null; escuro: string | null },
+): { cores: CoresDoTema; origem: string; motivos: MotivoDaMarca[] } {
+  const motivos: MotivoDaMarca[] = [];
+  let pilha: CoresDoTema = {};
+  let origem = PADRAO;
+  for (const camada of [...camadas].reverse()) {
+    const escolhidas = coresDoTemaEscolhidas(camada.cores);
+    if (!escolhidas) continue;
+    const candidata = empilharCores(escolhidas, pilha);
+    let conferencia: ConferenciaDasCores;
+    try {
+      conferencia = conferirCores({ regua, neutros, cores: candidata, sementes });
+    } catch {
+      conferencia = { passa: false, reprovas: [], pares: 0 };
+    }
+    if (!conferencia.passa) {
+      const primeira = conferencia.reprovas[0];
+      motivos.push({
+        codigo: "cores_sem_contraste",
+        origem: camada.origem,
+        tema: primeira?.tema ?? null,
+        alvo: primeira?.papel ?? null,
+        detalhe:
+          `${conferencia.reprovas.length} par(es) abaixo do piso sobre as camadas de baixo; ` +
+          `as cores do tema desta camada ficam de lado`,
+      });
+      continue;
+    }
+    pilha = candidata;
+    origem = camada.origem;
+  }
+  return { cores: pilha, origem, motivos };
+}
+
+/**
+ * A trava das cores do tema sobre uma pilha de camadas — a pergunta que a
+ * server action e a tela fazem ANTES de gravar.
+ *
+ * Diferente de `resolverMarca`, aqui nada é deixado de lado: as cores de todas
+ * as camadas são empilhadas e medidas juntas, e a resposta é sim ou não, com os
+ * pares. As sementes são as que a pilha pinta com essas cores no lugar.
+ */
+export function conferirCoresDaPilha(
+  camadas: readonly CamadaDeMarca[],
+  regua: Regua,
+): ConferenciaDasCores {
+  let pilha: CoresDoTema = {};
+  for (const camada of [...camadas].reverse()) {
+    const escolhidas = coresDoTemaEscolhidas(camada.cores);
+    if (escolhidas) pilha = empilharCores(escolhidas, pilha);
+  }
+  let neutros: NeutrosDaMarca = "quente";
+  for (const camada of camadas) {
+    const escolhido = neutrosEscolhidos(camada.neutros);
+    if (escolhido) {
+      neutros = escolhido;
+      break;
+    }
+  }
+  const reguaDosNeutros = regua === REGUA_DO_PRODUTO ? reguaDoProduto(neutros) : regua;
+  const { cor } = resolverACor(camadas, reguaComCores(reguaDosNeutros, pilha));
+  return conferirCores({ regua: reguaDosNeutros, neutros, cores: pilha, sementes: sementesQuePintam(cor) });
+}
+
 /**
  * Junta as camadas, da MAIS específica para a MAIS genérica.
  *
@@ -561,22 +695,23 @@ export function resolverMarca(camadas: readonly CamadaDeMarca[], regua: Regua): 
   // A cor e medida CONTRA os neutros que vao aparecer: o contraste do accent sobre
   // o fundo `frio` nao e o do `quente`. So a regua do PRODUTO ganha o preset — uma
   // regua injetada (teste, previa de outra regua) e do chamador e fica como veio.
-  const reguaEfetiva = regua === REGUA_DO_PRODUTO ? reguaDoProduto(neutros) : regua;
+  const reguaDosNeutros = regua === REGUA_DO_PRODUTO ? reguaDoProduto(neutros) : regua;
 
   const motivos: MotivoDaMarca[] = [];
-  let cor: CorResolvida | null = null;
-  let origemDaCor = PADRAO;
 
-  for (const camada of camadas) {
-    if (!("cor" in camada)) continue;
-    const tentativa = resolverCor(camada.cor, camada.origem, reguaEfetiva, camada.corEscura);
-    motivos.push(...tentativa.motivos);
-    if (tentativa.cor) {
-      cor = tentativa.cor;
-      origemDaCor = camada.origem;
-      break;
-    }
-  }
+  // A cor da marca é resolvida primeiro contra a régua dos NEUTROS: é ela que
+  // diz quais sementes pintam cada tema, e a trava das cores precisa disso.
+  const preliminar = resolverACor(camadas, reguaDosNeutros);
+  const travadas = travarCores(camadas, reguaDosNeutros, neutros, sementesQuePintam(preliminar.cor));
+
+  // Superfícies escolhidas mudam o chão da caminhada do accent: a cor da marca
+  // é re-derivada SOBRE elas. Sem superfície escolhida a régua é a MESMA
+  // (identidade), nada é recalculado e a saída é byte a byte a de antes.
+  const reguaEfetiva = reguaComCores(reguaDosNeutros, travadas.cores);
+  const final = reguaEfetiva === reguaDosNeutros ? preliminar : resolverACor(camadas, reguaEfetiva);
+  motivos.push(...final.motivos, ...travadas.motivos);
+  const cor = final.cor;
+  const origemDaCor = final.origem;
 
   return {
     ...base,
@@ -587,6 +722,7 @@ export function resolverMarca(camadas: readonly CamadaDeMarca[], regua: Regua): 
     barraLateral,
     densidade,
     fonte,
+    cores: travadas.cores,
     origens: {
       nome: nome?.origem ?? PADRAO,
       logoUrl: logo?.origem ?? PADRAO,
@@ -597,6 +733,7 @@ export function resolverMarca(camadas: readonly CamadaDeMarca[], regua: Regua): 
       barraLateral: origemDaBarra,
       densidade: origemDaDensidade,
       fonte: origemDaFonte,
+      cores: travadas.origem,
       ...(cor?.corEscura ? { corEscura: origemDaCor } : {}),
     },
     motivos,
@@ -654,6 +791,12 @@ export type LinhaDaInstalacao = {
   readonly densidade?: string | null;
   /** A fonte (migration 0676). Linha anterior a coluna: ausente = `atkinson`. */
   readonly fonte?: string | null;
+  /**
+   * As cores do tema (migration 0677), jsonb `{claro?, escuro?}`. `unknown` de
+   * propósito: o banco é lido sem confiança, e quem dá forma é
+   * `coresDoTemaEscolhidas` — linha anterior à coluna: ausente = o produto.
+   */
+  readonly cores?: unknown;
 };
 
 /**
@@ -684,6 +827,7 @@ export function camadaDaInstalacao(linha: LinhaDaInstalacao | null): CamadaDeMar
   const barraLateral = barraLateralEscolhida(linha.barra_lateral);
   const densidade = densidadeEscolhida(linha.densidade);
   const fonte = fonteEscolhida(linha.fonte);
+  const cores = coresDoTemaEscolhidas(linha.cores);
   // Mesma regra do `.env`: campo vazio é ausência de configuração, não cor com
   // defeito. Sem isto, uma linha semeada de um `.env` sem cor emitiria
   // `cor_ausente` em toda instalação de fábrica — e aviso no caso normal ensina
@@ -699,6 +843,7 @@ export function camadaDaInstalacao(linha: LinhaDaInstalacao | null): CamadaDeMar
       ...(barraLateral ? { barraLateral } : {}),
       ...(densidade ? { densidade } : {}),
       ...(fonte ? { fonte } : {}),
+      ...(cores ? { cores } : {}),
     };
   }
   return {
@@ -713,6 +858,7 @@ export function camadaDaInstalacao(linha: LinhaDaInstalacao | null): CamadaDeMar
       ...(barraLateral ? { barraLateral } : {}),
       ...(densidade ? { densidade } : {}),
       ...(fonte ? { fonte } : {}),
+      ...(cores ? { cores } : {}),
   };
 }
 
@@ -784,6 +930,8 @@ export type MarcaDaOrganizacao = {
   readonly densidade?: string | null;
   /** A fonte desta organizacao; ausente = herda da instalacao. */
   readonly fonte?: string | null;
+  /** As cores do tema desta organizacao (0677); ausente = herda token a token. */
+  readonly cores?: unknown;
 };
 
 /**
@@ -823,6 +971,7 @@ export function camadaDaOrganizacao(marca: MarcaDaOrganizacao | null): CamadaDeM
   const barraLateral = barraLateralEscolhida(marca.barra_lateral);
   const densidade = densidadeEscolhida(marca.densidade);
   const fonte = fonteEscolhida(marca.fonte);
+  const cores = coresDoTemaEscolhidas(marca.cores);
   if (hex.length === 0)
     return {
       origem: "organizacao",
@@ -834,6 +983,7 @@ export function camadaDaOrganizacao(marca: MarcaDaOrganizacao | null): CamadaDeM
       ...(barraLateral ? { barraLateral } : {}),
       ...(densidade ? { densidade } : {}),
       ...(fonte ? { fonte } : {}),
+      ...(cores ? { cores } : {}),
     };
   return {
     origem: "organizacao",
@@ -847,5 +997,6 @@ export function camadaDaOrganizacao(marca: MarcaDaOrganizacao | null): CamadaDeM
       ...(barraLateral ? { barraLateral } : {}),
       ...(densidade ? { densidade } : {}),
       ...(fonte ? { fonte } : {}),
+      ...(cores ? { cores } : {}),
   };
 }

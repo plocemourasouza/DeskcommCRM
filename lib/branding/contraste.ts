@@ -32,7 +32,7 @@
  */
 
 import type { Grau, Oklch, Rampa } from "./rampa";
-import type { NeutrosDaMarca } from "./schema";
+import { TOKENS_DE_COR_DO_TEMA, type NeutrosDaMarca, type TokenDeCorDoTema } from "./schema";
 import {
   compor,
   deltaEOklab,
@@ -366,6 +366,51 @@ export function extrairRegua(css: string, neutros: NeutrosDaMarca = "quente"): R
     claro: montarTema("claro", declsClaro, regras, false),
     escuro: montarTema("escuro", declsEscuro, regras, true),
   };
+}
+
+/**
+ * O valor de FÁBRICA de cada cor editável do tema (`TOKENS_DE_COR_DO_TEMA`), por
+ * tema, sob um preset de neutros — exatamente o que o `globals.css` declara,
+ * como texto CSS (`#rrggbb` ou `rgba(...)`: os `-bg` das semânticas são
+ * translúcidos de propósito, e uniformizar para hex apagaria a translucidez).
+ *
+ * É a base da trava de contraste das cores do tema: o que a marca não escolheu
+ * vale o que o produto pinta. Mesmo motivo de `extrairRegua` para receber o
+ * TEXTO e para estourar quando falta um token — cair num valor inventado
+ * mediria uma tela que ninguém vê.
+ */
+export function extrairCoresPadrao(
+  css: string,
+  neutros: NeutrosDaMarca = "quente",
+): Record<Tema, Record<TokenDeCorDoTema, string>> {
+  const regras = varrerRegras(css);
+  const raiz = regras.find((r) => r.seletor === ":root");
+  const escuro = regras.find(
+    (r) =>
+      r.seletor.includes('[data-theme="dark"]') && r.decls.some((d) => d.prop === "--color-bg"),
+  );
+  if (!raiz || !escuro) {
+    throw new Error('cores: não achei os blocos :root e [data-theme="dark"] no CSS');
+  }
+  const ler = (decls: readonly Declaracao[], tema: Tema): Record<TokenDeCorDoTema, string> => {
+    const saida = {} as Record<TokenDeCorDoTema, string>;
+    for (const token of TOKENS_DE_COR_DO_TEMA) {
+      const valor = decls.find((d) => d.prop === `--color-${token}`)?.valor;
+      if (!valor || !lerFonte(valor)) throw new Error(`cores: --color-${token} ausente em ${tema}`);
+      saida[token] = valor.toLowerCase().replace(/\s+/g, " ");
+    }
+    return saida;
+  };
+  return {
+    claro: ler(comPreset(raiz.decls, presetDe(regras, neutros, "claro")), "claro"),
+    escuro: ler(comPreset(escuro.decls, presetDe(regras, neutros, "escuro")), "escuro"),
+  };
+}
+
+/** Uma cor CSS das que `extrairCoresPadrao` devolve, como hex + alfa (`null` se não for cor). */
+export function lerCorCss(valor: string): { readonly hex: string; readonly alfa: number } | null {
+  const f = lerFonte(valor);
+  return f?.tipo === "literal" ? { hex: f.hex, alfa: f.alfa } : null;
 }
 
 /**

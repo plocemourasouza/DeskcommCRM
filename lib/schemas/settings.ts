@@ -15,6 +15,7 @@ import {
   FONTES_DA_MARCA,
   NEUTROS_DA_MARCA,
   RAIOS_DA_MARCA,
+  esquemaDasCoresDoTema,
 } from "@/lib/branding/schema";
 import { IDIOMAS } from "@/lib/i18n/idiomas";
 import { MOEDAS_SERVIDAS } from "@/lib/money";
@@ -348,6 +349,13 @@ export const platformBrandingSchema = z.object({
   densidade: z.enum(DENSIDADES_DA_MARCA).optional(),
   /** A fonte (migration 0676). Opcional pelo mesmo motivo: coluna `not null`. */
   fonte: z.enum(FONTES_DA_MARCA).optional(),
+  /**
+   * As cores do tema (migration 0677): `{claro?, escuro?}`, só a allowlist, só
+   * `#rrggbb` minúsculo. Opcional: ausente = não mexa (coluna `not null default
+   * '{}'`); `{}` = volte tudo ao padrão. A action ainda passa a TRAVA de
+   * contraste — forma certa não é cor legível.
+   */
+  cores: esquemaDasCoresDoTema.optional(),
 });
 export type PlatformBrandingInput = z.infer<typeof platformBrandingSchema>;
 
@@ -401,6 +409,12 @@ export const marcaDaOrganizacaoSchema = z.object({
   densidade: z.enum(DENSIDADES_DA_MARCA).nullable().optional(),
   /** A fonte desta organizacao (0676): mesmos tres estados do raio. */
   fonte: z.enum(FONTES_DA_MARCA).nullable().optional(),
+  /**
+   * As cores do tema desta organizacao (0677): os mesmos tres estados do raio
+   * (objeto = grava, `null` = herda tudo da instalacao, ausente = nao mexa). Token
+   * que a empresa nao escolheu desce para a instalacao, um por um.
+   */
+  cores: esquemaDasCoresDoTema.nullable().optional(),
 });
 export type MarcaDaOrganizacaoInput = z.infer<typeof marcaDaOrganizacaoSchema>;
 

@@ -8649,6 +8649,7 @@ export type Database = {
           accent_hex: string | null
           app_name: string | null
           barra_lateral: string
+          cores: Json
           densidade: string
           fallback_at: string | null
           fallback_reason: string | null
@@ -8668,6 +8669,7 @@ export type Database = {
           accent_hex?: string | null
           app_name?: string | null
           barra_lateral?: string
+          cores?: Json
           densidade?: string
           fallback_at?: string | null
           fallback_reason?: string | null
@@ -8687,6 +8689,7 @@ export type Database = {
           accent_hex?: string | null
           app_name?: string | null
           barra_lateral?: string
+          cores?: Json
           densidade?: string
           fallback_at?: string | null
           fallback_reason?: string | null

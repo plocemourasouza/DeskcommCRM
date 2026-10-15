@@ -13,6 +13,7 @@ import { camadaDaInstalacao, camadaDoAmbiente, resolverMarca } from "@/lib/brand
 import {
   barraLateralDeTexto,
   densidadeDeTexto,
+  coresDoTemaEscolhidas,
   fonteDeTexto,
   neutrosDeTexto,
   raioDeTexto,
@@ -116,6 +117,7 @@ export default async function Page() {
           barra_lateral: barraLateralDeTexto(linha?.barra_lateral),
           densidade: densidadeDeTexto(linha?.densidade),
           fonte: fonteDeTexto(linha?.fonte),
+          cores: coresDoTemaEscolhidas(linha?.cores) ?? {},
           // `true` é o default da coluna: sem linha ainda, é o valor que o
           // `upsert` gravaria de qualquer forma.
           show_powered_by: linha?.show_powered_by ?? true,
@@ -127,6 +129,7 @@ export default async function Page() {
         iconeDaAba={logoDaCamada(linha?.favicon_path, null)}
         logoDoAmbiente={semOArquivo.logoUrl}
         origens={marca.origens}
+        corDoAmbiente={env.APP_ACCENT_HEX}
         // `seeded_from_env` ligado significa que a linha é cópia do arquivo de
         // instalação, não escolha de alguém nesta tela. Sem linha, também não é.
         definidoNestaTela={linha !== null && !linha.seeded_from_env}

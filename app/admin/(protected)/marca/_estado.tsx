@@ -38,7 +38,13 @@ const CLASSE_DO_TOM: Record<Tom, string> = {
 
 interface Props {
   /** De qual camada veio cada campo GRAVADO (`banco`, `env` ou `padrao`). */
-  readonly origens: { readonly nome: string; readonly logoUrl: string; readonly cor: string };
+  readonly origens: {
+    readonly nome: string;
+    readonly logoUrl: string;
+    readonly cor: string;
+    /** As cores do tema (0677). Opcional: telas antigas que não as conhecem seguem iguais. */
+    readonly cores?: string;
+  };
   /** `false` quando a linha do banco é só uma cópia do arquivo de instalação. */
   readonly definidoNestaTela: boolean;
   /** Já formatado no servidor — data formatada no cliente diverge do HTML servido. */
@@ -174,6 +180,12 @@ export function EstadoDaMarca({
             campo={t("Cor")}
             valor={origemEmPortugues(origens.cor, definidoNestaTela, t)}
           />
+          {origens.cores !== undefined ? (
+            <LinhaDeOrigem
+              campo={t("Cores do tema")}
+              valor={origemEmPortugues(origens.cores, definidoNestaTela, t)}
+            />
+          ) : null}
         </div>
         <p className="mt-3 text-xs text-text-muted">
           {t(

@@ -1,18 +1,15 @@
 /**
  * A cor da barra do navegador (`<meta name="theme-color">`) — LIDA da régua.
  *
- * ─── Por que NÃO é dinâmico, e por que trocar por `generateViewport()` erra ──
+ * ─── Por que passou a ser dinâmico (migration 0677) ─────────────────────────
  *
- * A marca do operador não move o fundo da página. O serializador
- * (`lib/branding/css.ts`) emite `--color-brand` e a família do accent
- * (`--color-accent-{50..950}`, `-fg`, `-hover`, `-soft`) e mais nada — medido:
- * `grep -c color-bg lib/branding/css.ts` devolve 1, e essa única ocorrência
- * está dentro de um comentário sobre contraste. Logo `#faf9f6` / `#161510` são
- * a cor CERTA da barra para qualquer marca, e um `generateViewport()` lendo o
- * banco custaria uma leitura por requisição para devolver sempre a mesma
- * constante. Isto está escrito aqui porque a leitura apressada ("a barra tem a
- * cor do produto em todo clone!") é verdadeira e não é defeito, e sem o motivo
- * registrado alguém a "conserta" de novo.
+ * Até as cores do tema, a marca não movia o fundo e `#faf9f6` / `#161510` eram a
+ * cor certa da barra para qualquer marca — ler o banco no `viewport` seria pagar
+ * uma consulta para devolver uma constante. Com a decisão de 2026-10-15 a
+ * INSTALAÇÃO pode escolher o `--color-bg`, e a barra o acompanha: o layout raiz
+ * usa `generateViewport()` sobre `marcaResolvida()`, que é memoizada por TTL (não
+ * uma consulta por requisição). Sem cor escolhida, a saída é a de antes, byte a
+ * byte. A empresa não entra: o `<head>` não sabe de qual empresa é quem olha.
  *
  * ─── O defeito que este módulo conserta é DUPLICAÇÃO ────────────────────────
  *
@@ -31,6 +28,7 @@
  */
 
 import type { Regua, TemaDaRegua } from "./contraste";
+import type { CoresDoTema } from "./schema";
 
 /** O formato que `Viewport["themeColor"]` do Next aceita. */
 export type CorDaBarra = { readonly media: string; readonly color: string };
@@ -49,11 +47,17 @@ function corDeFundo(tema: TemaDaRegua): string | undefined {
  * num campo que o tipo do Next declara obrigatório — o cast que a doutrina
  * proíbe, e que aqui esconderia justamente a régua quebrada.
  */
-export function coresDaBarraDoNavegador(regua: Regua): CorDaBarra[] {
+/**
+ * `cores` (0677): o fundo que a marca da INSTALAÇÃO escolheu, por tema, vence o
+ * do preset — a barra do navegador acompanha o `--color-bg` que a página pinta.
+ * Só a instalação: o `<meta name="theme-color">` sai de `generateViewport()` no
+ * layout raiz, que não sabe de qual empresa é quem está olhando.
+ */
+export function coresDaBarraDoNavegador(regua: Regua, cores: CoresDoTema = {}): CorDaBarra[] {
   return (
     [
-      ["(prefers-color-scheme: light)", corDeFundo(regua.claro)],
-      ["(prefers-color-scheme: dark)", corDeFundo(regua.escuro)],
+      ["(prefers-color-scheme: light)", cores.claro?.bg ?? corDeFundo(regua.claro)],
+      ["(prefers-color-scheme: dark)", cores.escuro?.bg ?? corDeFundo(regua.escuro)],
     ] as const
   ).flatMap(([media, color]) => (color ? [{ media, color }] : []));
 }

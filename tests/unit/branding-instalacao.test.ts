@@ -214,7 +214,7 @@ describe("a camada do banco dentro da precedência", () => {
     // velho), linha não semeada: a marca da instalação tem de continuar de pé.
     const marca = resolverMarca([camadaDaInstalacao(null), ambiente], REGUA);
     expect(marca.name).toBe("Revenda XPTO");
-    expect(marca.origens).toEqual({ nome: "env", logoUrl: "env", cor: "env", neutros: "padrao", raio: "padrao", barraLateral: "padrao", densidade: "padrao", fonte: "padrao" });
+    expect(marca.origens).toEqual({ nome: "env", logoUrl: "env", cor: "env", neutros: "padrao", raio: "padrao", barraLateral: "padrao", densidade: "padrao", fonte: "padrao", cores: "padrao" });
     expect(marca.cor?.semente).toBe("#2563eb");
   });
 
@@ -225,7 +225,7 @@ describe("a camada do banco dentro da precedência", () => {
     );
     expect(marca.name).toBe("Clínica Sant'Ana");
     expect(marca.cor?.semente).toBe("#7f8c3a");
-    expect(marca.origens).toEqual({ nome: "banco", logoUrl: "env", cor: "banco", neutros: "padrao", raio: "padrao", barraLateral: "padrao", densidade: "padrao", fonte: "padrao" });
+    expect(marca.origens).toEqual({ nome: "banco", logoUrl: "env", cor: "banco", neutros: "padrao", raio: "padrao", barraLateral: "padrao", densidade: "padrao", fonte: "padrao", cores: "padrao" });
   });
 
   it("precedência é POR CAMPO: banco só com nome mantém o logo do `.env`", () => {

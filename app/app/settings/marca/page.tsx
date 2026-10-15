@@ -33,6 +33,7 @@ import { requireAuth, resolveActiveOrg } from "@/lib/auth/server";
 import { ROLE_RANK } from "@/lib/auth/types";
 import { marcaDaInstalacao } from "@/lib/branding/instalacao";
 import { marcaDaOrganizacaoDeSettings } from "@/lib/branding/organizacao";
+import { coresDoTemaEscolhidas } from "@/lib/branding/schema";
 import { env } from "@/lib/env";
 import { perfilDoPais } from "@/lib/legal/perfil-do-pais";
 import { createClient } from "@/lib/supabase/server";
@@ -95,6 +96,7 @@ export default async function MarcaDaOrganizacaoPage() {
           barra_lateral: gravada?.barra_lateral ?? null,
           densidade: gravada?.densidade ?? null,
           fonte: gravada?.fonte ?? null,
+          cores: coresDoTemaEscolhidas(gravada?.cores),
         }}
         // As DUAS camadas de baixo descem para o formulário, e não uma resolução
         // já pronta: a prévia ao vivo remonta a pilha inteira a cada tecla, pelo
@@ -112,6 +114,7 @@ export default async function MarcaDaOrganizacaoPage() {
           barra_lateral: linha?.barra_lateral ?? null,
           densidade: linha?.densidade ?? null,
           fonte: linha?.fonte ?? null,
+          cores: coresDoTemaEscolhidas(linha?.cores),
         }}
         // Só os três campos de marca do ambiente, nunca o objeto `env` inteiro:
         // isto atravessa a fronteira para o navegador, e o que atravessa é o que

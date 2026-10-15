@@ -299,6 +299,88 @@ export function fonteEscolhida(valor: unknown): FonteDaMarca | null {
     : null;
 }
 
+// ── As cores do tema (migration 0677) ────────────────────────────────────────
+
+/**
+ * As cores do tema que a marca pode mudar — lista FECHADA, a mesma nos dois temas,
+ * sem o prefixo `--color-`. Decisão do dono do produto (2026-10-15): a instalação e
+ * a empresa podem mudar fundo, cartões, textos, bordas e as cores de aviso, cada
+ * tema separado, LIVREMENTE — e a trava de contraste (`cores-do-tema.ts`) barra o
+ * Salvar quando algum par pintado fica abaixo do piso.
+ *
+ * Cada nome existe no `:root` e no `[data-theme="dark"]` do `app/globals.css`
+ * (`tests/unit/branding-cores-do-tema.test.ts` reprova token inventado ou sumido).
+ * A MESMA lista mora na função SQL `fn_definir_marca_da_organizacao` (0677):
+ * mudar aqui sem mudar lá faz a RPC recusar o que a tela aceita.
+ */
+export const TOKENS_DE_COR_DO_TEMA = [
+  "bg",
+  "surface",
+  "surface-elevated",
+  "text",
+  "text-muted",
+  "text-subtle",
+  "border",
+  "border-strong",
+  "success",
+  "success-bg",
+  "success-fg",
+  "warning",
+  "warning-bg",
+  "warning-fg",
+  "error",
+  "error-bg",
+  "error-fg",
+  "info",
+  "info-bg",
+  "info-fg",
+] as const;
+export type TokenDeCorDoTema = (typeof TOKENS_DE_COR_DO_TEMA)[number];
+export type TemaDasCores = "claro" | "escuro";
+export type CoresDeUmTema = Partial<Record<TokenDeCorDoTema, string>>;
+/** Esparso: só o que foi escolhido. Token ausente desce para a camada de baixo. */
+export type CoresDoTema = Partial<Record<TemaDasCores, CoresDeUmTema>>;
+
+/** `#rrggbb` minúsculo — o mesmo `^#[0-9a-f]{6}$` da função SQL. */
+export const HEX_DA_COR_DO_TEMA = /^#[0-9a-f]{6}$/;
+
+const esquemaDeUmTema = z.partialRecord(
+  z.enum(TOKENS_DE_COR_DO_TEMA),
+  z.string().regex(HEX_DA_COR_DO_TEMA, { message: "Use uma cor no formato #rrggbb" }),
+);
+
+/**
+ * A forma ESTRITA, de ESCRITA (server action, tela). Chave fora da lista é recusa:
+ * aqui não há código velho a proteger, há a porta do que vira CSS.
+ */
+export const esquemaDasCoresDoTema = z.strictObject({
+  claro: esquemaDeUmTema.optional(),
+  escuro: esquemaDeUmTema.optional(),
+});
+
+function lerUmTema(cru: unknown): CoresDeUmTema | null {
+  if (typeof cru !== "object" || cru === null || Array.isArray(cru)) return null;
+  const saida: CoresDeUmTema = {};
+  for (const token of TOKENS_DE_COR_DO_TEMA) {
+    const valor = (cru as Record<string, unknown>)[token];
+    if (typeof valor === "string" && HEX_DA_COR_DO_TEMA.test(valor)) saida[token] = valor;
+  }
+  return Object.keys(saida).length > 0 ? saida : null;
+}
+
+/**
+ * A leitura DEFENSIVA, de LEITURA (resolvedor, layout). Nunca lança: o que não
+ * entende é descartado token a token — mesma régua do `.catchall` do envelope
+ * (código velho sobre dado novo). `null` = a camada não escolheu cor nenhuma.
+ */
+export function coresDoTemaEscolhidas(cru: unknown): CoresDoTema | null {
+  if (typeof cru !== "object" || cru === null || Array.isArray(cru)) return null;
+  const claro = lerUmTema((cru as Record<string, unknown>).claro);
+  const escuro = lerUmTema((cru as Record<string, unknown>).escuro);
+  if (!claro && !escuro) return null;
+  return { ...(claro ? { claro } : {}), ...(escuro ? { escuro } : {}) };
+}
+
 export const CAMINHO_DA_SEMENTE = "semente_hex";
 
 export const esquemaDaCorDaMarca = z

@@ -111,6 +111,14 @@ export const TRADUCOES: Record<CodigoDaMarca, Traducao> = {
       "A cor do modo escuro é um tom neutro (cinza, preto ou branco), e uma cor assim não " +
       "destaca nada na tela. No modo escuro, os botões seguem com a cor padrão do sistema.",
   },
+  cores_sem_contraste: {
+    modo: "frase",
+    tom: "problema",
+    texto:
+      "As cores do tema escolhidas aqui deixaram algum texto difícil de ler sobre as cores que " +
+      "vêm de quem instalou o sistema. Enquanto isso, a tela usa as cores de baixo — abra " +
+      "\u201cCores do tema\u201d para ajustar.",
+  },
 
   // ── derivação: o que o sistema fez com a cor para ela caber na interface ──
   marca_acromatica: {
@@ -336,4 +344,106 @@ export function motivosDoFallback(motivo: string | null): Aviso[] {
     );
   }
   return semRepetir(avisos);
+}
+
+// ── As cores do tema: a frase de cada par que a trava reprovou ──────────────
+
+/** O nome em português de cada papel ou superfície que a trava mede. */
+export const NOME_DO_PAPEL: Readonly<Record<string, string>> = {
+  "--color-bg": "Fundo da página",
+  "--color-surface": "Cartões",
+  "--color-surface-elevated": "Áreas em destaque",
+  "--color-text": "Texto principal",
+  "--color-text-muted": "Texto secundário",
+  "--color-text-subtle": "Texto apagado",
+  "--color-border": "Bordas",
+  "--color-border-strong": "Bordas fortes",
+  "--color-success": "Cor de sucesso",
+  "--color-success-bg": "Fundo de sucesso",
+  "--color-success-fg": "Texto de sucesso",
+  "--color-warning": "Cor de atenção",
+  "--color-warning-bg": "Fundo de atenção",
+  "--color-warning-fg": "Texto de atenção",
+  "--color-error": "Cor de erro",
+  "--color-error-bg": "Fundo de erro",
+  "--color-error-fg": "Texto de erro",
+  "--color-info": "Cor informativa",
+  "--color-info-bg": "Fundo informativo",
+  "--color-info-fg": "Texto informativo",
+  "--color-accent": "Cor dos botões",
+  "--color-accent-fg": "Texto dos botões",
+  "--color-accent-hover": "Botão sob o mouse",
+  "--color-accent-soft": "Destaque suave",
+  "--ring": "Contorno de foco",
+};
+
+/**
+ * O nome de um papel da trava. Os papéis da marca chegam com o SELETOR do
+ * `globals.css` (`::selection/color`, `[data-theme="dark"] :focus-visible/…`):
+ * esses viram o que a pessoa vê, nunca o seletor.
+ */
+function nomeDoPapel(chave: string): string {
+  const base = chave.split("@")[0] ?? chave;
+  if (base.includes("::selection")) return "Texto selecionado";
+  if (base.includes(":focus-visible")) return "Contorno de foco";
+  return NOME_DO_PAPEL[base] ?? "Um elemento da tela";
+}
+
+function minuscula(nome: string): string {
+  return nome.charAt(0).toLowerCase() + nome.slice(1);
+}
+
+function decimal(n: number): string {
+  return n.toFixed(1).replace(".", ",");
+}
+
+/** O par como a trava o devolve — a forma de `ReprovaDeCor` (`cores-do-tema.ts`). */
+export type ReprovaLida = {
+  readonly papel: string;
+  readonly superficie: string;
+  readonly tema: Tema;
+  readonly razao: number;
+  readonly piso: number;
+  readonly frenteMaisClara?: boolean;
+};
+
+/**
+ * O MOLDE da frase. É chave do dicionário (o espanhol tem o seu), e os nomes
+ * entram traduzidos — tradução de frase montada por concatenação sairia em
+ * português para quem lê espanhol, que é o modo de falha mudo do i18n.
+ */
+const MOLDE_DA_REPROVA =
+  "{frente} sobre {fundo} ({tema}): {razao} de {piso} — {verbo_frente} {frente_min} ou {verbo_fundo} {fundo_min}.";
+
+/**
+ * Uma frase por par reprovado: o par, o tema, a razão contra o piso e o que
+ * ajustar — "Texto secundário sobre Cartões (tema escuro): 3,1 de 4,5 —
+ * clareie texto secundário ou escureça cartões."
+ *
+ * O sentido do conselho sai da própria medida: frente mais clara que o fundo
+ * pede clarear a frente ou escurecer o fundo; o contrário, o contrário. Sem
+ * código de cor: a frase pode ir para log e auditoria.
+ */
+export function frasesDasReprovas(
+  reprovas: readonly ReprovaLida[],
+  t: (texto: string) => string = (texto) => texto,
+): string[] {
+  const frases = reprovas.map((r) => {
+    const frente = t(nomeDoPapel(r.papel));
+    const fundo = t(nomeDoPapel(r.superficie));
+    const clara = r.frenteMaisClara ?? r.tema === "escuro";
+    const valores: Record<string, string> = {
+      frente,
+      fundo,
+      tema: r.tema === "claro" ? t("tema claro") : t("tema escuro"),
+      razao: decimal(r.razao),
+      piso: decimal(r.piso),
+      verbo_frente: clara ? t("clareie") : t("escureça"),
+      verbo_fundo: clara ? t("escureça") : t("clareie"),
+      frente_min: minuscula(frente),
+      fundo_min: minuscula(fundo),
+    };
+    return t(MOLDE_DA_REPROVA).replace(/\{([a-z_]+)\}/g, (_, chave: string) => valores[chave] ?? "");
+  });
+  return [...new Set(frases)];
 }
