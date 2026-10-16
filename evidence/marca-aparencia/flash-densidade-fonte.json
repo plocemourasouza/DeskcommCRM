@@ -1,14 +1,14 @@
 {
-  "fcp_ms": 92,
+  "fcp_ms": 168,
   "trocas_densidade": [
-    "equilibrada@59.3ms",
-    "compacta@59.9ms"
+    "equilibrada@94.0ms",
+    "compacta@94.6ms"
   ],
   "trocas_fonte": [
-    "null@59.3ms",
-    "fraunces@59.9ms"
+    "null@94.0ms",
+    "fraunces@94.6ms"
   ],
-  "quadros_medidos": 295,
+  "quadros_medidos": 292,
   "quadros_com_densidade_errada": 0,
   "quadros_com_fonte_errada": 0,
   "janela_do_flash_densidade_ms": "0",

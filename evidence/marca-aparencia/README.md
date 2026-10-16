@@ -41,3 +41,25 @@ Lastro de `tests/e2e/marca-aparencia.spec.ts`, num build de produção com banco
 - `flash-densidade-fonte.json` — mesma medição quadro a quadro de `flash.json`, para empresa
   **compacta + fraunces** sobre instalação **equilibrada + atkinson**: zero quadros com a densidade ou a
   fonte da instalação; os atributos trocam no parse, menos de 1 ms depois dos da instalação.
+- `10-cores-ilegiveis-bloqueadas.png` — cores do tema: o admin da empresa põe o texto principal do
+  claro em `#f2f2f0`. A trava lista os três pares do claro com a razão contra o piso ("Texto principal
+  sobre Fundo da página (tema claro): 1,1 de 4,5 …", 1,1 sobre Cartões, 1,0 sobre Áreas em destaque),
+  nenhum par do escuro, e o Salvar fica desligado. A amostra pinta `rgb(242, 242, 240)` sobre
+  `rgb(250, 249, 246)` — 1,06:1 medido no navegador. Recarregar: campo vazio, trava "passa", e nenhuma
+  organização tem `settings.branding.cores` no banco.
+- `11-previa-cores-legiveis.png`, `11-empresa-cores-claro.png`, `11-empresa-cores-escuro.png` e
+  `11-cores-medidas.json` — fundo/cartões/texto próprios nos dois modos (claro `#eef4fb`/`#f8fbff`/
+  `#0f2340`, escuro `#0d141d`/`#151e2a`/`#e8eef6`). A prévia pinta os três antes de salvar; depois de
+  salvar, o `<body>` e um cartão de `/app` resolvem exatamente esses valores nos dois temas (texto sobre
+  página 14,21:1 no claro e 15,85:1 no escuro), e o banco guarda o mesmo objeto. "Voltar todas as cores
+  do tema ao padrão" + Salvar apaga a chave e devolve os valores medidos antes (`rgb(250, 249, 246)` /
+  `rgb(22, 21, 16)` de fundo).
+- `12-servidor-recusa.png` — o formulário é submetido com o Salvar desligado (`requestSubmit()`, como
+  quem tira o `disabled` no DevTools), com o texto ilegível e um nome novo: a Server Action responde
+  `{"ok":false,"error":"cores_sem_contraste","details":[…"--color-text"…]}`, o toast de recusa aparece,
+  nunca "Marca salva", e o `settings.branding` de todas as organizações fica igual (nem as cores, nem o
+  nome).
+- `13-empresa-herda-instalacao.png` — o dono põe o fundo do claro em `#f1f6ee` em Admin › Marca; a
+  empresa sem cores próprias pinta `rgb(241, 246, 238)` no `<body>` de `/app`, o escuro não muda, e o
+  campo da empresa mostra `#f1f6ee` como placeholder (herdado). Voltar ao padrão na instalação devolve
+  o fundo de fábrica.

@@ -31,8 +31,24 @@
  *   9. SEM FLASH de densidade e fonte: empresa compacta+fraunces sobre
  *      instalação equilibrada+atkinson — zero quadros com o valor errado.
  *
+ *  10. Cores do tema, combinação ILEGÍVEL: o admin da empresa põe o texto
+ *      principal quase da cor do fundo; a lista da trava nomeia o par com a
+ *      razão medida, o Salvar fica desligado, e recarregar prova que nada foi
+ *      gravado (nenhuma organização tem `settings.branding.cores`).
+ *  11. Combinação LEGÍVEL: fundo, cartões e texto próprios no claro e no
+ *      escuro; a prévia pinta antes de salvar; depois de salvar, `/app` resolve
+ *      os valores escolhidos no `<body>` e num cartão, nos dois temas; "Voltar
+ *      todas as cores do tema ao padrão" devolve os valores medidos antes.
+ *  12. O SERVIDOR é a fronteira: o formulário é submetido com o Salvar
+ *      desligado (`requestSubmit`, que ignora o botão) e a action recusa com
+ *      `cores_sem_contraste`; o `settings.branding` fica byte a byte igual.
+ *  13. A instalação escolhe o fundo do claro em Admin › Marca; a empresa sem
+ *      cores herda (o `<body>` de `/app` pinta a cor, o escuro não muda, o
+ *      campo da empresa mostra a cor herdada como placeholder).
+ *
  * Limpeza: o `afterAll` devolve as duas camadas ao padrão pelo service role,
- * tocando só as linhas que esta spec escreveu (raio, barra lateral, densidade, fonte).
+ * tocando só as linhas que esta spec escreveu (raio, barra lateral, densidade,
+ * fonte, cores do tema).
  */
 import { execFileSync } from "node:child_process";
 import * as fs from "node:fs";
@@ -139,10 +155,11 @@ async function limpar(): Promise<void> {
       barra_lateral: "padrao",
       densidade: "aerada",
       fonte: "atkinson",
+      cores: {},
     } as never)
     .eq("id", 1);
   if (e1) throw new Error(`reset da instalação: ${e1.message}`);
-  for (const chave of ["raio", "barra_lateral", "densidade", "fonte"] as const) {
+  for (const chave of ["raio", "barra_lateral", "densidade", "fonte", "cores"] as const) {
     const { data, error } = await db
       .from("organizations")
       .select("id, settings")
@@ -900,4 +917,416 @@ test("(9) sem flash: empresa COMPACTA+FRAUNCES sobre instalação EQUILIBRADA+AT
     `${densidadeErrada.length} quadro(s) pintaram a densidade da instalação`,
   ).toEqual([]);
   expect(fonteErrada, `${fonteErrada.length} quadro(s) pintaram a fonte da instalação`).toEqual([]);
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Cores do tema e a trava de contraste
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Texto principal quase igual ao fundo do claro: 1,06 sobre a página (piso 4,5). */
+const TEXTO_ILEGIVEL = "#f2f2f0";
+
+/** Escolha legível: as três cores que se medem no `<body>` e num cartão. */
+const LEGIVEL = {
+  claro: { bg: "#eef4fb", surface: "#f8fbff", text: "#0f2340" },
+  escuro: { bg: "#0d141d", surface: "#151e2a", text: "#e8eef6" },
+} as const;
+
+/** Fundo do claro escolhido pela INSTALAÇÃO no caso 13. */
+const FUNDO_DA_INSTALACAO = "#f1f6ee";
+
+function rgbDe(hex: string): string {
+  const h = hex.replace("#", "");
+  const n = (i: number) => Number.parseInt(h.slice(i, i + 2), 16);
+  return `rgb(${n(0)}, ${n(2)}, ${n(4)})`;
+}
+
+/** Razão de contraste WCAG entre duas cores `rgb(...)` que o `getComputedStyle` devolveu. */
+function razaoWcag(a: string, b: string): number {
+  const lum = (cor: string) => {
+    const [r, g, bl] = (cor.match(/\d+(\.\d+)?/g) ?? []).slice(0, 3).map(Number);
+    const c = [r ?? 0, g ?? 0, bl ?? 0].map((v) => {
+      const s = v / 255;
+      return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+    });
+    return 0.2126 * c[0]! + 0.7152 * c[1]! + 0.0722 * c[2]!;
+  };
+  const [x, y] = [lum(a), lum(b)];
+  const [claro, escuro] = x > y ? [x, y] : [y, x];
+  return (claro + 0.05) / (escuro + 0.05);
+}
+
+function bancoDeServico() {
+  const c = credenciaisSupabaseDeTeste();
+  return createClient(c.url, c.serviceRole, { auth: { persistSession: false } });
+}
+
+/** Organizações com `settings.branding.cores` gravado — o que a trava deixou passar. */
+async function orgsComCores(): Promise<{ id: string; cores: unknown }[]> {
+  const { data, error } = await bancoDeServico()
+    .from("organizations")
+    .select("id, settings")
+    .filter("settings->branding->>cores", "not.is", null);
+  if (error) throw new Error(`leitura das cores das organizações: ${error.message}`);
+  return (
+    (data ?? []) as { id: string; settings: { branding?: { cores?: unknown } } | null }[]
+  ).map((o) => ({ id: o.id, cores: o.settings?.branding?.cores }));
+}
+
+/** Abre o `<details>` "Cores do tema" (fechado quando a camada não tem escolha). */
+async function abrirCoresDoTema(page: Page, id: string): Promise<void> {
+  const details = page.locator(`details#${id}`);
+  await expect(details).toBeAttached();
+  if (!(await details.evaluate((el) => (el as HTMLDetailsElement).open))) {
+    await details.locator("summary").click();
+  }
+  await expect(details).toHaveJSProperty("open", true);
+}
+
+/** O que a página pinta: `<body>` (página) e o primeiro cartão (`Card`) dentro do `<main>`. */
+async function coresPintadas(page: Page) {
+  return page.evaluate(() => {
+    const corpo = getComputedStyle(document.body);
+    const cartao = document.querySelector<HTMLElement>("main div.rounded-lg.border.bg-surface");
+    return {
+      tema: document.documentElement.getAttribute("data-theme"),
+      fundoDaPagina: corpo.backgroundColor,
+      textoDaPagina: corpo.color,
+      fundoDoCartao: cartao ? getComputedStyle(cartao).backgroundColor : null,
+      textoDoCartao: cartao ? getComputedStyle(cartao).color : null,
+    };
+  });
+}
+
+type CoresPintadas = Awaited<ReturnType<typeof coresPintadas>>;
+
+/** Mede quando assenta (a cor pode animar numa transição) e devolve a medida estável. */
+async function coresAssentadas(
+  page: Page,
+  esperado: Partial<Omit<CoresPintadas, "tema">>,
+  mensagem: string,
+): Promise<CoresPintadas> {
+  await expect
+    .poll(
+      async () => {
+        const m = await coresPintadas(page);
+        return Object.fromEntries(
+          Object.keys(esperado).map((k) => [k, m[k as keyof CoresPintadas]]),
+        );
+      },
+      { message: mensagem },
+    )
+    .toEqual(esperado);
+  return coresPintadas(page);
+}
+
+/** O que a amostra de UM tema pinta: o fundo dela, o cartão de dentro e o texto principal. */
+async function amostraDasCores(page: Page, tema: "claro" | "escuro") {
+  return page.locator(`[data-previa-das-cores="${tema}"]`).evaluate((el) => {
+    const cartao = el.firstElementChild as HTMLElement;
+    const texto = cartao.querySelector("p") as HTMLElement;
+    return {
+      fundoDaPagina: getComputedStyle(el).backgroundColor,
+      fundoDoCartao: getComputedStyle(cartao).backgroundColor,
+      textoPrincipal: getComputedStyle(texto).color,
+    };
+  });
+}
+
+const BOTAO_SALVAR = { name: "Salvar", exact: true } as const;
+
+test("(10) cores do tema ILEGÍVEIS: a trava nomeia o par, o Salvar desliga e nada é gravado", async ({
+  page,
+}) => {
+  creds = await loginComoAdmin(page, creds);
+  expect(await orgsComCores(), "precondição: nenhuma organização com cores").toEqual([]);
+
+  await page.goto("/app/settings/marca");
+  await abrirCoresDoTema(page, "org-cores-do-tema");
+  const trava = page.locator("[data-trava-das-cores]");
+  await expect(trava, "precondição: sem escolha, a trava passa").toHaveAttribute(
+    "data-trava-das-cores",
+    "passa",
+  );
+  const salvar = page.getByRole("button", BOTAO_SALVAR);
+  await expect(salvar).toBeEnabled();
+
+  await page.locator("#org-cores-do-tema-claro-text").fill(TEXTO_ILEGIVEL);
+
+  await expect(trava).toHaveAttribute("data-trava-das-cores", "reprova");
+  const itens = trava.locator("li");
+  const frases = await itens.allTextContents();
+  console.info(`[marca-aparencia] trava reprova → ${JSON.stringify(frases)}`);
+  expect(frases, "a lista nomeia o par, o tema e a razão contra o piso").toContain(
+    "Texto principal sobre Fundo da página (tema claro): 1,1 de 4,5 — escureça texto principal ou clareie fundo da página.",
+  );
+  expect(frases.some((f) => f.startsWith("Texto principal sobre Cartões (tema claro)"))).toBe(true);
+  expect(
+    frases.every((f) => f.includes("(tema claro)")),
+    "só o claro foi mexido — nenhum par do escuro reprova",
+  ).toBe(true);
+  await expect(salvar, "o Salvar desliga enquanto algum par reprova").toBeDisabled();
+
+  // O contraste que a amostra REALMENTE pinta, medido no navegador.
+  const amostra = await amostraDasCores(page, "claro");
+  const razaoNaAmostra = razaoWcag(amostra.textoPrincipal, amostra.fundoDaPagina);
+  console.info(
+    `[marca-aparencia] amostra ilegível → ${JSON.stringify({ ...amostra, razaoNaAmostra })}`,
+  );
+  expect(amostra.textoPrincipal, "a prévia pinta o texto escolhido").toBe(rgbDe(TEXTO_ILEGIVEL));
+  expect(razaoNaAmostra).toBeLessThan(4.5);
+  await page.screenshot({ path: evidencia("10-cores-ilegiveis-bloqueadas.png"), fullPage: true });
+
+  // Recarregar descarta o rascunho: nada foi gravado.
+  await page.reload();
+  await abrirCoresDoTema(page, "org-cores-do-tema");
+  await expect(page.locator("#org-cores-do-tema-claro-text")).toHaveValue("");
+  await expect(trava).toHaveAttribute("data-trava-das-cores", "passa");
+  expect(await orgsComCores(), "o banco não recebeu cor nenhuma").toEqual([]);
+});
+
+test("(11) cores do tema LEGÍVEIS: prévia antes de salvar, /app pinta nos dois temas, voltar ao padrão restaura", async ({
+  page,
+}) => {
+  creds = await loginComoAdmin(page, creds);
+
+  // O que /app pinta SEM escolha — é o que "voltar ao padrão" tem de devolver.
+  const antes: Record<"light" | "dark", CoresPintadas> = {} as never;
+  for (const tema of ["light", "dark"] as const) {
+    await emTema(page, tema, "/app/settings/marca");
+    antes[tema] = await coresPintadas(page);
+  }
+  console.info(`[marca-aparencia] cores de fábrica → ${JSON.stringify(antes)}`);
+  expect(antes.light.fundoDaPagina).not.toBe(rgbDe(LEGIVEL.claro.bg));
+  expect(antes.dark.fundoDaPagina).not.toBe(rgbDe(LEGIVEL.escuro.bg));
+
+  await emTema(page, "light", "/app/settings/marca");
+  await abrirCoresDoTema(page, "org-cores-do-tema");
+  for (const tema of ["claro", "escuro"] as const) {
+    for (const [token, hex] of Object.entries(LEGIVEL[tema])) {
+      await page.locator(`#org-cores-do-tema-${tema}-${token}`).fill(hex);
+    }
+  }
+  await expect(page.locator("[data-trava-das-cores]")).toHaveAttribute(
+    "data-trava-das-cores",
+    "passa",
+  );
+
+  // Prévia ANTES de salvar, nos dois temas.
+  for (const tema of ["claro", "escuro"] as const) {
+    const esperado = {
+      fundoDaPagina: rgbDe(LEGIVEL[tema].bg),
+      fundoDoCartao: rgbDe(LEGIVEL[tema].surface),
+      textoPrincipal: rgbDe(LEGIVEL[tema].text),
+    };
+    await expect
+      .poll(() => amostraDasCores(page, tema), { message: `amostra do ${tema} antes de salvar` })
+      .toEqual(esperado);
+    console.info(
+      `[marca-aparencia] prévia ${tema} → ${JSON.stringify({ ...esperado, razaoTextoCartao: razaoWcag(esperado.textoPrincipal, esperado.fundoDoCartao).toFixed(2) })}`,
+    );
+  }
+  await page.screenshot({ path: evidencia("11-previa-cores-legiveis.png"), fullPage: true });
+
+  const salvar = page.getByRole("button", BOTAO_SALVAR);
+  await expect(salvar).toBeEnabled();
+  await salvar.click();
+  await esperarToast(page);
+
+  const gravadas = await orgsComCores();
+  console.info(`[marca-aparencia] gravado → ${JSON.stringify(gravadas)}`);
+  expect(gravadas).toHaveLength(1);
+  expect(gravadas[0]!.cores, "o banco guarda exatamente o que a tela escolheu").toEqual(LEGIVEL);
+
+  // Depois de salvar e recarregar: /app resolve as cores escolhidas, nos dois temas.
+  const medidas: Record<string, unknown> = { antes };
+  for (const [tema, chave] of [
+    ["light", "claro"],
+    ["dark", "escuro"],
+  ] as const) {
+    await emTema(page, tema, "/app/settings/marca");
+    const m = await coresAssentadas(
+      page,
+      {
+        fundoDaPagina: rgbDe(LEGIVEL[chave].bg),
+        textoDaPagina: rgbDe(LEGIVEL[chave].text),
+        fundoDoCartao: rgbDe(LEGIVEL[chave].surface),
+        textoDoCartao: rgbDe(LEGIVEL[chave].text),
+      },
+      `/app pinta as cores da empresa no ${chave}`,
+    );
+    medidas[chave] = {
+      ...m,
+      razaoTextoPagina: razaoWcag(m.textoDaPagina, m.fundoDaPagina).toFixed(2),
+      razaoTextoCartao: razaoWcag(m.textoDoCartao!, m.fundoDoCartao!).toFixed(2),
+    };
+    console.info(`[marca-aparencia] /app ${chave} salvo → ${JSON.stringify(medidas[chave])}`);
+    expect(m.tema).toBe(tema);
+    await page.screenshot({
+      path: evidencia(`11-empresa-cores-${chave}.png`),
+      fullPage: true,
+    });
+  }
+  // Outra tela de /app, sem cartão: a página toda pinta, não só a de Marca.
+  await emTema(page, "light", "/app/inbox");
+  await coresAssentadas(
+    page,
+    { fundoDaPagina: rgbDe(LEGIVEL.claro.bg), textoDaPagina: rgbDe(LEGIVEL.claro.text) },
+    "/app/inbox também pinta as cores da empresa",
+  );
+
+  // "Voltar todas as cores do tema ao padrão" → Salvar → os valores de antes.
+  await emTema(page, "light", "/app/settings/marca");
+  await abrirCoresDoTema(page, "org-cores-do-tema");
+  await expect(page.locator("#org-cores-do-tema-claro-bg")).toHaveValue(LEGIVEL.claro.bg);
+  await page.getByRole("button", { name: "Voltar todas as cores do tema ao padrão" }).click();
+  await expect(page.locator("#org-cores-do-tema-claro-bg")).toHaveValue("");
+  await page.getByRole("button", BOTAO_SALVAR).click();
+  await esperarToast(page);
+  expect(await orgsComCores(), "herdar apaga a chave no banco").toEqual([]);
+
+  for (const tema of ["light", "dark"] as const) {
+    await emTema(page, tema, "/app/settings/marca");
+    const { tema: _t, ...esperado } = antes[tema];
+    const m = await coresAssentadas(page, esperado, `voltar ao padrão devolve o ${tema} de antes`);
+    medidas[`restaurado_${tema}`] = m;
+  }
+  fs.writeFileSync(evidencia("11-cores-medidas.json"), JSON.stringify(medidas, null, 2));
+});
+
+test("(12) o SERVIDOR é a fronteira: submissão com o Salvar desligado é recusada com cores_sem_contraste", async ({
+  page,
+}) => {
+  creds = await loginComoAdmin(page, creds);
+  await page.goto("/app/settings/marca");
+
+  const db = bancoDeServico();
+  const lerBranding = async () => {
+    const { data, error } = await db
+      .from("organizations")
+      .select("id, settings")
+      .order("created_at", { ascending: true });
+    if (error) throw new Error(error.message);
+    return (data ?? []).map((o) => ({
+      id: (o as { id: string }).id,
+      branding: (o as { settings: { branding?: unknown } | null }).settings?.branding ?? null,
+    }));
+  };
+  const antes = await lerBranding();
+
+  await abrirCoresDoTema(page, "org-cores-do-tema");
+  await page.locator("#org-cores-do-tema-claro-text").fill(TEXTO_ILEGIVEL);
+  // Um campo legítimo junto: a recusa tem de ser da GRAVAÇÃO inteira, não só das cores.
+  await page.locator("#org_app_name").fill("Empresa Que Burlou a Tela");
+  const salvar = page.getByRole("button", BOTAO_SALVAR);
+  await expect(salvar).toBeDisabled();
+
+  // A tela não é fronteira: `requestSubmit()` sem submitter dispara o submit do
+  // formulário sem passar pelo botão desligado, como um usuário que remove o
+  // `disabled` no DevTools. O handler do formulário chama a Server Action.
+  //
+  // A resposta da action é lida pelo `route.fetch()`: a resposta é em fluxo (RSC)
+  // e o corpo pelo `waitForResponse` some do buffer do CDP ("No data found").
+  let corpoDaAction: string | null = null;
+  await page.route("**/app/settings/marca", async (route) => {
+    const req = route.request();
+    if (req.method() !== "POST" || req.headers()["next-action"] === undefined) {
+      await route.fallback();
+      return;
+    }
+    const r = await route.fetch();
+    const corpo = await r.text();
+    corpoDaAction = corpo;
+    await route.fulfill({ response: r, body: corpo });
+  });
+  await page
+    .locator("form:has(#org-cores-do-tema)")
+    .evaluate((f) => (f as HTMLFormElement).requestSubmit());
+  await expect
+    .poll(() => corpoDaAction, { message: "a Server Action foi chamada", timeout: 15_000 })
+    .not.toBeNull();
+  const corpo = corpoDaAction ?? "";
+  const recusa = corpo.match(/"error":"([a-z_]+)"/)?.[1] ?? null;
+  console.info(
+    `[marca-aparencia] action com par ilegível → ${JSON.stringify({ recusa, trecho: corpo.slice(0, 400) })}`,
+  );
+  expect(recusa, "a action recusa no servidor").toBe("cores_sem_contraste");
+  expect(corpo, "a recusa diz o par").toContain("--color-text");
+
+  await expect(
+    page
+      .locator("[data-sonner-toast]")
+      .filter({ hasText: /Alguma combinação de cores ficou difícil de ler/ }),
+  ).toBeVisible({ timeout: 15_000 });
+  await expect(
+    page.locator("[data-sonner-toast]").filter({ hasText: TOAST_SALVO }),
+    "nunca 'salvo'",
+  ).toHaveCount(0);
+  await page.screenshot({ path: evidencia("12-servidor-recusa.png"), fullPage: true });
+
+  const depois = await lerBranding();
+  expect(depois, "nenhuma organização mudou — nem as cores, nem o nome").toEqual(antes);
+  expect(await orgsComCores()).toEqual([]);
+});
+
+test("(13) a INSTALAÇÃO escolhe o fundo do claro: a empresa sem cores herda", async ({
+  page,
+  browser,
+}) => {
+  creds = await loginComoAdmin(page, creds);
+  const antes: Record<"light" | "dark", CoresPintadas> = {} as never;
+  for (const tema of ["light", "dark"] as const) {
+    await emTema(page, tema, "/app/inbox");
+    antes[tema] = await coresPintadas(page);
+  }
+
+  const dono = await browser.newPage();
+  try {
+    creds = await loginComoDono(dono, creds);
+    await dono.goto("/admin/marca");
+    await abrirCoresDoTema(dono, "cores-do-tema");
+    await dono.locator("#cores-do-tema-claro-bg").fill(FUNDO_DA_INSTALACAO);
+    await expect(dono.locator("[data-trava-das-cores]")).toHaveAttribute(
+      "data-trava-das-cores",
+      "passa",
+    );
+    await dono.getByRole("button", BOTAO_SALVAR).click();
+    await esperarToast(dono);
+
+    expect(await orgsComCores(), "precondição: a empresa não tem cores próprias").toEqual([]);
+    await emTema(page, "light", "/app/inbox");
+    const claro = await coresAssentadas(
+      page,
+      { fundoDaPagina: rgbDe(FUNDO_DA_INSTALACAO), textoDaPagina: antes.light.textoDaPagina },
+      "a empresa herda o fundo da instalação",
+    );
+    await page.screenshot({ path: evidencia("13-empresa-herda-instalacao.png"), fullPage: true });
+    await emTema(page, "dark", "/app/inbox");
+    const { tema: _t, ...escuroDeAntes } = antes.dark;
+    const escuro = await coresAssentadas(page, escuroDeAntes, "o escuro não foi tocado");
+    console.info(`[marca-aparencia] herança da instalação → ${JSON.stringify({ claro, escuro })}`);
+
+    // A tela da empresa mostra a cor herdada como placeholder do campo vazio.
+    await emTema(page, "light", "/app/settings/marca");
+    await abrirCoresDoTema(page, "org-cores-do-tema");
+    const campo = page.locator("#org-cores-do-tema-claro-bg");
+    await expect(campo).toHaveValue("");
+    await expect(campo).toHaveAttribute("placeholder", FUNDO_DA_INSTALACAO);
+  } finally {
+    // A marca da instalação é memo do processo: só a Server Action o invalida,
+    // então a devolução ao padrão passa pela tela, não pelo service role.
+    await dono.goto("/admin/marca");
+    await abrirCoresDoTema(dono, "cores-do-tema");
+    const voltar = dono.getByRole("button", { name: "Voltar todas as cores do tema ao padrão" });
+    if (await voltar.isVisible()) {
+      await voltar.click();
+      await dono.getByRole("button", BOTAO_SALVAR).click();
+      await esperarToast(dono);
+    }
+    await dono.close();
+  }
+
+  await emTema(page, "light", "/app/inbox");
+  const { tema: _t, ...claroDeAntes } = antes.light;
+  await coresAssentadas(page, claroDeAntes, "voltar ao padrão na instalação devolve o claro");
 });

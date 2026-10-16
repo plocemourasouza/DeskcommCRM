@@ -1,10 +1,10 @@
 {
-  "fcp_ms": 112,
+  "fcp_ms": 120,
   "trocas": [
-    "suave@80.8ms",
-    "arredondado@81.4ms"
+    "suave@76.7ms",
+    "arredondado@77.3ms"
   ],
-  "quadros_medidos": 295,
+  "quadros_medidos": 294,
   "quadros_com_raio_errado": 0,
   "janela_do_flash_ms": "0"
 }
