@@ -85,6 +85,14 @@ const FORM_GRAVADA = {
   logo_path: null,
   accent_hex: "#1c261d",
   accent_dark_hex: "#d9ac62",
+  // A aparência no padrão do produto: este arquivo mede a cor de destaque, e
+  // `MarcaGravada` exige a linha inteira (a tela devolve tudo no Salvar).
+  neutros: "quente",
+  raio: "padrao",
+  barra_lateral: "padrao",
+  densidade: "aerada",
+  fonte: "atkinson",
+  cores: {},
   show_powered_by: false,
 } as const;
 

@@ -1201,10 +1201,14 @@ test("(12) o SERVIDOR é a fronteira: submissão com o Salvar desligado é recus
   await page.goto("/app/settings/marca");
 
   const db = bancoDeServico();
+  // QUEM: as organizações que têm marca gravada. Não perde poder de detecção —
+  // uma gravação que passasse criaria ou mudaria `settings.branding` de alguma
+  // organização, e ela apareceria (ou mudaria) no conjunto de depois.
   const lerBranding = async () => {
     const { data, error } = await db
       .from("organizations")
       .select("id, settings")
+      .filter("settings->branding", "not.is", null)
       .order("created_at", { ascending: true });
     if (error) throw new Error(error.message);
     return (data ?? []).map((o) => ({
