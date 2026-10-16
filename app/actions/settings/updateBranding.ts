@@ -14,6 +14,7 @@ import {
 } from "@/lib/branding/resolve";
 import type { ReprovaDeCor } from "@/lib/branding/cores-do-tema";
 import { env } from "@/lib/env";
+import { ipDoCliente } from "@/lib/http/ip-do-cliente";
 import { platformBrandingSchema, type PlatformBrandingInput } from "@/lib/schemas/settings";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -92,7 +93,7 @@ export async function updateBranding(
   if (!escrita.ok) return escrita;
   const { user: authUser } = escrita.ctx;
 
-  // A TRAVA de contraste das cores do tema (0677). A tela roda a mesma função e
+  // A TRAVA de contraste das cores do tema (0678). A tela roda a mesma função e
   // desabilita o Salvar, mas tela não é fronteira: um POST direto chega aqui.
   //
   // Mede a INSTALAÇÃO SOZINHA (esta linha como ficaria + o `.env` embaixo) e de
@@ -120,7 +121,7 @@ export async function updateBranding(
 
   const hdrs = await headers();
   const requestId = hdrs.get("x-request-id");
-  const ip = hdrs.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
+  const ip = ipDoCliente(hdrs);
   const userAgent = hdrs.get("user-agent") ?? null;
 
   const valores = {
@@ -145,7 +146,7 @@ export async function updateBranding(
     ...(parsed.data.barra_lateral ? { barra_lateral: parsed.data.barra_lateral } : {}),
     ...(parsed.data.densidade ? { densidade: parsed.data.densidade } : {}),
     ...(parsed.data.fonte ? { fonte: parsed.data.fonte } : {}),
-    // Cores do tema (0677): ausente = não mexa; `{}` = volte tudo ao padrão.
+    // Cores do tema (0678): ausente = não mexa; `{}` = volte tudo ao padrão.
     ...(parsed.data.cores !== undefined ? { cores: parsed.data.cores } : {}),
     // A linha passa a ser HUMANA. É o que impede a semeadura do `.env` de
     // reescrever a escolha no render seguinte — inclusive quando a escolha foi

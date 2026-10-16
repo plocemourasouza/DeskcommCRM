@@ -107,14 +107,14 @@ const COLUNAS =
   "app_name, logo_url, logo_path, logo_dark_path, favicon_path, accent_hex, accent_dark_hex, neutros, raio, barra_lateral, densidade, fonte, cores, show_powered_by, seeded_from_env, fallback_at, fallback_reason";
 
 /**
- * As colunas de ANTES da 0677 (cores do tema): banco que já tem a fonte mas não
+ * As colunas de ANTES da 0678 (cores do tema): banco que já tem a fonte mas não
  * as cores. Mesmo degrau dos de baixo: faltar a coluna nova nunca leva embora as
  * que existem, e a ausência de `cores` vale o produto.
  */
 const COLUNAS_SEM_CORES = COLUNAS.replace(" cores,", "");
 
 /**
- * As colunas de ANTES da 0676 (fonte): banco que já tem raio, barra lateral e
+ * As colunas de ANTES da 0677 (fonte): banco que já tem raio, barra lateral e
  * densidade mas ainda não a fonte. Código novo sobre banco que não aplicou a
  * migration recebe `42703` na leitura acima — e perder a marca inteira por uma
  * coluna de aparência seria desproporcional. `lerLinha` tenta de novo com cada
@@ -423,15 +423,15 @@ async function lerLinha(): Promise<LinhaDaMarca | null | "erro"> {
   const lida = await lerLinhaCom(COLUNAS);
   if (lida !== "coluna_ausente") return lida;
   avisarUmaVez(
-    "leitura|0677",
-    "marca da instalação: as cores do tema ainda não existem no banco (migration 0677); valem as do produto",
+    "leitura|0678",
+    "marca da instalação: as cores do tema ainda não existem no banco (migration 0678); valem as do produto",
     {},
   );
   const semCores = await lerLinhaCom(COLUNAS_SEM_CORES);
   if (semCores !== "coluna_ausente") return semCores;
   avisarUmaVez(
-    "leitura|0676",
-    "marca da instalação: a fonte ainda não existe no banco (migration 0676); vale o padrão",
+    "leitura|0677",
+    "marca da instalação: a fonte ainda não existe no banco (migration 0677); vale o padrão",
     {},
   );
   const semFonte = await lerLinhaCom(COLUNAS_SEM_FONTE);

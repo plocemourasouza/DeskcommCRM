@@ -1,7 +1,7 @@
 /**
  * A cor da barra do navegador (`<meta name="theme-color">`) — LIDA da régua.
  *
- * ─── Por que passou a ser dinâmico (migration 0677) ─────────────────────────
+ * ─── Por que passou a ser dinâmico (migration 0678) ─────────────────────────
  *
  * Até as cores do tema, a marca não movia o fundo e `#faf9f6` / `#161510` eram a
  * cor certa da barra para qualquer marca — ler o banco no `viewport` seria pagar
@@ -48,7 +48,7 @@ function corDeFundo(tema: TemaDaRegua): string | undefined {
  * proíbe, e que aqui esconderia justamente a régua quebrada.
  */
 /**
- * `cores` (0677): o fundo que a marca da INSTALAÇÃO escolheu, por tema, vence o
+ * `cores` (0678): o fundo que a marca da INSTALAÇÃO escolheu, por tema, vence o
  * do preset — a barra do navegador acompanha o `--color-bg` que a página pinta.
  * Só a instalação: o `<meta name="theme-color">` sai de `generateViewport()` no
  * layout raiz, que não sabe de qual empresa é quem está olhando.

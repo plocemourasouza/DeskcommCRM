@@ -224,7 +224,7 @@ export function densidadeEscolhida(valor: unknown): DensidadeDaMarca | null {
  * A fonte da interface: `atkinson` e a de sempre (e o default do banco), as
  * outras seis sao familias OFL versionadas em `app/fonts/`. Vocabulario fechado
  * no CHECK `platform_branding_fonte` e em `fn_definir_marca_da_organizacao`
- * (migration 0676); o invariante vocabulario-banco-x-typescript cobre a
+ * (migration 0677); o invariante vocabulario-banco-x-typescript cobre a
  * igualdade. O primeiro item e o padrao.
  */
 export const FONTES_DA_MARCA = [
@@ -299,7 +299,7 @@ export function fonteEscolhida(valor: unknown): FonteDaMarca | null {
     : null;
 }
 
-// ── As cores do tema (migration 0677) ────────────────────────────────────────
+// ── As cores do tema (migration 0678) ────────────────────────────────────────
 
 /**
  * As cores do tema que a marca pode mudar — lista FECHADA, a mesma nos dois temas,
@@ -310,7 +310,7 @@ export function fonteEscolhida(valor: unknown): FonteDaMarca | null {
  *
  * Cada nome existe no `:root` e no `[data-theme="dark"]` do `app/globals.css`
  * (`tests/unit/branding-cores-do-tema.test.ts` reprova token inventado ou sumido).
- * A MESMA lista mora na função SQL `fn_definir_marca_da_organizacao` (0677):
+ * A MESMA lista mora na função SQL `fn_definir_marca_da_organizacao` (0678):
  * mudar aqui sem mudar lá faz a RPC recusar o que a tela aceita.
  */
 export const TOKENS_DE_COR_DO_TEMA = [

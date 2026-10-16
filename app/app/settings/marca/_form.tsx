@@ -99,7 +99,7 @@ interface Props {
     readonly densidade: string | null;
     readonly fonte: string | null;
     /**
-     * As cores do tema desta empresa (0677), já lidas pela leitura defensiva.
+     * As cores do tema desta empresa (0678), já lidas pela leitura defensiva.
      * OBRIGATÓRIO no tipo: uma página que esquecesse de passá-las faria o editor
      * nascer vazio — e o primeiro Salvar apagaria as cores gravadas.
      */
@@ -114,7 +114,7 @@ interface Props {
     readonly barra_lateral: string | null;
     readonly densidade: string | null;
     readonly fonte: string | null;
-    /** As cores do tema da instalação (0677) — o herdado de cada campo vazio. */
+    /** As cores do tema da instalação (0678) — o herdado de cada campo vazio. */
     readonly cores: CoresDoTema | null;
   };
   /** O arquivo de instalação do servidor — o fundo da pilha. */

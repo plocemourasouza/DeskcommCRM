@@ -1,5 +1,6 @@
 "use server";
 
+import { ipDoCliente } from "@/lib/http/ip-do-cliente";
 import { supportWriteError } from "@/lib/impersonate/support";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
@@ -125,7 +126,7 @@ export async function updateMarcaDaOrganizacao(
     return { ok: false, error: "mfa_required" };
   }
 
-  // A TRAVA de contraste das cores do tema (0677), contra a pilha RESOLVIDA: a
+  // A TRAVA de contraste das cores do tema (0678), contra a pilha RESOLVIDA: a
   // empresa como ficaria, SOBRE a instalação de hoje e o `.env`. A tela roda a
   // mesma pergunta, mas tela não é fronteira. Só quando a empresa ENVIA cores:
   // `null` (herdar) e ausente (não mexer) não acrescentam cor nenhuma dela.
@@ -151,7 +152,7 @@ export async function updateMarcaDaOrganizacao(
 
   const hdrs = await headers();
   const requestId = hdrs.get("x-request-id");
-  const ip = hdrs.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
+  const ip = ipDoCliente(hdrs);
   const userAgent = hdrs.get("user-agent") ?? null;
 
   // Os dois campos vazios significam "volte ao que vem da instalação", e é `null`
@@ -196,9 +197,9 @@ export async function updateMarcaDaOrganizacao(
           : {}),
         // densidade (0675): os mesmos tres estados do raio.
         ...(parsed.data.densidade !== undefined ? { densidade: parsed.data.densidade } : {}),
-        // fonte (0676): os mesmos tres estados do raio.
+        // fonte (0677): os mesmos tres estados do raio.
         ...(parsed.data.fonte !== undefined ? { fonte: parsed.data.fonte } : {}),
-        // cores do tema (0677): os mesmos tres estados do raio.
+        // cores do tema (0678): os mesmos tres estados do raio.
         ...(parsed.data.cores !== undefined ? { cores: parsed.data.cores } : {}),
         updated_by: authUser.id,
         updated_at: new Date().toISOString(),

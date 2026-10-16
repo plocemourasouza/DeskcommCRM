@@ -4,7 +4,7 @@ import { lastLine, sql } from "./gov-helpers";
 import { motivoDoErro } from "./psql-transporte";
 
 /**
- * CORES DO TEMA DA MARCA (migration 0677).
+ * CORES DO TEMA DA MARCA (migration 0678).
  *
  *  - instalacao: `platform_branding.cores` jsonb `not null default '{}'` + CHECK
  *    de que e um objeto.
@@ -15,11 +15,11 @@ import { motivoDoErro } from "./psql-transporte";
  * Forma: { claro?: { token: "#rrggbb" }, escuro?: { ... } }, 20 tokens fechados,
  * hex minusculo de 6 digitos.
  *
- * Namespace `a4ca0677`: o banco do `test:db` e compartilhado entre arquivos.
+ * Namespace `a4ca0678`: o banco do `test:db` e compartilhado entre arquivos.
  */
 
-const ORG_A = "a4ca0677-0000-4000-8000-000000000001";
-const ADMIN_A = "a4ca0677-1111-4000-8000-000000000001";
+const ORG_A = "a4ca0678-0000-4000-8000-000000000001";
+const ADMIN_A = "a4ca0678-1111-4000-8000-000000000001";
 const FN = "public.fn_definir_marca_da_organizacao(uuid,uuid,jsonb)";
 
 function definir(marca: string): number {

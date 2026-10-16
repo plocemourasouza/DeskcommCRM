@@ -347,10 +347,10 @@ export const platformBrandingSchema = z.object({
   barra_lateral: z.enum(BARRAS_LATERAIS_DA_MARCA).optional(),
   /** A densidade (migration 0675). Opcional pelo mesmo motivo: coluna `not null`. */
   densidade: z.enum(DENSIDADES_DA_MARCA).optional(),
-  /** A fonte (migration 0676). Opcional pelo mesmo motivo: coluna `not null`. */
+  /** A fonte (migration 0677). Opcional pelo mesmo motivo: coluna `not null`. */
   fonte: z.enum(FONTES_DA_MARCA).optional(),
   /**
-   * As cores do tema (migration 0677): `{claro?, escuro?}`, só a allowlist, só
+   * As cores do tema (migration 0678): `{claro?, escuro?}`, só a allowlist, só
    * `#rrggbb` minúsculo. Opcional: ausente = não mexa (coluna `not null default
    * '{}'`); `{}` = volte tudo ao padrão. A action ainda passa a TRAVA de
    * contraste — forma certa não é cor legível.
@@ -407,10 +407,10 @@ export const marcaDaOrganizacaoSchema = z.object({
   barra_lateral: z.enum(BARRAS_LATERAIS_DA_MARCA).nullable().optional(),
   /** A densidade desta organizacao (0675): mesmos tres estados do raio. */
   densidade: z.enum(DENSIDADES_DA_MARCA).nullable().optional(),
-  /** A fonte desta organizacao (0676): mesmos tres estados do raio. */
+  /** A fonte desta organizacao (0677): mesmos tres estados do raio. */
   fonte: z.enum(FONTES_DA_MARCA).nullable().optional(),
   /**
-   * As cores do tema desta organizacao (0677): os mesmos tres estados do raio
+   * As cores do tema desta organizacao (0678): os mesmos tres estados do raio
    * (objeto = grava, `null` = herda tudo da instalacao, ausente = nao mexa). Token
    * que a empresa nao escolheu desce para a instalacao, um por um.
    */

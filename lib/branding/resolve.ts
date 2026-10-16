@@ -71,7 +71,7 @@ export type CodigoDaResolucao =
   /** A cor do TEMA ESCURO (#2482) é neutra: o escuro pinta com a escala do produto. */
   | "cor_escura_acromatica"
   /**
-   * As cores do tema de uma camada (0677) deixam algum par abaixo do piso sobre a
+   * As cores do tema de uma camada (0678) deixam algum par abaixo do piso sobre a
    * pilha de HOJE — a instalação mudou por baixo da empresa. A camada perde as
    * cores dela (as de baixo valem) e a tela diz por quê.
    */
@@ -130,7 +130,7 @@ export type CamadaDeMarca = {
   readonly densidade?: DensidadeDaMarca | null;
   /** A fonte desta camada; mesma regra. */
   readonly fonte?: FonteDaMarca | null;
-  /** As cores do tema escolhidas por ESTA camada (0677). Lidas defensivamente na resolução. */
+  /** As cores do tema escolhidas por ESTA camada (0678). Lidas defensivamente na resolução. */
   readonly cores?: unknown;
 };
 
@@ -163,7 +163,7 @@ export type MarcaResolvida = Branding & {
   /** A fonte em vigor (`atkinson` quando nenhuma camada escolheu). */
   readonly fonte: FonteDaMarca;
   /**
-   * As cores do tema em vigor (0677), por token, já empilhadas e já TRAVADAS:
+   * As cores do tema em vigor (0678), por token, já empilhadas e já TRAVADAS:
    * toda camada que sobrou aqui passou na trava de contraste. `{}` = o produto.
    */
   readonly cores: CoresDoTema;
@@ -789,10 +789,10 @@ export type LinhaDaInstalacao = {
   readonly barra_lateral?: string | null;
   /** A densidade (migration 0675). Linha anterior a coluna: ausente = `aerada`. */
   readonly densidade?: string | null;
-  /** A fonte (migration 0676). Linha anterior a coluna: ausente = `atkinson`. */
+  /** A fonte (migration 0677). Linha anterior a coluna: ausente = `atkinson`. */
   readonly fonte?: string | null;
   /**
-   * As cores do tema (migration 0677), jsonb `{claro?, escuro?}`. `unknown` de
+   * As cores do tema (migration 0678), jsonb `{claro?, escuro?}`. `unknown` de
    * propósito: o banco é lido sem confiança, e quem dá forma é
    * `coresDoTemaEscolhidas` — linha anterior à coluna: ausente = o produto.
    */
@@ -930,7 +930,7 @@ export type MarcaDaOrganizacao = {
   readonly densidade?: string | null;
   /** A fonte desta organizacao; ausente = herda da instalacao. */
   readonly fonte?: string | null;
-  /** As cores do tema desta organizacao (0677); ausente = herda token a token. */
+  /** As cores do tema desta organizacao (0678); ausente = herda token a token. */
   readonly cores?: unknown;
 };
 

@@ -3,8 +3,8 @@
  * degraus, e faltar UMA coluna de aparência nunca leva as outras embora.
  *
  *   1. todas as colunas;
- *   2. sem `cores` (banco na 0676, ainda sem a 0677);
- *   3. sem `cores` e `fonte` (banco na 0675, ainda sem a 0676);
+ *   2. sem `cores` (banco na 0677, ainda sem a 0678);
+ *   3. sem `cores` e `fonte` (banco na 0675, ainda sem a 0677);
  *   4. sem `cores`, `fonte` e `densidade` (banco na 0674, ainda sem a 0675);
  *   5. sem `cores`, `raio`, `barra_lateral`, `densidade` e `fonte` (anterior à 0674).
  *
@@ -74,7 +74,7 @@ describe("leitura da marca da instalação sobre banco sem as colunas novas", ()
     expect(banco.pedidos[0]).toContain("cores");
   });
 
-  it("sem a coluna cores (0676 sem 0677): segunda ida mantém fonte, densidade, raio e barra", async () => {
+  it("sem a coluna cores (0677 sem 0678): segunda ida mantém fonte, densidade, raio e barra", async () => {
     banco.ausentes = ["cores"];
     const linha = await ler();
     expect(linha?.app_name).toBe("Revenda");
@@ -83,7 +83,7 @@ describe("leitura da marca da instalação sobre banco sem as colunas novas", ()
     expect(banco.pedidos[1]).toContain("raio, barra_lateral, densidade, fonte");
   });
 
-  it("sem cores e fonte (0675 sem 0676): terceira ida mantém raio, barra e densidade", async () => {
+  it("sem cores e fonte (0675 sem 0677): terceira ida mantém raio, barra e densidade", async () => {
     banco.ausentes = ["cores", "fonte"];
     const linha = await ler();
     expect(linha?.app_name).toBe("Revenda");

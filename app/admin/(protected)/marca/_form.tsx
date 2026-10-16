@@ -61,7 +61,7 @@ export interface MarcaGravada {
   readonly densidade: DensidadeDaMarca;
   readonly fonte: FonteDaMarca;
   /**
-   * As cores do tema gravadas (0677), `{}` sem nenhuma. OBRIGATÓRIO: a tela
+   * As cores do tema gravadas (0678), `{}` sem nenhuma. OBRIGATÓRIO: a tela
    * manda o objeto inteiro no Salvar, e uma página que esquecesse de passá-lo
    * apagaria as cores no primeiro clique.
    */
