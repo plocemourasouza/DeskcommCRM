@@ -1,5 +1,5 @@
 -- manifest: **Aparencia da marca: densidade dos controles (aerada, equilibrada, compacta).** Coluna platform_branding.densidade (CHECK de conjunto, default aerada = visual de hoje) e validacao + preservacao de settings.branding.densidade em fn_definir_marca_da_organizacao.
--- 0675: densidade da marca (platform_branding.densidade + chave na RPC da organizacao)
+-- 0688: densidade da marca (platform_branding.densidade + chave na RPC da organizacao)
 --
 -- Aditiva e idempotente; linhas existentes ficam 'aerada'. Espelhada no apendice do baseline.sql.
 
@@ -16,7 +16,7 @@ alter table public.platform_branding
 alter table public.platform_branding
   add constraint platform_branding_densidade check (densidade in ('aerada', 'equilibrada', 'compacta'));
 
--- Forward-fix de fn_definir_marca_da_organizacao (ultima definicao: a da 0674,
+-- Forward-fix de fn_definir_marca_da_organizacao (ultima definicao: a da 0687,
 -- raio e barra lateral). O corpo e identico, mais a chave `densidade`: validacao
 -- (valor do vocabulario ou JSON null) e preservacao (enviada = manda, null =
 -- apaga, ausente = mantem a gravada).

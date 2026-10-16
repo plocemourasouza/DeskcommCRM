@@ -3,10 +3,10 @@
  * degraus, e faltar UMA coluna de aparência nunca leva as outras embora.
  *
  *   1. todas as colunas;
- *   2. sem `cores` (banco na 0677, ainda sem a 0678);
- *   3. sem `cores` e `fonte` (banco na 0675, ainda sem a 0677);
- *   4. sem `cores`, `fonte` e `densidade` (banco na 0674, ainda sem a 0675);
- *   5. sem `cores`, `raio`, `barra_lateral`, `densidade` e `fonte` (anterior à 0674).
+ *   2. sem `cores` (banco na 0689, ainda sem a 0690);
+ *   3. sem `cores` e `fonte` (banco na 0688, ainda sem a 0689);
+ *   4. sem `cores`, `fonte` e `densidade` (banco na 0687, ainda sem a 0688);
+ *   5. sem `cores`, `raio`, `barra_lateral`, `densidade` e `fonte` (anterior à 0687).
  *
  * O dublê do cliente é o mesmo do `branding-memo-da-instalacao`: o que se mede
  * é a lista de colunas pedida em cada ida e o que sobra da linha.
@@ -74,7 +74,7 @@ describe("leitura da marca da instalação sobre banco sem as colunas novas", ()
     expect(banco.pedidos[0]).toContain("cores");
   });
 
-  it("sem a coluna cores (0677 sem 0678): segunda ida mantém fonte, densidade, raio e barra", async () => {
+  it("sem a coluna cores (0689 sem 0690): segunda ida mantém fonte, densidade, raio e barra", async () => {
     banco.ausentes = ["cores"];
     const linha = await ler();
     expect(linha?.app_name).toBe("Revenda");
@@ -83,7 +83,7 @@ describe("leitura da marca da instalação sobre banco sem as colunas novas", ()
     expect(banco.pedidos[1]).toContain("raio, barra_lateral, densidade, fonte");
   });
 
-  it("sem cores e fonte (0675 sem 0677): terceira ida mantém raio, barra e densidade", async () => {
+  it("sem cores e fonte (0688 sem 0689): terceira ida mantém raio, barra e densidade", async () => {
     banco.ausentes = ["cores", "fonte"];
     const linha = await ler();
     expect(linha?.app_name).toBe("Revenda");
@@ -92,7 +92,7 @@ describe("leitura da marca da instalação sobre banco sem as colunas novas", ()
     expect(banco.pedidos[2]).toContain("raio, barra_lateral, densidade");
   });
 
-  it("sem cores, fonte e densidade (0674 sem 0675): quarta ida mantém raio e barra", async () => {
+  it("sem cores, fonte e densidade (0687 sem 0688): quarta ida mantém raio e barra", async () => {
     banco.ausentes = ["cores", "densidade", "fonte"];
     const linha = await ler();
     expect(linha?.app_name).toBe("Revenda");
@@ -101,7 +101,7 @@ describe("leitura da marca da instalação sobre banco sem as colunas novas", ()
     expect(banco.pedidos[3]).toContain("raio, barra_lateral");
   });
 
-  it("banco anterior à 0674: quinta ida sem nenhuma das cinco", async () => {
+  it("banco anterior à 0687: quinta ida sem nenhuma das cinco", async () => {
     banco.ausentes = ["cores", "densidade", "raio", "barra_lateral", "fonte"];
     const linha = await ler();
     expect(linha?.app_name).toBe("Revenda");

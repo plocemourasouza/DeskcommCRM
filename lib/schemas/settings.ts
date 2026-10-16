@@ -341,16 +341,16 @@ export const platformBrandingSchema = z.object({
    * valor), porque a coluna e `not null` — nao existe "apague", so "escolha".
    */
   neutros: z.enum(NEUTROS_DA_MARCA).optional(),
-  /** O raio dos cantos (migration 0674). Opcional pelo mesmo motivo: coluna `not null`. */
+  /** O raio dos cantos (migration 0687). Opcional pelo mesmo motivo: coluna `not null`. */
   raio: z.enum(RAIOS_DA_MARCA).optional(),
-  /** A barra lateral (migration 0674). Opcional pelo mesmo motivo. */
+  /** A barra lateral (migration 0687). Opcional pelo mesmo motivo. */
   barra_lateral: z.enum(BARRAS_LATERAIS_DA_MARCA).optional(),
-  /** A densidade (migration 0675). Opcional pelo mesmo motivo: coluna `not null`. */
+  /** A densidade (migration 0688). Opcional pelo mesmo motivo: coluna `not null`. */
   densidade: z.enum(DENSIDADES_DA_MARCA).optional(),
-  /** A fonte (migration 0677). Opcional pelo mesmo motivo: coluna `not null`. */
+  /** A fonte (migration 0689). Opcional pelo mesmo motivo: coluna `not null`. */
   fonte: z.enum(FONTES_DA_MARCA).optional(),
   /**
-   * As cores do tema (migration 0678): `{claro?, escuro?}`, só a allowlist, só
+   * As cores do tema (migration 0690): `{claro?, escuro?}`, só a allowlist, só
    * `#rrggbb` minúsculo. Opcional: ausente = não mexa (coluna `not null default
    * '{}'`); `{}` = volte tudo ao padrão. A action ainda passa a TRAVA de
    * contraste — forma certa não é cor legível.
@@ -398,19 +398,19 @@ export const marcaDaOrganizacaoSchema = z.object({
    */
   neutros: z.enum(NEUTROS_DA_MARCA).nullable(),
   /**
-   * O raio e a barra lateral desta organizacao (migration 0674). TRES estados,
+   * O raio e a barra lateral desta organizacao (migration 0687). TRES estados,
    * ao contrario dos irmaos: valor = escolhe, `null` = "herde da instalacao"
    * (a chave sai do jsonb) e AUSENTE = "nao mexa" — a RPC preserva a chave
    * gravada. Salvar so o nome nunca apaga o que o formulario nao enviou.
    */
   raio: z.enum(RAIOS_DA_MARCA).nullable().optional(),
   barra_lateral: z.enum(BARRAS_LATERAIS_DA_MARCA).nullable().optional(),
-  /** A densidade desta organizacao (0675): mesmos tres estados do raio. */
+  /** A densidade desta organizacao (0688): mesmos tres estados do raio. */
   densidade: z.enum(DENSIDADES_DA_MARCA).nullable().optional(),
-  /** A fonte desta organizacao (0677): mesmos tres estados do raio. */
+  /** A fonte desta organizacao (0689): mesmos tres estados do raio. */
   fonte: z.enum(FONTES_DA_MARCA).nullable().optional(),
   /**
-   * As cores do tema desta organizacao (0678): os mesmos tres estados do raio
+   * As cores do tema desta organizacao (0690): os mesmos tres estados do raio
    * (objeto = grava, `null` = herda tudo da instalacao, ausente = nao mexa). Token
    * que a empresa nao escolheu desce para a instalacao, um por um.
    */

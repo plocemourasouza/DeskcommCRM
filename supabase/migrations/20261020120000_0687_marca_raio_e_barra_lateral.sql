@@ -1,25 +1,34 @@
--- manifest: **Aparencia da marca: fonte da interface (atkinson, manrope, jakarta, plex-sans, bricolage, fraunces, source-serif).** Coluna platform_branding.fonte (CHECK de conjunto, default atkinson = a fonte de hoje) e validacao + preservacao de settings.branding.fonte em fn_definir_marca_da_organizacao.
--- 0677: fonte da marca (platform_branding.fonte + chave na RPC da organizacao)
+-- manifest: **Aparencia da marca: raio dos cantos (suave, padrao, arredondado) e barra lateral (padrao, escura).** Colunas platform_branding.raio e .barra_lateral (CHECK de conjunto, default padrao = visual de hoje) e validacao + preservacao de settings.branding.raio/.barra_lateral em fn_definir_marca_da_organizacao.
+-- 0687: aparencia da marca (platform_branding.raio/.barra_lateral + chaves na RPC da organizacao)
 --
--- Aditiva e idempotente; linhas existentes ficam 'atkinson'. Espelhada no apendice do baseline.sql.
+-- Aditiva e idempotente; linhas existentes ficam 'padrao'. Espelhada no apendice do baseline.sql.
 
 alter table public.platform_branding
-  add column if not exists fonte text not null default 'atkinson';
+  add column if not exists raio text not null default 'padrao';
+alter table public.platform_branding
+  add column if not exists barra_lateral text not null default 'padrao';
 
-comment on column public.platform_branding.fonte is
-  'Fonte da interface da instalacao: atkinson (a de sempre), manrope, jakarta, plex-sans, bricolage, fraunces ou source-serif. Vocabulario fechado no CHECK; a organizacao pode sobrepor em settings.branding.fonte. Linhas antigas nascem atkinson.';
+comment on column public.platform_branding.raio is
+  'Raio dos cantos da instalacao: suave, padrao (o visual de sempre) ou arredondado. Vocabulario fechado no CHECK; a organizacao pode sobrepor em settings.branding.raio. Linhas antigas nascem padrao.';
+comment on column public.platform_branding.barra_lateral is
+  'Barra lateral da instalacao: padrao (acompanha o tema) ou escura (sempre escura). Vocabulario fechado no CHECK; a organizacao pode sobrepor em settings.branding.barra_lateral. Linhas antigas nascem padrao.';
 
--- drop + add: torna a REGRA idempotente. O default 'atkinson' garante que nenhuma
+-- drop + add: torna a REGRA idempotente. O default 'padrao' garante que nenhuma
 -- linha existente viole o CHECK.
 alter table public.platform_branding
-  drop constraint if exists platform_branding_fonte;
+  drop constraint if exists platform_branding_raio;
 alter table public.platform_branding
-  add constraint platform_branding_fonte check (fonte in ('atkinson', 'manrope', 'jakarta', 'plex-sans', 'bricolage', 'fraunces', 'source-serif'));
+  add constraint platform_branding_raio check (raio in ('suave', 'padrao', 'arredondado'));
+alter table public.platform_branding
+  drop constraint if exists platform_branding_barra_lateral;
+alter table public.platform_branding
+  add constraint platform_branding_barra_lateral check (barra_lateral in ('padrao', 'escura'));
 
--- Forward-fix de fn_definir_marca_da_organizacao (ultima definicao: a da 0675,
--- raio, barra lateral e densidade). O corpo e identico, mais a chave `fonte`: validacao
--- (valor do vocabulario ou JSON null) e preservacao (enviada = manda, null =
--- apaga, ausente = mantem a gravada).
+-- Forward-fix de fn_definir_marca_da_organizacao (ultima definicao: a da 0650,
+-- neutros). O corpo e identico, mais: (1) validacao de `raio`/`barra_lateral`
+-- (valor do vocabulario ou JSON null) e (2) a funcao SUBSTITUI o objeto
+-- `branding` inteiro, entao as duas chaves entram na preservacao que ja existe
+-- para os logos: enviada = manda, ausente = mantem a gravada.
 create or replace function public.fn_definir_marca_da_organizacao(
   p_org   uuid,
   p_actor uuid,
@@ -82,24 +91,6 @@ begin
       using errcode = '22023';
   end if;
 
-  if not v_limpar and p_marca ? 'fonte'
-     and jsonb_typeof(p_marca -> 'fonte') <> 'null'
-     and (jsonb_typeof(p_marca -> 'fonte') <> 'string'
-          or (p_marca ->> 'fonte') not in ('atkinson', 'manrope', 'jakarta', 'plex-sans', 'bricolage', 'fraunces', 'source-serif'))
-  then
-    raise exception 'marca_da_organizacao_fonte_invalida'
-      using errcode = '22023';
-  end if;
-
-  if not v_limpar and p_marca ? 'densidade'
-     and jsonb_typeof(p_marca -> 'densidade') <> 'null'
-     and (jsonb_typeof(p_marca -> 'densidade') <> 'string'
-          or (p_marca ->> 'densidade') not in ('aerada', 'equilibrada', 'compacta'))
-  then
-    raise exception 'marca_da_organizacao_densidade_invalida'
-      using errcode = '22023';
-  end if;
-
   if not exists (
        select 1 from public.user_organizations uo
         where uo.user_id = p_actor
@@ -127,7 +118,7 @@ begin
        else jsonb_set(
        coalesce(o.settings, '{}'::jsonb), '{branding}',
        (case when v_limpar then '{}'::jsonb
-             else p_marca - 'logo_path' - 'logo_dark_path' - 'raio' - 'barra_lateral' - 'densidade' - 'fonte' end)
+             else p_marca - 'logo_path' - 'logo_dark_path' - 'raio' - 'barra_lateral' end)
        || jsonb_strip_nulls(jsonb_build_object(
          'logo_path', o.settings #> '{branding,logo_path}',
          'logo_dark_path', o.settings #> '{branding,logo_dark_path}',
@@ -139,13 +130,7 @@ begin
                       else o.settings #> '{branding,raio}' end,
          'barra_lateral', case when v_limpar then null
                                when p_marca ? 'barra_lateral' then p_marca -> 'barra_lateral'
-                               else o.settings #> '{branding,barra_lateral}' end,
-         'densidade', case when v_limpar then null
-                           when p_marca ? 'densidade' then p_marca -> 'densidade'
-                           else o.settings #> '{branding,densidade}' end,
-         'fonte', case when v_limpar then null
-                       when p_marca ? 'fonte' then p_marca -> 'fonte'
-                       else o.settings #> '{branding,fonte}' end
+                               else o.settings #> '{branding,barra_lateral}' end
        )), true) end
    where o.id = p_org;
 

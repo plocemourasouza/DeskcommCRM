@@ -347,7 +347,7 @@ export function cssDaMarca(
   return { css, motivos };
 }
 
-// ── As CORES DO TEMA (migration 0678) ────────────────────────────────────────
+// ── As CORES DO TEMA (migration 0690) ────────────────────────────────────────
 //
 // O segundo emissor deste módulo, e o ÚNICO que declara superfície
 // (`--color-bg`, `--color-surface*`). Até a decisão de 2026-10-15 nenhum

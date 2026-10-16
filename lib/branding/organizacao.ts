@@ -108,7 +108,7 @@ export function marcaDaOrganizacaoDeSettings(settings: unknown): MarcaDaOrganiza
       ? { densidade: densidadeEscolhida(envelope.densidade) }
       : {}),
     ...(fonteEscolhida(envelope.fonte) ? { fonte: fonteEscolhida(envelope.fonte) } : {}),
-    // As cores do tema (0678), token a token: o que nao e `#rrggbb` da allowlist
+    // As cores do tema (0690), token a token: o que nao e `#rrggbb` da allowlist
     // some, e o token desce para a instalacao. Nunca lanca.
     ...(coresDoTemaEscolhidas(envelope.cores) ? { cores: coresDoTemaEscolhidas(envelope.cores) } : {}),
   };

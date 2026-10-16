@@ -230,7 +230,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       // os motivos para quem pode consertá-los — o admin daquela organização.
       cssDaOrganizacao = cssDaMarca(marca.cor, ESCOPO_DA_ORGANIZACAO).css;
     }
-    // As cores do tema da EMPRESA (0678), já travadas pelo resolvedor contra a
+    // As cores do tema da EMPRESA (0690), já travadas pelo resolvedor contra a
     // instalação de hoje. Só as dela: a pilha resolvida inteira (com as da
     // instalação embaixo) re-emitiria no `<body>` o que o `<html>` já pinta.
     if (marca.origens.cores === "organizacao") {

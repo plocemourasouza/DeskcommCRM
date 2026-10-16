@@ -4,7 +4,7 @@ import { lastLine, sql } from "./gov-helpers";
 import { motivoDoErro } from "./psql-transporte";
 
 /**
- * RAIO E BARRA LATERAL DA MARCA (migration 0674).
+ * RAIO E BARRA LATERAL DA MARCA (migration 0687).
  *
  *  - instalacao: `platform_branding.raio` (suave|padrao|arredondado) e
  *    `.barra_lateral` (padrao|escura), `not null default 'padrao'` + CHECK.

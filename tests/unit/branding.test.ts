@@ -100,7 +100,7 @@ describe("guarda de white-label (self-host)", () => {
     expect(
       layoutRaiz.match(/await marcaResolvida\(\)/g) ?? [],
       "os seis consumidores do layout raiz são `generateMetadata` (aba), " +
-        "`generateViewport` (a barra do navegador segue o fundo escolhido, 0678), " +
+        "`generateViewport` (a barra do navegador segue o fundo escolhido, 0690), " +
         "`EstiloDaMarca` (cor), `MarcaNoNavegador` (`window.__PUBLIC_ENV__`), " +
         "`MarcaDosClientComponents` (o contexto que os `\"use client\"` leem) e " +
         "`neutrosDaInstalacao` (o atributo `data-neutros` do `<html>`). " +

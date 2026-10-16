@@ -54995,7 +54995,7 @@ end; $$;
 revoke execute on function public.fn_mark_conversation_message(uuid,text,text,timestamptz) from public,anon,authenticated;
 grant execute on function public.fn_mark_conversation_message(uuid,text,text,timestamptz) to service_role;
 
--- ---- raio e barra lateral da marca (migration 0674) ----
+-- ---- raio e barra lateral da marca (migration 0687) ----
 alter table public.platform_branding
   add column if not exists raio text not null default 'padrao';
 alter table public.platform_branding
@@ -55136,7 +55136,7 @@ revoke execute on function public.fn_definir_marca_da_organizacao(uuid, uuid, js
 grant  execute on function public.fn_definir_marca_da_organizacao(uuid, uuid, jsonb) to service_role;
 notify pgrst, 'reload schema';
 
--- ---- densidade da marca (migration 0675) ----
+-- ---- densidade da marca (migration 0688) ----
 alter table public.platform_branding
   add column if not exists densidade text not null default 'aerada';
 
@@ -55150,7 +55150,7 @@ alter table public.platform_branding
 alter table public.platform_branding
   add constraint platform_branding_densidade check (densidade in ('aerada', 'equilibrada', 'compacta'));
 
--- Forward-fix de fn_definir_marca_da_organizacao (ultima definicao: a da 0674,
+-- Forward-fix de fn_definir_marca_da_organizacao (ultima definicao: a da 0687,
 -- raio e barra lateral). O corpo e identico, mais a chave `densidade`: validacao
 -- (valor do vocabulario ou JSON null) e preservacao (enviada = manda, null =
 -- apaga, ausente = mantem a gravada).
@@ -55280,7 +55280,7 @@ revoke execute on function public.fn_definir_marca_da_organizacao(uuid, uuid, js
 grant  execute on function public.fn_definir_marca_da_organizacao(uuid, uuid, jsonb) to service_role;
 notify pgrst, 'reload schema';
 
--- ---- fonte da marca (migration 0677) ----
+-- ---- fonte da marca (migration 0689) ----
 alter table public.platform_branding
   add column if not exists fonte text not null default 'atkinson';
 
@@ -55294,7 +55294,7 @@ alter table public.platform_branding
 alter table public.platform_branding
   add constraint platform_branding_fonte check (fonte in ('atkinson', 'manrope', 'jakarta', 'plex-sans', 'bricolage', 'fraunces', 'source-serif'));
 
--- Forward-fix de fn_definir_marca_da_organizacao (ultima definicao: a da 0675,
+-- Forward-fix de fn_definir_marca_da_organizacao (ultima definicao: a da 0688,
 -- raio, barra lateral e densidade). O corpo e identico, mais a chave `fonte`: validacao
 -- (valor do vocabulario ou JSON null) e preservacao (enviada = manda, null =
 -- apaga, ausente = mantem a gravada).
@@ -55436,7 +55436,7 @@ revoke execute on function public.fn_definir_marca_da_organizacao(uuid, uuid, js
 grant  execute on function public.fn_definir_marca_da_organizacao(uuid, uuid, jsonb) to service_role;
 notify pgrst, 'reload schema';
 
--- ---- marca: cores do tema (migration 0678) ----
+-- ---- marca: cores do tema (migration 0690) ----
 alter table public.platform_branding
   add column if not exists cores jsonb not null default '{}'::jsonb;
 
@@ -55450,7 +55450,7 @@ alter table public.platform_branding
 alter table public.platform_branding
   add constraint platform_branding_cores check (jsonb_typeof(cores) = 'object');
 
--- Forward-fix de fn_definir_marca_da_organizacao (ultima definicao: a da 0677,
+-- Forward-fix de fn_definir_marca_da_organizacao (ultima definicao: a da 0689,
 -- fonte). O corpo e identico, mais a chave `cores`: validacao (objeto com
 -- claro/escuro, tokens fechados, hex minusculo, ou JSON null) e preservacao
 -- (enviada = manda, null = apaga, ausente = mantem a gravada).

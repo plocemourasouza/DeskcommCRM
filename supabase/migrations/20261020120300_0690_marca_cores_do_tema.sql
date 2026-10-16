@@ -1,5 +1,5 @@
 -- manifest: **Aparencia da marca: cores do tema (variaveis de cor claro/escuro editaveis).** Coluna platform_branding.cores (jsonb objeto, default {}) e validacao + preservacao de settings.branding.cores em fn_definir_marca_da_organizacao (20 tokens fechados, hex minusculo).
--- 0678: cores do tema da marca (platform_branding.cores + chave na RPC da organizacao)
+-- 0690: cores do tema da marca (platform_branding.cores + chave na RPC da organizacao)
 --
 -- Aditiva e idempotente; linhas existentes ficam '{}'. Espelhada no apendice do baseline.sql.
 
@@ -16,7 +16,7 @@ alter table public.platform_branding
 alter table public.platform_branding
   add constraint platform_branding_cores check (jsonb_typeof(cores) = 'object');
 
--- Forward-fix de fn_definir_marca_da_organizacao (ultima definicao: a da 0677,
+-- Forward-fix de fn_definir_marca_da_organizacao (ultima definicao: a da 0689,
 -- fonte). O corpo e identico, mais a chave `cores`: validacao (objeto com
 -- claro/escuro, tokens fechados, hex minusculo, ou JSON null) e preservacao
 -- (enviada = manda, null = apaga, ausente = mantem a gravada).

@@ -42,7 +42,7 @@ interface Props {
     readonly nome: string;
     readonly logoUrl: string;
     readonly cor: string;
-    /** As cores do tema (0678). Opcional: telas antigas que não as conhecem seguem iguais. */
+    /** As cores do tema (0690). Opcional: telas antigas que não as conhecem seguem iguais. */
     readonly cores?: string;
   };
   /** `false` quando a linha do banco é só uma cópia do arquivo de instalação. */

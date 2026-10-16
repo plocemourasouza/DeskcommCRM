@@ -127,7 +127,7 @@ export async function generateMetadata(): Promise<Metadata> {
 /**
  * A cor da barra do navegador sai da RÉGUA, não de dois hexes redigitados aqui.
  *
- * `generateViewport()` desde as cores do tema (migration 0678): a instalação
+ * `generateViewport()` desde as cores do tema (migration 0690): a instalação
  * pode escolher o `--color-bg`, então a barra deixou de ser "sempre a mesma
  * constante" — a premissa que o cabeçalho de `lib/branding/barra-do-navegador.ts`
  * registrava para NÃO ler o banco aqui caiu com a decisão de 2026-10-15. O custo
@@ -220,7 +220,7 @@ async function EstiloDaMarca() {
   await headers();
   const { linha, marca } = await marcaResolvida();
   const { css: cssDoAccent, motivos: motivosDoAccent } = cssDaMarca(marca.cor);
-  // As cores do tema (0678): já TRAVADAS pelo resolvedor — a camada que reprovou
+  // As cores do tema (0690): já TRAVADAS pelo resolvedor — a camada que reprovou
   // ficou de lado e o motivo está em `marca.motivos`. Mesmo `<style>`, um bloco
   // a mais: o id continua respondendo "a instalação tem marca própria?".
   const doTema = cssDasCores(marca.cores, "instalacao");
