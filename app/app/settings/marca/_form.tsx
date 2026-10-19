@@ -24,6 +24,7 @@ import { toast } from "sonner";
 
 import { updateMarcaDaOrganizacao } from "@/app/actions/settings/updateMarcaDaOrganizacao";
 import { CampoDeLogo } from "@/components/branding/CampoDeLogo";
+import { EditorDeCoresDoTema } from "@/components/branding/EditorDeCoresDoTema";
 import { TiraDeTons, type ItemDaLegenda } from "@/components/branding/TiraDeTons";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -35,6 +36,7 @@ import { SeletorDeDensidade, type EscolhaDeDensidade } from "@/components/brandi
 import { SeletorDeFonte, type EscolhaDeFonte } from "@/components/branding/SeletorDeFonte";
 import { SeletorDeNeutros, type EscolhaDeNeutros } from "@/components/branding/SeletorDeNeutros";
 import { SeletorDeRaio, type EscolhaDeRaio } from "@/components/branding/SeletorDeRaio";
+import { empilharCores, valoresEfetivos } from "@/lib/branding/cores-do-tema";
 import { cssDaMarca, ESCOPO_DA_ORGANIZACAO } from "@/lib/branding/css";
 import {
   avisosDaMarca,
@@ -48,6 +50,7 @@ import {
   camadaDaInstalacao,
   camadaDaOrganizacao,
   camadaDoAmbiente,
+  conferirCoresDaPilha,
   resolverMarca,
   type LinhaDaInstalacao,
 } from "@/lib/branding/resolve";
@@ -62,6 +65,7 @@ import {
   neutrosEscolhidos,
   raioDeTexto,
   raioEscolhido,
+  type CoresDoTema,
 } from "@/lib/branding/schema";
 import { marcaDaOrganizacaoSchema } from "@/lib/schemas/settings";
 import { dicaDoRelatorio, type VocabularioDaEmpresa } from "@/lib/legal/dica-do-relatorio-de-dados";
@@ -96,6 +100,12 @@ interface Props {
     readonly barra_lateral: string | null;
     readonly densidade: string | null;
     readonly fonte: string | null;
+    /**
+     * As cores do tema desta empresa (0707), já lidas pela leitura defensiva.
+     * OBRIGATÓRIO no tipo: uma página que esquecesse de passá-las faria o editor
+     * nascer vazio — e o primeiro Salvar apagaria as cores gravadas.
+     */
+    readonly cores: CoresDoTema | null;
   };
   /**
    * A linha da marca da INSTALAÇÃO — a camada logo abaixo desta. `raio` e
@@ -106,6 +116,8 @@ interface Props {
     readonly barra_lateral: string | null;
     readonly densidade: string | null;
     readonly fonte: string | null;
+    /** As cores do tema da instalação (0707) — o herdado de cada campo vazio. */
+    readonly cores: CoresDoTema | null;
   };
   /** O arquivo de instalação do servidor — o fundo da pilha. */
   readonly ambiente: {
@@ -138,6 +150,10 @@ const ERRO_EM_PORTUGUES: Record<string, string> = {
   // gravação não casou nenhuma linha, e a tela dizer "salvo" quando nada foi
   // gravado é a forma exata do defeito que a função SQL veio fechar.
   nao_gravou: "A alteração não chegou ao banco — nada foi mudado. Tente de novo.",
+  // A trava das cores do tema recusou no SERVIDOR: a instalação mudou entre o
+  // carregar desta tela e o Salvar. A lista na própria seção diz o par.
+  cores_sem_contraste:
+    "Alguma combinação de cores ficou difícil de ler. Veja a lista em \u201cCores do tema\u201d.",
 };
 
 const CLASSE_DO_TOM: Record<Tom, string> = {
@@ -192,6 +208,9 @@ export function FormularioDaMarcaDaOrganizacao({ gravada, instalacao, ambiente, 
   const [barraLateral, setBarraLateral] = useState<EscolhaDeBarraLateral>(barraGravada);
   const [densidade, setDensidade] = useState<EscolhaDeDensidade>(densidadeGravada);
   const [fonte, setFonte] = useState<EscolhaDeFonte>(fonteGravada);
+  const coresGravadas = gravada.cores ?? {};
+  const [cores, setCores] = useState<CoresDoTema>(coresGravadas);
+  const [coresValidas, setCoresValidas] = useState(true);
   const [erroTecnico, setErroTecnico] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -230,6 +249,7 @@ export function FormularioDaMarcaDaOrganizacao({ gravada, instalacao, ambiente, 
             barra_lateral: barraLateral,
             densidade,
             fonte,
+            cores,
             // GRAVADO, não digitado: o logo não é campo deste formulário — ele
             // já está no banco quando esta tela renderiza. Entra na prévia para
             // que o bloco "de onde vem cada coisa" possa responder sobre ele.
@@ -249,11 +269,52 @@ export function FormularioDaMarcaDaOrganizacao({ gravada, instalacao, ambiente, 
       barraLateral,
       densidade,
       fonte,
+      cores,
       gravada.logo_path,
       gravada.logo_dark_path,
       abaixo,
     ],
   );
+
+  // A TRAVA, ao vivo: a mesma pergunta que a server action faz antes de gravar —
+  // a empresa COMO ESTÁ NOS CAMPOS, sobre a instalação e o `.env`.
+  const conferenciaDasCores = useMemo(
+    () =>
+      conferirCoresDaPilha(
+        [
+          camadaDaOrganizacao({
+            accent_hex: hexLimpo.length > 0 && ehHexValido(hexLimpo) ? hexLimpo : null,
+            accent_dark_hex:
+              hexEscuroLimpo.length > 0 && ehHexValido(hexEscuroLimpo) ? hexEscuroLimpo : null,
+            neutros,
+            cores,
+          }),
+          ...abaixo,
+        ],
+        REGUA_DO_PRODUTO,
+      ),
+    [hexLimpo, hexEscuroLimpo, neutros, cores, abaixo],
+  );
+  // O herdado (placeholder) e o efetivo (amostra) sob os neutros que vão valer.
+  const coresHerdadas = useMemo(
+    () => valoresEfetivos(resolvida.neutros, semAOrganizacao.cores),
+    [resolvida.neutros, semAOrganizacao.cores],
+  );
+  const coresEfetivas = useMemo(
+    () => valoresEfetivos(resolvida.neutros, empilharCores(cores, semAOrganizacao.cores)),
+    [resolvida.neutros, cores, semAOrganizacao.cores],
+  );
+  const accentDaAmostra = useMemo(() => {
+    const claro = resolvida.cor?.derivada ?? semAOrganizacao.cor?.derivada ?? null;
+    const escuro =
+      resolvida.cor?.corEscura?.derivada ?? semAOrganizacao.cor?.corEscura?.derivada ?? claro;
+    if (!claro || !escuro) return null;
+    return {
+      claro: { accent: claro.claro.accent, accentFg: claro.claro.accentFg },
+      escuro: { accent: escuro.escuro.accent, accentFg: escuro.escuro.accentFg },
+    };
+  }, [resolvida.cor, semAOrganizacao.cor]);
+  const coresMudaram = JSON.stringify(cores) !== JSON.stringify(coresGravadas);
 
   // A MESMA serialização, com o MESMO escopo, que o layout de `/app` roda no
   // servidor — inclusive o seletor. É o que permite a tela dizer "esta cor não
@@ -343,6 +404,8 @@ export function FormularioDaMarcaDaOrganizacao({ gravada, instalacao, ambiente, 
       ...(barraLateral !== barraGravada ? { barra_lateral: barraLateral } : {}),
       ...(densidade !== densidadeGravada ? { densidade } : {}),
       ...(fonte !== fonteGravada ? { fonte } : {}),
+      // Cores do tema: mesmos TRÊS estados. Vazio = `null` = herda tudo.
+      ...(coresMudaram ? { cores: Object.keys(cores).length > 0 ? cores : null } : {}),
     });
     if (!lido.success) {
       toast.error(t("Confira os campos: algum valor não está no formato esperado."));
@@ -567,6 +630,10 @@ export function FormularioDaMarcaDaOrganizacao({ gravada, instalacao, ambiente, 
             valor={origemEmPortugues(resolvida.origens.densidade, t)}
           />
           <LinhaDeOrigem campo={t("Fonte")} valor={origemEmPortugues(resolvida.origens.fonte, t)} />
+          <LinhaDeOrigem
+            campo={t("Cores do tema")}
+            valor={origemEmPortugues(resolvida.origens.cores, t)}
+          />
         </div>
 
         {avisos.length > 0 ? (
@@ -630,6 +697,22 @@ export function FormularioDaMarcaDaOrganizacao({ gravada, instalacao, ambiente, 
         />
       </Card>
 
+      <Card className="p-6">
+        <EditorDeCoresDoTema
+          id="org-cores-do-tema"
+          valor={cores}
+          onChange={(novas, validas) => {
+            setCores(novas);
+            setCoresValidas(validas);
+          }}
+          herdadas={coresHerdadas}
+          origemDoHerdado={t("de quem instalou o sistema")}
+          efetivas={coresEfetivas}
+          accent={accentDaAmostra}
+          conferencia={conferenciaDasCores}
+        />
+      </Card>
+
       <Card className="space-y-2 p-6">
         <h2 className="text-base font-semibold tracking-tight text-text">
           {t("O que isto ainda não muda")}
@@ -690,7 +773,16 @@ export function FormularioDaMarcaDaOrganizacao({ gravada, instalacao, ambiente, 
         {erroTecnico ? (
           <span className="font-mono text-xs text-text-muted">{erroTecnico}</span>
         ) : null}
-        <Button type="submit" disabled={isPending || !hexValido || !hexEscuroValido}>
+        <Button
+          type="submit"
+          disabled={
+            isPending ||
+            !hexValido ||
+            !hexEscuroValido ||
+            !coresValidas ||
+            !conferenciaDasCores.passa
+          }
+        >
           {isPending ? t("Salvando…") : t("Salvar")}
         </Button>
       </div>

@@ -37,6 +37,7 @@
 import { REGUA_DO_PRODUTO } from "./regua-do-produto";
 import {
   barraLateralEscolhida,
+  coresDoTemaEscolhidas,
   densidadeEscolhida,
   fonteEscolhida,
   neutrosEscolhidos,
@@ -107,6 +108,9 @@ export function marcaDaOrganizacaoDeSettings(settings: unknown): MarcaDaOrganiza
       ? { densidade: densidadeEscolhida(envelope.densidade) }
       : {}),
     ...(fonteEscolhida(envelope.fonte) ? { fonte: fonteEscolhida(envelope.fonte) } : {}),
+    // As cores do tema (0707), token a token: o que nao e `#rrggbb` da allowlist
+    // some, e o token desce para a instalacao. Nunca lanca.
+    ...(coresDoTemaEscolhidas(envelope.cores) ? { cores: coresDoTemaEscolhidas(envelope.cores) } : {}),
   };
 }
 

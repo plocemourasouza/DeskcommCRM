@@ -52,34 +52,35 @@ function soltarPrevia(url: string | null | undefined) {
   if (url?.startsWith("blob:")) URL.revokeObjectURL(url);
 }
 
+/** Sobe o arquivo LOCAL (se houver) e manda a mensagem — o mesmo POST de sempre. */
+async function enviar(input: SendArgs) {
+  const { file, filename, ...corpo } = input;
+  if (!file) return apiClient.post<{ data: Message }>("/api/v1/messages", corpo);
+  const uploaded = await uploadMedia({ conversationId: input.conversation_id, file, filename });
+  return apiClient.post<{ data: Message }>("/api/v1/messages", {
+    ...corpo,
+    type: uploaded.kind,
+    media_storage_path: uploaded.storage_path,
+    media_mime: uploaded.media_mime,
+    media_size_bytes: uploaded.media_size_bytes,
+  });
+}
+
+/** O motivo da bolha que nem chegou a sair: a anterior da MESMA leva falhou. */
+const MOTIVO_DA_FILA_INTERROMPIDA = "Não saiu porque o arquivo anterior falhou.";
+
+interface BolhaCriada {
+  tempId: string;
+  previa: string | null;
+}
+
 export function useSendMessage() {
   const qc = useQueryClient();
 
-  const mutation = useMutation({
-    mutationFn: async (input: SendArgs) => {
-      const { file, filename, ...corpo } = input;
-      if (!file) return apiClient.post<{ data: Message }>("/api/v1/messages", corpo);
-      const uploaded = await uploadMedia({ conversationId: input.conversation_id, file, filename });
-      return apiClient.post<{ data: Message }>("/api/v1/messages", {
-        ...corpo,
-        type: uploaded.kind,
-        media_storage_path: uploaded.storage_path,
-        media_mime: uploaded.media_mime,
-        media_size_bytes: uploaded.media_size_bytes,
-      });
-    },
-    onMutate: async (args) => {
-      if (!args.file && (args.media_storage_path || args.media_url || args.type === "contact")) {
-        return {};
-      }
-
+  /** Põe a bolha pendente no fio e registra o envio dela para o "Tentar de novo". */
+  const criarBolha = useCallback(
+    (args: SendArgs): BolhaCriada => {
       const queryKey = ["messages", args.conversation_id];
-      // Com a lista já em cache, um refetch em voo não pode sobrescrever a bolha.
-      // SEM a lista (anexo enviado antes de ela carregar), a primeira leitura não
-      // é cancelada: cancelá-la deixaria a conversa só com a bolha, sem histórico.
-      // Ela chega depois e passa pela mescla de `bolhasLocais`, que guarda a bolha.
-      if (qc.getQueryData(queryKey)) await qc.cancelQueries({ queryKey });
-
       const tempId = `temp-${randomId()}`;
       registrarBolhaLocal(tempId, args);
       const previa = args.file ? URL.createObjectURL(args.file) : null;
@@ -139,46 +140,86 @@ export function useSendMessage() {
 
       return { tempId, previa };
     },
-    onSuccess: (result, args, context) => {
-      const real = result.data;
-      if (context?.tempId) esquecerBolhaLocal(context.tempId);
-      soltarPrevia(context?.previa);
-      const queryKey = ["messages", args.conversation_id];
-      qc.setQueryData<InfiniteData<PaginaDeMensagens>>(queryKey, (old) => {
+    [qc],
+  );
+
+  /**
+   * Troca a bolha pela mensagem real NO LUGAR dela. Numa leva de vários anexos
+   * as seguintes ainda estão pendentes logo abaixo; acrescentar a real no fim
+   * a faria pular para depois delas até a leva terminar.
+   */
+  const assentar = useCallback(
+    (conversationId: string, bolha: BolhaCriada | undefined, real: Message) => {
+      if (bolha) esquecerBolhaLocal(bolha.tempId);
+      soltarPrevia(bolha?.previa);
+      qc.setQueryData<InfiniteData<PaginaDeMensagens>>(["messages", conversationId], (old) => {
         if (!old || old.pages.length === 0) return old;
         // O Realtime pode ter buscado a mensagem real antes da resposta do
-        // POST. Remover ambas as cópias antes de inseri-la evita duplicação.
+        // POST. Remover essa cópia antes de pôr a real evita duplicação.
+        let trocou = false;
         const pages = old.pages.map((page) => ({
           ...page,
-          data: page.data.filter((m) => m.id !== context?.tempId && m.id !== real.id),
+          data: page.data.flatMap((m) => {
+            if (m.id === real.id) return [];
+            if (m.id !== bolha?.tempId) return [m];
+            trocou = true;
+            return [real];
+          }),
         }));
-        pages[0] = { ...pages[0]!, data: [...pages[0]!.data, real] };
+        if (!trocou) pages[0] = { ...pages[0]!, data: [...pages[0]!.data, real] };
         return { ...old, pages };
       });
     },
+    [qc],
+  );
+
+  /**
+   * A bolha NÃO some: vira `failed` e oferece "Tentar de novo". Sumir com ela
+   * era perder o que a pessoa acabou de escrever ou anexar.
+   */
+  const falhar = useCallback(
+    (conversationId: string, tempId: string, motivo: string | null) => {
+      qc.setQueryData<InfiniteData<PaginaDeMensagens>>(["messages", conversationId], (old) =>
+        old
+          ? {
+              ...old,
+              pages: old.pages.map((page) => ({
+                ...page,
+                data: page.data.map((m) =>
+                  m.id === tempId ? { ...m, status: "failed", error_message: motivo } : m,
+                ),
+              })),
+            }
+          : old,
+      );
+    },
+    [qc],
+  );
+
+  const mutation = useMutation({
+    mutationFn: enviar,
+    onMutate: async (args): Promise<Partial<BolhaCriada>> => {
+      if (!args.file && (args.media_storage_path || args.media_url || args.type === "contact")) {
+        return {};
+      }
+      const queryKey = ["messages", args.conversation_id];
+      // Com a lista já em cache, um refetch em voo não pode sobrescrever a bolha.
+      // SEM a lista (anexo enviado antes de ela carregar), a primeira leitura não
+      // é cancelada: cancelá-la deixaria a conversa só com a bolha, sem histórico.
+      // Ela chega depois e passa pela mescla de `bolhasLocais`, que guarda a bolha.
+      if (qc.getQueryData(queryKey)) await qc.cancelQueries({ queryKey });
+      return criarBolha(args);
+    },
+    onSuccess: (result, args, context) => {
+      assentar(
+        args.conversation_id,
+        context?.tempId ? { tempId: context.tempId, previa: context.previa ?? null } : undefined,
+        result.data,
+      );
+    },
     onError: (err, args, context) => {
       if (context?.tempId) {
-        // A bolha NÃO some: vira `failed` e oferece "Tentar de novo". Sumir com
-        // ela era perder o que a pessoa acabou de escrever ou anexar.
-        qc.setQueryData<InfiniteData<PaginaDeMensagens>>(["messages", args.conversation_id], (old) =>
-          old
-            ? {
-                ...old,
-                pages: old.pages.map((page) => ({
-                  ...page,
-                  data: page.data.map((m) =>
-                    m.id === context.tempId
-                      ? {
-                          ...m,
-                          status: "failed",
-                          error_message: err instanceof Error ? err.message : null,
-                        }
-                      : m,
-                  ),
-                })),
-              }
-            : old,
-        );
+        falhar(args.conversation_id, context.tempId, err instanceof Error ? err.message : null);
       }
       showApiError(err);
     },
@@ -190,6 +231,58 @@ export function useSendMessage() {
       qc.invalidateQueries({ queryKey: ["conversations"] });
     },
   });
+
+  /**
+   * Vários anexos de uma vez (#2526), com o mesmo feedback do envio único: todas
+   * as bolhas entram no fio AGORA, na ordem escolhida, e saem UMA DE CADA VEZ —
+   * a ordem em que chegam ao cliente é a da prévia. Quem chama decide a legenda
+   * (só no primeiro).
+   *
+   * Uma falha INTERROMPE a leva: a bolha que falhou mostra o motivo, as
+   * seguintes viram `failed` sem nunca terem subido — cada uma com o seu
+   * arquivo guardado e o seu "Tentar de novo". Seguir mandando depois de uma
+   * falha entregaria ao cliente o 3º arquivo sem o 2º, fora da ordem que o
+   * atendente montou. Um aviso só: um toast por arquivo que nem tentou sair
+   * repetiria a mesma notícia.
+   *
+   * Dispara e não devolve promessa, como o `mutate`: quem chama não espera a
+   * leva — a janela fecha e as bolhas assumem o feedback.
+   */
+  const executarSequencia = useCallback(
+    async (envios: SendArgs[]) => {
+      const primeiro = envios[0];
+      if (!primeiro) return;
+      const queryKey = ["messages", primeiro.conversation_id];
+      if (qc.getQueryData(queryKey)) await qc.cancelQueries({ queryKey });
+      const bolhas = envios.map((args) => criarBolha(args));
+
+      let falhou = false;
+      for (const [indice, args] of envios.entries()) {
+        const bolha = bolhas[indice]!;
+        if (falhou) {
+          falhar(args.conversation_id, bolha.tempId, MOTIVO_DA_FILA_INTERROMPIDA);
+          continue;
+        }
+        try {
+          const resultado = await enviar(args);
+          assentar(args.conversation_id, bolha, resultado.data);
+        } catch (err) {
+          falhou = true;
+          falhar(args.conversation_id, bolha.tempId, err instanceof Error ? err.message : null);
+          showApiError(err);
+        }
+      }
+      if (!falhou) qc.invalidateQueries({ queryKey });
+      qc.invalidateQueries({ queryKey: ["conversations"] });
+    },
+    [qc, criarBolha, assentar, falhar],
+  );
+  const enviarEmSequencia = useCallback(
+    (envios: SendArgs[]) => {
+      void executarSequencia(envios);
+    },
+    [executarSequencia],
+  );
 
   /** "Tentar de novo": tira a bolha falha e reenvia o MESMO envio (arquivo incluso). */
   const { mutate } = mutation;
@@ -217,5 +310,5 @@ export function useSendMessage() {
     [qc, mutate],
   );
 
-  return { ...mutation, retry };
+  return { ...mutation, retry, enviarEmSequencia };
 }

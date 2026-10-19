@@ -1,0 +1,50 @@
+{
+  "antes": {
+    "light": {
+      "tema": "light",
+      "fundoDaPagina": "rgb(250, 249, 246)",
+      "textoDaPagina": "rgb(28, 26, 22)",
+      "fundoDoCartao": "rgb(255, 255, 255)",
+      "textoDoCartao": "rgb(28, 26, 22)"
+    },
+    "dark": {
+      "tema": "dark",
+      "fundoDaPagina": "rgb(22, 21, 16)",
+      "textoDaPagina": "rgb(245, 244, 239)",
+      "fundoDoCartao": "rgb(29, 28, 23)",
+      "textoDoCartao": "rgb(245, 244, 239)"
+    }
+  },
+  "claro": {
+    "tema": "light",
+    "fundoDaPagina": "rgb(238, 244, 251)",
+    "textoDaPagina": "rgb(15, 35, 64)",
+    "fundoDoCartao": "rgb(248, 251, 255)",
+    "textoDoCartao": "rgb(15, 35, 64)",
+    "razaoTextoPagina": "14.21",
+    "razaoTextoCartao": "15.16"
+  },
+  "escuro": {
+    "tema": "dark",
+    "fundoDaPagina": "rgb(13, 20, 29)",
+    "textoDaPagina": "rgb(232, 238, 246)",
+    "fundoDoCartao": "rgb(21, 30, 42)",
+    "textoDoCartao": "rgb(232, 238, 246)",
+    "razaoTextoPagina": "15.85",
+    "razaoTextoCartao": "14.38"
+  },
+  "restaurado_light": {
+    "tema": "light",
+    "fundoDaPagina": "rgb(250, 249, 246)",
+    "textoDaPagina": "rgb(28, 26, 22)",
+    "fundoDoCartao": "rgb(255, 255, 255)",
+    "textoDoCartao": "rgb(28, 26, 22)"
+  },
+  "restaurado_dark": {
+    "tema": "dark",
+    "fundoDaPagina": "rgb(22, 21, 16)",
+    "textoDaPagina": "rgb(245, 244, 239)",
+    "fundoDoCartao": "rgb(29, 28, 23)",
+    "textoDoCartao": "rgb(245, 244, 239)"
+  }
+}

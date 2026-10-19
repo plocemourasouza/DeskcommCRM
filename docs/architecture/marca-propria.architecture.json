@@ -88,12 +88,12 @@
 
     { "id": "instalacao", "lane": "resolver", "col": 4, "type": "service", "label": "lib/branding/instalacao.ts", "sublabel": "marcaDaInstalacao() · memo TTL 30s · sementeDoAmbiente() · registrarEstadoDaMarca() · NUNCA LANÇA" },
     { "id": "organizacao", "lane": "resolver", "col": 4, "type": "service", "label": "lib/branding/organizacao.ts", "sublabel": "resolverMarcaDaOrganizacao(organizationId)" },
-    { "id": "resolver", "lane": "resolver", "col": 5, "type": "service", "label": "lib/branding/resolve.ts", "sublabel": "pilha org → instalação → .env → padrão do produto; cor recusada NÃO apaga a camada de baixo" },
+    { "id": "resolver", "lane": "resolver", "col": 5, "type": "service", "label": "lib/branding/resolve.ts", "sublabel": "pilha org → instalação → .env → padrão do produto; cor recusada NÃO apaga a camada de baixo · cores do tema: camada que reprova a trava fica de lado inteira (motivo cores_sem_contraste)" },
     { "id": "rampa", "lane": "resolver", "col": 5, "type": "service", "label": "rampa.ts + contraste.ts", "sublabel": "1 hex → 11 stops nos 2 temas; piso por PAPEL × SUPERFÍCIE, não pela semente" },
-    { "id": "css", "lane": "resolver", "col": 6, "type": "service", "label": "lib/branding/css.ts", "sublabel": "serialização com allowlist: emite --color-brand e a família do accent — NUNCA --color-bg" },
+    { "id": "css", "lane": "resolver", "col": 6, "type": "service", "label": "lib/branding/css.ts", "sublabel": "serialização com allowlist: cssDaMarca emite --color-brand e a família do accent — NUNCA --color-bg · cssDasCores (0707) é o ÚNICO emissor de superfície, só com cores já travadas" },
     { "id": "csscustom", "lane": "resolver", "col": 7, "type": "service", "label": "lib/branding/css-personalizado.ts", "sublabel": "PostCSS AST · classes + propriedades cosméticas · sem at-rules, URLs, escapes, layout ou !important" },
     { "id": "saida", "lane": "resolver", "col": 6, "type": "service", "label": "lib/branding/saida.ts", "sublabel": "marcaDaSaida(orgId|null) → um hex + uma frente legível · tema CLARO sempre · NUNCA LANÇA" },
-    { "id": "barra", "lane": "resolver", "col": 6, "type": "service", "label": "lib/branding/barra-do-navegador.ts", "sublabel": "os 2 hexes do themeColor, importados de REGUA_DO_PRODUTO (eram cópia em 3 arquivos)" },
+    { "id": "barra", "lane": "resolver", "col": 6, "type": "service", "label": "lib/branding/barra-do-navegador.ts", "sublabel": "os 2 hexes do themeColor, da REGUA_DO_PRODUTO — ou o --color-bg que a INSTALAÇÃO escolheu nas cores do tema (0707), via generateViewport" },
 
     { "id": "layout", "lane": "saida", "col": 7, "type": "frontend", "label": "app/layout.tsx", "sublabel": "<EstiloDaMarca/> no <head> + generateMetadata (título com template) + viewport" },
     { "id": "applayout", "lane": "saida", "col": 7, "type": "frontend", "label": "app/app/layout.tsx", "sublabel": "<EstiloDaMarcaDaOrganizacao/> escopado em [data-marca-org] — não alcança /login" },
@@ -110,9 +110,11 @@
     {"id": "manifestapp", "lane": "saida", "col": 10, "type": "frontend", "label": "manifest → aplicativo instalado", "sublabel": "marca pública da instalação; 192/512 PNG; leitura em runtime"},
     {"id": "seletoresaparencia", "lane": "humano", "col": 1, "type": "frontend", "label": "Cantos, barra lateral, densidade e fonte (seletores)", "sublabel": "SeletorDeRaio + SeletorDeBarraLateral + SeletorDeDensidade + SeletorDeFonte (amostra na própria fonte) nas DUAS telas de Marca · na org, 'Usar o padrão da instalação' grava null"},
     {"id": "barralateral", "lane": "humano", "col": 8, "type": "frontend", "label": "A barra lateral do sistema", "sublabel": "data-theme=dark na subárvore da barra, mesmo em página clara · existe só dentro de /app"},
-    {"id": "aparenciacolunas", "lane": "banco", "col": 4, "type": "database", "label": "platform_branding.raio · barra_lateral (0674) · densidade (0675) · fonte (0676)", "sublabel": "CHECK de vocabulário fechado · organizations.settings.branding.raio, barra_lateral, densidade e fonte via fn_definir_marca_da_organizacao · padrao = o de sempre"},
+    {"id": "aparenciacolunas", "lane": "banco", "col": 4, "type": "database", "label": "platform_branding.raio · barra_lateral (0704) · densidade (0705) · fonte (0706)", "sublabel": "CHECK de vocabulário fechado · organizations.settings.branding.raio, barra_lateral, densidade e fonte via fn_definir_marca_da_organizacao · padrao = o de sempre"},
     {"id": "aparenciaschema", "lane": "resolver", "col": 5, "type": "service", "label": "lib/branding/schema.ts — RAIOS_DA_MARCA · BARRAS_LATERAIS_DA_MARCA · DENSIDADES_DA_MARCA · FONTES_DA_MARCA", "sublabel": "raioDeTexto, barraLateralDeTexto, densidadeDeTexto e fonteDeTexto NUNCA lançam: fora do vocabulário vira padrao · estiloDoRaio(), estiloDaDensidade() e pilhaDaFonte() espelham o globals.css"},
     {"id": "scriptaparencia", "lane": "saida", "col": 7, "type": "service", "label": "lib/branding/script-da-aparencia.ts", "sublabel": "script inline do layout: data-raio, data-densidade, data-fonte e data-neutros no html antes da primeira pintura · padrao = atributo ausente"},
+    {"id": "editorcores", "lane": "humano", "col": 1, "type": "frontend", "label": "Cores do tema (EditorDeCoresDoTema)", "sublabel": "nas DUAS telas de Marca · claro e escuro · seletor + hex + 'Voltar ao padrão' por cor · a trava roda AO VIVO e desliga o Salvar com o par em português"},
+    {"id": "travacores", "lane": "resolver", "col": 5, "type": "service", "label": "lib/branding/cores-do-tema.ts — a trava de contraste", "sublabel": "conferirCores: texto/aviso × superfícies + os papéis da marca (refaz a caminhada do accent sobre o fundo novo) · piso = min(WCAG, o que o produto já entrega) · mesma função na tela, na action e no resolvedor"},
     {"id": "globalscss", "lane": "saida", "col": 7, "type": "service", "label": "app/globals.css — :root[data-raio=...] · [data-densidade=...] · [data-fonte=...]", "sublabel": "blocos estáticos de raio · fonte: cada bloco só redefine --font-ui, lida por body e font-sans; as famílias vêm de app/fontes-da-marca.ts com preload:false (só a Atkinson é pré-carregada) · densidade só sob @media (pointer: fine), consumida por button/input/select/table/Sidebar via --controle-h & cia · os neutros cinza e frio chegam à barra por seletor descendente"}
   ],
   "edges": [
@@ -200,7 +202,14 @@
     {"id": "e80", "from": "applayout", "to": "barralateral", "label": "barra escura por PROP: escurece só a subárvore da barra, não a página"},
     {"id": "e81", "from": "globalscss", "to": "barralateral", "label": "accent escuro e neutros cinza/frio alcançam a barra por seletor descendente"},
     {"id": "e82", "from": "globalscss", "to": "layout", "label": "os blocos :root[data-raio=...] trocam --radius-sm..xl de botões, campos e cartões"},
-    {"id": "e83", "from": "barralateral", "to": "interface", "label": "a barra é parte da interface pós-login"}
+    {"id": "e83", "from": "barralateral", "to": "interface", "label": "a barra é parte da interface pós-login"},
+    {"id": "e84", "from": "editorcores", "to": "travacores", "label": "a tela mede ao vivo com a MESMA função — Salvar desligado enquanto algum par reprova"},
+    {"id": "e85", "from": "editorcores", "to": "updatebranding", "label": "Salvar da instalação manda cores (objeto inteiro; {} = padrão)"},
+    {"id": "e86", "from": "editorcores", "to": "updateorg", "label": "Salvar da organização manda cores (valor / null = herda / ausente = não mexe)"},
+    {"id": "e87", "from": "updatebranding", "to": "travacores", "label": "trava da instalação SOZINHA — empresa nenhuma bloqueia o revendedor"},
+    {"id": "e88", "from": "updateorg", "to": "travacores", "label": "trava contra a pilha resolvida: empresa sobre a instalação de hoje · recusa cores_sem_contraste com os pares"},
+    {"id": "e89", "from": "resolver", "to": "travacores", "label": "no render: camada que deixou de passar (instalação mudou por baixo) perde as cores dela"},
+    {"id": "e90", "from": "travacores", "to": "css", "label": "só cores aprovadas chegam a cssDasCores"}
   ],
   "cards": [
     {

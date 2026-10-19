@@ -4,7 +4,7 @@ import { lastLine, sql } from "./gov-helpers";
 import { motivoDoErro } from "./psql-transporte";
 
 /**
- * FONTE DA MARCA (migration 0676).
+ * FONTE DA MARCA (migration 0706).
  *
  *  - instalacao: `platform_branding.fonte`
  *    (atkinson|manrope|jakarta|plex-sans|bricolage|fraunces|source-serif),
@@ -15,13 +15,13 @@ import { motivoDoErro } from "./psql-transporte";
  *    quando o que se salva e so o nome, e junto de logos, neutros, raio, barra
  *    e densidade.
  *
- * Namespace `a4ca0676`: o banco do `test:db` e compartilhado entre arquivos.
+ * Namespace `a4ca0677`: o banco do `test:db` e compartilhado entre arquivos.
  */
 
-const ORG_A = "a4ca0676-0000-4000-8000-000000000001";
-const ORG_B = "a4ca0676-0000-4000-8000-000000000002";
-const ADMIN_A = "a4ca0676-1111-4000-8000-000000000001";
-const ADMIN_B = "a4ca0676-1111-4000-8000-000000000002";
+const ORG_A = "a4ca0677-0000-4000-8000-000000000001";
+const ORG_B = "a4ca0677-0000-4000-8000-000000000002";
+const ADMIN_A = "a4ca0677-1111-4000-8000-000000000001";
+const ADMIN_B = "a4ca0677-1111-4000-8000-000000000002";
 const FN = "public.fn_definir_marca_da_organizacao(uuid,uuid,jsonb)";
 
 const FONTES = ["atkinson", "manrope", "jakarta", "plex-sans", "bricolage", "fraunces", "source-serif"];

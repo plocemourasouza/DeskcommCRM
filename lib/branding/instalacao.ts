@@ -104,23 +104,30 @@ export type SementeDoAmbiente = {
  * 0155; tratá-la diferente agora criaria duas regras para o mesmo caso.
  */
 const COLUNAS =
-  "app_name, logo_url, logo_path, logo_dark_path, favicon_path, accent_hex, accent_dark_hex, neutros, raio, barra_lateral, densidade, fonte, show_powered_by, seeded_from_env, fallback_at, fallback_reason";
+  "app_name, logo_url, logo_path, logo_dark_path, favicon_path, accent_hex, accent_dark_hex, neutros, raio, barra_lateral, densidade, fonte, cores, show_powered_by, seeded_from_env, fallback_at, fallback_reason";
 
 /**
- * As colunas de ANTES da 0676 (fonte): banco que já tem raio, barra lateral e
+ * As colunas de ANTES da 0707 (cores do tema): banco que já tem a fonte mas não
+ * as cores. Mesmo degrau dos de baixo: faltar a coluna nova nunca leva embora as
+ * que existem, e a ausência de `cores` vale o produto.
+ */
+const COLUNAS_SEM_CORES = COLUNAS.replace(" cores,", "");
+
+/**
+ * As colunas de ANTES da 0706 (fonte): banco que já tem raio, barra lateral e
  * densidade mas ainda não a fonte. Código novo sobre banco que não aplicou a
  * migration recebe `42703` na leitura acima — e perder a marca inteira por uma
  * coluna de aparência seria desproporcional. `lerLinha` tenta de novo com cada
  * lista, da mais nova à mais antiga, para que faltar UMA coluna nunca leve
  * embora as que existem: o resolvedor trata a ausência como o padrão.
  */
-const COLUNAS_SEM_FONTE = COLUNAS.replace(" fonte,", "");
+const COLUNAS_SEM_FONTE = COLUNAS_SEM_CORES.replace(" fonte,", "");
 
-/** As colunas de ANTES da 0675 (densidade): sem `fonte` e sem `densidade`. */
+/** As colunas de ANTES da 0705 (densidade): sem `fonte` e sem `densidade`. */
 const COLUNAS_SEM_DENSIDADE = COLUNAS_SEM_FONTE.replace(" densidade,", "");
 
-/** As colunas de ANTES da 0674 (raio e barra lateral): nenhuma das quatro de aparência. */
-const COLUNAS_SEM_APARENCIA = COLUNAS.replace(" raio, barra_lateral, densidade, fonte,", "");
+/** As colunas de ANTES da 0704 (raio e barra lateral): nenhuma das quatro de aparência. */
+const COLUNAS_SEM_APARENCIA = COLUNAS_SEM_CORES.replace(" raio, barra_lateral, densidade, fonte,", "");
 
 /**
  * Códigos de recusa — os que significam "a cor configurada NÃO pintou".
@@ -416,22 +423,29 @@ async function lerLinha(): Promise<LinhaDaMarca | null | "erro"> {
   const lida = await lerLinhaCom(COLUNAS);
   if (lida !== "coluna_ausente") return lida;
   avisarUmaVez(
-    "leitura|0676",
-    "marca da instalação: a fonte ainda não existe no banco (migration 0676); vale o padrão",
+    "leitura|0707",
+    "marca da instalação: as cores do tema ainda não existem no banco (migration 0707); valem as do produto",
+    {},
+  );
+  const semCores = await lerLinhaCom(COLUNAS_SEM_CORES);
+  if (semCores !== "coluna_ausente") return semCores;
+  avisarUmaVez(
+    "leitura|0706",
+    "marca da instalação: a fonte ainda não existe no banco (migration 0706); vale o padrão",
     {},
   );
   const semFonte = await lerLinhaCom(COLUNAS_SEM_FONTE);
   if (semFonte !== "coluna_ausente") return semFonte;
   avisarUmaVez(
-    "leitura|0675",
-    "marca da instalação: a densidade ainda não existe no banco (migration 0675); vale o padrão",
+    "leitura|0705",
+    "marca da instalação: a densidade ainda não existe no banco (migration 0705); vale o padrão",
     {},
   );
   const semDensidade = await lerLinhaCom(COLUNAS_SEM_DENSIDADE);
   if (semDensidade !== "coluna_ausente") return semDensidade;
   avisarUmaVez(
-    "leitura|0674",
-    "marca da instalação: raio e barra lateral ainda não existem no banco (migration 0674); valem os padrões",
+    "leitura|0704",
+    "marca da instalação: raio e barra lateral ainda não existem no banco (migration 0704); valem os padrões",
     {},
   );
   const antiga = await lerLinhaCom(COLUNAS_SEM_APARENCIA);

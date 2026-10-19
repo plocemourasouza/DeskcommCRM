@@ -1,5 +1,6 @@
 "use server";
 
+import { ipDoCliente } from "@/lib/http/ip-do-cliente";
 import { supportWriteError } from "@/lib/impersonate/support";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
@@ -7,7 +8,17 @@ import { revalidatePath } from "next/cache";
 import { audit } from "@/lib/audit";
 import { loadAuthUser, mfaEmDivida, resolveActiveOrg } from "@/lib/auth/server";
 import { podeAdministrarEmpresa } from "@/lib/auth/pode-administrar-empresa";
+import type { ReprovaDeCor } from "@/lib/branding/cores-do-tema";
+import { marcaDaInstalacao } from "@/lib/branding/instalacao";
 import { normalizarHex } from "@/lib/branding/rampa";
+import { REGUA_DO_PRODUTO } from "@/lib/branding/regua-do-produto";
+import {
+  camadaDaInstalacao,
+  camadaDaOrganizacao,
+  camadaDoAmbiente,
+  conferirCoresDaPilha,
+} from "@/lib/branding/resolve";
+import { env } from "@/lib/env";
 import {
   marcaDaOrganizacaoSchema,
   type MarcaDaOrganizacaoInput,
@@ -27,7 +38,8 @@ export type UpdateMarcaDaOrganizacaoResult =
         | "nao_gravou"
         | "db_error";
       details?: unknown;
-    };
+    }
+  | { ok: false; error: "cores_sem_contraste"; details: readonly ReprovaDeCor[] };
 
 /**
  * Troca o nome e a cor que a ORGANIZAÇÃO mostra dentro do produto.
@@ -114,9 +126,33 @@ export async function updateMarcaDaOrganizacao(
     return { ok: false, error: "mfa_required" };
   }
 
+  // A TRAVA de contraste das cores do tema (0707), contra a pilha RESOLVIDA: a
+  // empresa como ficaria, SOBRE a instalação de hoje e o `.env`. A tela roda a
+  // mesma pergunta, mas tela não é fronteira. Só quando a empresa ENVIA cores:
+  // `null` (herdar) e ausente (não mexer) não acrescentam cor nenhuma dela.
+  if (parsed.data.cores) {
+    const instalacao = await marcaDaInstalacao();
+    const trava = conferirCoresDaPilha(
+      [
+        camadaDaOrganizacao({
+          accent_hex: parsed.data.accent_hex,
+          accent_dark_hex: parsed.data.accent_dark_hex,
+          neutros: parsed.data.neutros,
+          cores: parsed.data.cores,
+        }),
+        camadaDaInstalacao(instalacao),
+        camadaDoAmbiente({ APP_ACCENT_HEX: env.APP_ACCENT_HEX }),
+      ],
+      REGUA_DO_PRODUTO,
+    );
+    if (!trava.passa) {
+      return { ok: false, error: "cores_sem_contraste", details: trava.reprovas };
+    }
+  }
+
   const hdrs = await headers();
   const requestId = hdrs.get("x-request-id");
-  const ip = hdrs.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
+  const ip = ipDoCliente(hdrs);
   const userAgent = hdrs.get("user-agent") ?? null;
 
   // Os dois campos vazios significam "volte ao que vem da instalação", e é `null`
@@ -132,7 +168,8 @@ export async function updateMarcaDaOrganizacao(
     parsed.data.raio === null &&
     parsed.data.barra_lateral === null &&
     parsed.data.densidade === null &&
-    parsed.data.fonte === null;
+    parsed.data.fonte === null &&
+    parsed.data.cores === null;
   const marca = limpar
     ? null
     : {
@@ -151,17 +188,19 @@ export async function updateMarcaDaOrganizacao(
         // `null` = herdar: a chave NAO vai. A RPC recusa `neutros` que nao seja
         // string do vocabulario, entao um `null` explicito estouraria 22023.
         ...(parsed.data.neutros ? { neutros: parsed.data.neutros } : {}),
-        // raio e barra lateral (0674), tres estados: valor grava; `null` VAI como
+        // raio e barra lateral (0704), tres estados: valor grava; `null` VAI como
         // `null` (a RPC apaga a chave = herdar); ausente NAO vai (a RPC preserva
         // a gravada). Ao contrario de `neutros`, o `null` e aceito pela funcao.
         ...(parsed.data.raio !== undefined ? { raio: parsed.data.raio } : {}),
         ...(parsed.data.barra_lateral !== undefined
           ? { barra_lateral: parsed.data.barra_lateral }
           : {}),
-        // densidade (0675): os mesmos tres estados do raio.
+        // densidade (0705): os mesmos tres estados do raio.
         ...(parsed.data.densidade !== undefined ? { densidade: parsed.data.densidade } : {}),
-        // fonte (0676): os mesmos tres estados do raio.
+        // fonte (0706): os mesmos tres estados do raio.
         ...(parsed.data.fonte !== undefined ? { fonte: parsed.data.fonte } : {}),
+        // cores do tema (0707): os mesmos tres estados do raio.
+        ...(parsed.data.cores !== undefined ? { cores: parsed.data.cores } : {}),
         updated_by: authUser.id,
         updated_at: new Date().toISOString(),
       };
@@ -221,6 +260,7 @@ export async function updateMarcaDaOrganizacao(
       barra_lateral_definida: (parsed.data.barra_lateral ?? null) !== null,
       densidade_definida: (parsed.data.densidade ?? null) !== null,
       fonte_definida: (parsed.data.fonte ?? null) !== null,
+      cores_definidas: (parsed.data.cores ?? null) !== null,
     },
   });
 

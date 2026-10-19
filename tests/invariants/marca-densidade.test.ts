@@ -4,7 +4,7 @@ import { lastLine, sql } from "./gov-helpers";
 import { motivoDoErro } from "./psql-transporte";
 
 /**
- * DENSIDADE DA MARCA (migration 0675).
+ * DENSIDADE DA MARCA (migration 0705).
  *
  *  - instalacao: `platform_branding.densidade` (aerada|equilibrada|compacta),
  *    `not null default 'aerada'` + CHECK.

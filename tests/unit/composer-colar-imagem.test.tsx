@@ -20,13 +20,14 @@ const uploadResult = {
 };
 const uploadMock = vi.fn(async () => uploadResult);
 const sendMock = vi.fn();
+const sequenciaMock = vi.fn();
 const createNoteMock = vi.fn();
 
 vi.mock("@/hooks/inbox/useUploadMedia", () => ({
   useUploadMedia: () => ({ mutateAsync: uploadMock, isPending: false }),
 }));
 vi.mock("@/hooks/inbox/useSendMessage", () => ({
-  useSendMessage: () => ({ mutate: sendMock, isPending: false }),
+  useSendMessage: () => ({ mutate: sendMock, enviarEmSequencia: sequenciaMock, isPending: false }),
 }));
 vi.mock("@/hooks/inbox/useCreateNote", () => ({
   useCreateNote: () => ({ mutate: createNoteMock, isPending: false }),
@@ -112,6 +113,7 @@ describe("Composer — colar imagem", () => {
   beforeEach(() => {
     uploadMock.mockClear();
     sendMock.mockClear();
+    sequenciaMock.mockClear();
     createNoteMock.mockClear();
   });
 
@@ -124,9 +126,9 @@ describe("Composer — colar imagem", () => {
     fireEvent.click(screen.getByRole("button", { name: /^enviar$/i }));
 
     await waitFor(() =>
-      expect(sendMock).toHaveBeenCalledWith(
+      expect(sequenciaMock).toHaveBeenCalledWith([
         expect.objectContaining({ conversation_id: "conv-1", body: "mirá esto", file: expect.any(File) }),
-      ),
+      ]),
     );
     expect(uploadMock).not.toHaveBeenCalled();
   });
@@ -166,6 +168,7 @@ describe("Composer — colar imagem", () => {
       ),
     );
     expect(sendMock).not.toHaveBeenCalled();
+    expect(sequenciaMock).not.toHaveBeenCalled();
   });
 
   it("com anexo já em preview, colar não substitui em silêncio o que o operador escolheu", async () => {

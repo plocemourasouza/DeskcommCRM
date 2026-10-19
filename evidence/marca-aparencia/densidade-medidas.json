@@ -1,0 +1,25 @@
+{
+  "6_instalacao_equilibrada": {
+    "botao": 32,
+    "campo": 38,
+    "atributo": "equilibrada",
+    "ponteiroFino": true,
+    "larguraDaJanela": 1280,
+    "itemDeNavegacao": 26
+  },
+  "7_empresa_compacta": {
+    "botao": 30,
+    "campo": 36,
+    "atributo": "compacta",
+    "ponteiroFino": true,
+    "larguraDaJanela": 1280,
+    "itemDeNavegacao": 24
+  },
+  "7_toque_compacta": {
+    "botao": 36,
+    "campo": 40,
+    "atributo": "compacta",
+    "ponteiroFino": false,
+    "larguraDaJanela": 1280
+  }
+}

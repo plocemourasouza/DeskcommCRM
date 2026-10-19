@@ -1,4 +1,4 @@
-<!-- traduzido-de: docs/white-label.md@f47aab48e6ea -->
+<!-- traduzido-de: docs/white-label.md@a8972aab8c73 -->
 
 [🇧🇷 Português](white-label.md) · [🇺🇸 English](white-label.en.md) · 🇪🇸 Español
 
@@ -52,6 +52,24 @@ La densidad vale solo en computadora (puntero de mouse) y en anchos de pantalla 
 Las siete están licenciadas bajo la SIL Open Font License 1.1: uso comercial libre, y pueden acompañar al producto (el texto de la licencia está en `app/fonts/OFL.txt`). Los archivos van dentro de la imagen — no se busca nada en un servicio externo. Solo la Atkinson se precarga; el navegador descarga el archivo de una de las otras únicamente cuando alguien la elige, así que quien se queda con la predeterminada no paga nada por las otras seis. La fuente del código y de los números tabulares (IBM Plex Mono) no cambia. Cada opción de la pantalla muestra una frase de ejemplo en su propia fuente, y la vista previa muestra la elección antes de guardar.
 
 En la organización, cada campo tiene la opción **Usar el valor predeterminado de la instalación**, que devuelve ese campo a la elección de la instalación. No hay que reiniciar nada: el cambio vale en la próxima carga de pantalla. Si no tocas nada, el sistema sigue exactamente como estaba.
+
+### Colores del tema
+
+En la sección **Colores del tema**, en las dos pantallas de marca, eliges los colores base de la pantalla, por separado para el modo claro y el oscuro:
+
+- **Superficies**: fondo de la página, tarjetas y áreas destacadas.
+- **Textos**: texto principal, secundario y atenuado.
+- **Bordes**: bordes y bordes marcados.
+- **Avisos**: los colores de éxito, atención, error e información, cada uno con su fondo y su texto.
+
+La elección es libre, con un bloqueo: **Guardar queda desactivado mientras alguna combinación sea difícil de leer**, y la pantalla dice cuál es y qué ajustar (por ejemplo, "Texto secundario sobre Tarjetas (tema oscuro): 3,1 de 4,5 — aclara texto secundario u oscurece tarjetas"). Los mínimos son los de la WCAG: 4,5 para texto y 3,0 para color de componente. El color de la marca también entra en la cuenta. Cuando cambias el fondo, el sistema vuelve a elegir el tono de los botones, del foco y de la selección sobre el fondo nuevo. El texto atenuado y los bordes quedan fuera del bloqueo, porque el propio sistema los usa por debajo de ese mínimo, como pista y separador. El bloqueo también acepta cualquier par que ya esté al nivel del predeterminado del sistema: hoy, el texto secundario sobre las áreas destacadas en modo oscuro queda en 4,4.
+
+El orden es el mismo de los otros ajustes, **color por color**: la organización gana a la instalación, y la instalación gana al tono neutro elegido (cálido, gris o frío) y al predeterminado. Un campo vacío hereda. En la organización, el campo muestra el color heredado, y **Volver al valor por defecto** devuelve ese color al de la instalación. El color vale también en el menú lateral oscuro y en el modo oscuro. La barra del navegador sigue el fondo elegido en la instalación.
+
+Dos reglas para quien aloja varias organizaciones:
+
+- **Cambiar los colores de la instalación nunca queda bloqueado por una organización.** El bloqueo revisa la instalación sola. Si el cambio deja ilegible un color que una organización eligió, el sistema descarta los colores de esa organización y usa los de la instalación. La pantalla de marca de la organización avisa y muestra qué ajustar.
+- **Un tema de extensión activado por la organización gana a sus colores del tema**, porque fue una elección explícita de la propia organización. Los colores de la instalación siguen valiendo fuera del tema de la extensión.
 
 ### CSS personalizado
 
@@ -135,7 +153,7 @@ Directo, para que no lo descubras delante del cliente. Cada línea trae la razó
 
 - **Dominio por organización.** Una instalación, un dominio. No hay columna de dominio en el esquema, la bifurcación por host en `proxy.ts` es un NOOP declarado (existe solo como documentación de la topología pretendida), y en el Edge no hay base de datos que consultar antes de decidir a quién pertenece ese host. El cliente que exige su propio dominio pide **instalación dedicada**.
 - **Fuente propia.** La elección es entre las siete familias de la lista; subir un archivo de fuente en el panel no existe. `next/font` resuelve en tiempo de **build**, y la imagen que baja tu VPS ya viene construida — un campo de carga guardaría un archivo que nadie leería. Agregar una familia a la lista es un cambio de código (un archivo OFL en `app/fonts/` y el vocabulario), no de panel.
-- **Colores libres.** Tu marca mueve el **acento** — lo que es acción, destaque y foco — y no hay un color elegido a mano para cada elemento. El fondo de la página cambia solo por los tonos neutros (cálido, gris o frío) y el par claro/oscuro es del design system. El color de la barra del navegador es el del producto en toda marca, porque la marca no mueve el fondo.
+- **Color por componente.** Los **Colores del tema** cubren las variables base (fondo, tarjetas, textos, bordes y avisos). No hay cómo elegir el color de un botón o de una pantalla específica. El acento sigue derivándose del color de la marca. La barra del navegador sigue el fondo de la **instalación**; en la organización, queda con el fondo de la instalación, porque la cabecera de la página se arma antes de que el sistema sepa de qué organización es la persona.
 - **Espaciado.** La distancia entre elementos (márgenes y huecos) es la del design system. La altura de los controles, de las filas de tabla y de los ítems del menú es la **Densidad**, descrita arriba.
 - **Login por organización.** El login es de la instalación, por el motivo de la sección anterior. Las esquinas de la instalación valen también en el login; las de la organización solo después de entrar, y el menú lateral existe solo dentro del sistema.
 - **Tema.** El par claro/oscuro es del design system. Tu marca mueve el **accent** — lo que es acción, destaque y foco — y deliberadamente **no** mueve el fondo de la página: el fondo es el mismo en toda marca, y por eso el color de la barra del navegador también.

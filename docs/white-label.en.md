@@ -1,4 +1,4 @@
-<!-- traduzido-de: docs/white-label.md@f47aab48e6ea -->
+<!-- traduzido-de: docs/white-label.md@a8972aab8c73 -->
 
 [🇧🇷 Português](white-label.md) · 🇺🇸 English · [🇪🇸 Español](white-label.es.md)
 
@@ -52,6 +52,24 @@ Density applies only on computers (mouse pointer) at large screen widths: on pho
 All seven are licensed under the SIL Open Font License 1.1: free for commercial use, and they may ship with the product (the license text is in `app/fonts/OFL.txt`). The files ship inside the image — nothing is fetched from an external service. Only Atkinson is preloaded; the browser downloads one of the others only when someone picks it, so an installation that keeps the default pays nothing for the other six. The font for code and tabular numbers (IBM Plex Mono) does not change. Each option on the screen shows a sample sentence in its own font, and the preview shows the choice before saving.
 
 In the organization, each field has the **Use the installation default** option, which returns that field to the installation's choice. Nothing needs restarting: the change applies on the next screen load. If you touch nothing, the system stays exactly as it was.
+
+### Theme colors
+
+In the **Theme colors** section of both brand screens you choose the base colors of the interface, separately for light and dark mode:
+
+- **Surfaces**: page background, cards and highlighted areas.
+- **Text**: primary, secondary and faded text.
+- **Borders**: borders and strong borders.
+- **Notices**: the success, warning, error and info colors, each with its own background and text.
+
+The choice is free, with one lock: **Save stays disabled while any combination is hard to read**, and the screen says which one and what to adjust (for example, "Secondary text on Cards (dark theme): 3.1 of 4.5 — lighten secondary text or darken cards"). The minimums are WCAG's: 4.5 for text and 3.0 for component color. The brand color is part of the check too. When you change the background, the system picks the button, focus and selection tone again on the new background. Faded text and borders stay outside the lock, because the product itself uses them below that minimum, as hints and dividers. The lock also accepts any pair that is already at the level of the product default: today, secondary text on highlighted areas in dark mode sits at 4.4.
+
+The order is the same as the other settings, **color by color**: the organization wins over the installation, the installation wins over the chosen neutral tone (warm, gray or cool) and the default. An empty field inherits. In the organization, the field shows the inherited color, and **Back to default** returns that color to the installation's. The color also applies to the dark sidebar and to dark mode. The browser bar follows the background chosen by the installation.
+
+Two rules for whoever hosts several organizations:
+
+- **Changing the installation colors is never blocked by an organization.** The lock checks the installation alone. If the change makes a color chosen by an organization hard to read, the system drops that organization's colors and uses the installation's. The organization's brand screen warns about it and shows what to adjust.
+- **An extension theme turned on by the organization wins over its theme colors**, because it was the organization's own explicit choice. The installation colors still apply outside the extension theme.
 
 ### Custom CSS
 
@@ -135,7 +153,7 @@ Straight to the point, so that you do not find out in front of the client. Each 
 
 - **Domain per organization.** One installation, one domain. There is no domain column in the schema, the host-based branching in `proxy.ts` is a declared NOOP (it exists only as documentation of the intended topology), and at the Edge there is no database to query before deciding whom that host belongs to. A client who demands their own domain is asking for a **dedicated installation**.
 - **Your own font.** The choice is among the seven families on the list; uploading a font file in the panel does not exist. `next/font` resolves at **build** time, and the image your VPS downloads already arrives built — an upload field would save a file that nothing would read. Adding a family to the list is a code change (an OFL file in `app/fonts/` plus the vocabulary), not a panel change.
-- **Free colors.** Your brand moves the **accent** — what is action, highlight and focus — and there is no hand-picked color for each element. The page background changes only through the neutral tones (warm, gray or cool), and the light/dark pair belongs to the design system. The browser bar color is the product's in every brand, because the brand does not move the background.
+- **Per-component color.** **Theme colors** cover the base variables (background, cards, text, borders and notices). There is no way to pick the color of a specific button or screen. The accent is still derived from the brand color. The browser bar follows the **installation** background; for an organization it keeps the installation background, because the page head is built before the system knows which organization the person belongs to.
 - **Spacing.** The distance between elements (margins and gaps) is the design system's. The height of controls, table rows and menu items is the **Density**, described above.
 - **Per-organization login.** Login belongs to the installation, for the reason in the section above. The installation's corners also apply on the login; the organization's only after signing in, and the sidebar exists only inside the system.
 - **Theme.** The light/dark pair belongs to the design system. Your brand moves the **accent** — what is action, highlight and focus — and deliberately does **not** move the page background: the background is the same under every brand, and that is why the browser bar color is too.

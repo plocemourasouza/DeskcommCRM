@@ -33,6 +33,7 @@ const INSTALACAO = {
   barra_lateral: "escura",
   densidade: "compacta",
   fonte: "manrope",
+  cores: null,
 };
 
 function pintarOrg(gravada: Partial<Parameters<typeof FormularioDaMarcaDaOrganizacao>[0]["gravada"]> = {}) {
@@ -49,6 +50,7 @@ function pintarOrg(gravada: Partial<Parameters<typeof FormularioDaMarcaDaOrganiz
         barra_lateral: null,
         densidade: null,
         fonte: null,
+        cores: null,
         ...gravada,
       }}
       instalacao={INSTALACAO}
@@ -175,7 +177,7 @@ describe("formulário da instalação — densidade", () => {
       <FormularioDaMarca
         gravada={{
           app_name: null, logo_url: null, logo_path: null, accent_hex: null, accent_dark_hex: null,
-          neutros: "quente", raio: "padrao", barra_lateral: "padrao", densidade: "aerada", fonte: "atkinson", show_powered_by: true,
+          neutros: "quente", raio: "padrao", barra_lateral: "padrao", densidade: "aerada", fonte: "atkinson", cores: {}, show_powered_by: true,
         }}
         nomeEmVigor="Deskcomm"
         logoEmVigor={null}
@@ -252,7 +254,7 @@ describe("formulário da instalação — fonte", () => {
       <FormularioDaMarca
         gravada={{
           app_name: null, logo_url: null, logo_path: null, accent_hex: null, accent_dark_hex: null,
-          neutros: "quente", raio: "padrao", barra_lateral: "padrao", densidade: "aerada", fonte: "atkinson", show_powered_by: true,
+          neutros: "quente", raio: "padrao", barra_lateral: "padrao", densidade: "aerada", fonte: "atkinson", cores: {}, show_powered_by: true,
         }}
         nomeEmVigor="Deskcomm"
         logoEmVigor={null}
@@ -298,6 +300,7 @@ describe("formulário da instalação — cantos e menu lateral", () => {
           barra_lateral: "padrao",
           densidade: "aerada",
           fonte: "atkinson",
+          cores: {},
           show_powered_by: true,
         }}
         nomeEmVigor="Deskcomm"
@@ -323,5 +326,97 @@ describe("formulário da instalação — cantos e menu lateral", () => {
     fireEvent.click(screen.getByLabelText(/^Sempre escura/));
     await salvar();
     expect(salvarInstalacao.mock.calls[0]![0]).toMatchObject({ raio: "suave", barra_lateral: "escura" });
+  });
+});
+
+describe("cores do tema — os dois formulários", () => {
+  function pintarInstalacao(cores = {}) {
+    return render(
+      <FormularioDaMarca
+        gravada={{
+          app_name: null, logo_url: null, logo_path: null, accent_hex: null, accent_dark_hex: null,
+          neutros: "quente", raio: "padrao", barra_lateral: "padrao", densidade: "aerada", fonte: "atkinson", cores, show_powered_by: true,
+        }}
+        nomeEmVigor="Deskcomm"
+        logoEmVigor={null}
+        logoDoAmbiente={null}
+        origens={{ nome: "padrao", logoUrl: "padrao", cor: "padrao", cores: "padrao" }}
+        definidoNestaTela={false}
+        fallbackEm={null}
+        fallbackMotivo={null}
+      />,
+    );
+  }
+  const campo = (tema: "claro" | "escuro", token: string) =>
+    document.querySelector<HTMLInputElement>(`[data-cor-do-tema="${tema}:${token}"] input[type="text"], [data-cor-do-tema="${tema}:${token}"] input:not([type="color"])`)!;
+  const salvarBotao = () => screen.getByRole("button", { name: /^Salvar$/ }) as HTMLButtonElement;
+
+  it("organização: cor legível vai para a action; intocadas não vão", async () => {
+    pintarOrg();
+    await salvar();
+    expect("cores" in (salvarOrg.mock.calls[0]![0] as Record<string, unknown>)).toBe(false);
+    salvarOrg.mockClear();
+    fireEvent.change(campo("claro", "bg"), { target: { value: "#FFFFFF" } });
+    await salvar();
+    expect((salvarOrg.mock.calls[0]![0] as Record<string, unknown>).cores).toEqual({ claro: { bg: "#ffffff" } });
+  });
+
+  it("organização: par ilegível TRAVA o Salvar e nomeia o par em português", () => {
+    pintarOrg();
+    fireEvent.change(campo("escuro", "text-muted"), { target: { value: "#4a4840" } });
+    expect(salvarBotao().disabled).toBe(true);
+    expect(document.querySelector("[data-trava-das-cores]")?.getAttribute("data-trava-das-cores")).toBe("reprova");
+    expect(
+      screen.getByText(/Texto secundário sobre Cartões \(tema escuro\): [0-9],[0-9] de 4,5/),
+    ).toBeInTheDocument();
+    // Voltar ao padrão destrava.
+    fireEvent.change(campo("escuro", "text-muted"), { target: { value: "" } });
+    expect(salvarBotao().disabled).toBe(false);
+  });
+
+  it("organização: texto que não é cor também trava", () => {
+    pintarOrg();
+    fireEvent.change(campo("claro", "text"), { target: { value: "azul" } });
+    expect(salvarBotao().disabled).toBe(true);
+  });
+
+  it("organização: gravadas, 'Voltar todas' envia null (herda tudo)", async () => {
+    pintarOrg({ cores: { claro: { bg: "#ffffff" } } });
+    fireEvent.click(screen.getByRole("button", { name: /Voltar todas as cores do tema ao padrão/ }));
+    await salvar();
+    expect((salvarOrg.mock.calls[0]![0] as Record<string, unknown>).cores).toBeNull();
+  });
+
+  it("organização: o placeholder é o herdado da instalação, token a token", () => {
+    render(
+      <FormularioDaMarcaDaOrganizacao
+        gravada={{
+          app_name: null, accent_hex: null, accent_dark_hex: null, logo_path: null, logo_dark_path: null, neutros: null,
+          raio: null, barra_lateral: null, densidade: null, fonte: null, cores: null,
+        }}
+        instalacao={{ ...INSTALACAO, cores: { claro: { bg: "#fdfdfd" } } }}
+        ambiente={{}}
+        vocabulario={{ lei: "LGPD", rotuloNomeLegal: "Razão social" }}
+      />,
+    );
+    expect(campo("claro", "bg").placeholder).toBe("#fdfdfd");
+    expect(campo("claro", "surface").placeholder).toBe("#ffffff");
+    expect(screen.getByText("Cores do tema", { selector: "span" })).toBeInTheDocument();
+  });
+
+  it("organização: a amostra aplica as cores inline, antes de salvar", () => {
+    pintarOrg();
+    fireEvent.change(campo("escuro", "surface"), { target: { value: "#101010" } });
+    const amostra = document.querySelector<HTMLElement>('[data-previa-das-cores="escuro"]')!;
+    expect(amostra.style.getPropertyValue("--color-surface")).toBe("#101010");
+    expect(amostra.style.getPropertyValue("--card")).toBe("var(--color-surface)");
+  });
+
+  it("instalação: o Salvar leva o objeto inteiro; ilegível trava", async () => {
+    pintarInstalacao({ claro: { text: "#000000" } });
+    await salvar();
+    expect(salvarInstalacao.mock.calls[0]![0]).toMatchObject({ cores: { claro: { text: "#000000" } } });
+    fireEvent.change(campo("claro", "surface"), { target: { value: "#6f6f6f" } });
+    expect(salvarBotao().disabled).toBe(true);
   });
 });

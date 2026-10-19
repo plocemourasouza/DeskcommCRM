@@ -91,7 +91,7 @@ describe("guarda de white-label (self-host)", () => {
     expect(layoutRaiz).toMatch(/marcaResolvida\(\)/);
   });
 
-  it("o layout raiz resolve a marca UMA vez para os cinco consumidores", () => {
+  it("o layout raiz resolve a marca UMA vez para os seis consumidores", () => {
     // Guarda de vacuidade das duas de cima: se `marcaResolvida` deixasse de ser
     // a fonte da aba ou do CSS, o casamento de `marcaResolvida()` acima
     // continuaria verdadeiro e mediria um resolvedor que só o script usa — que é
@@ -99,13 +99,14 @@ describe("guarda de white-label (self-host)", () => {
     // cabeçalho daquela função existe para impedir.
     expect(
       layoutRaiz.match(/await marcaResolvida\(\)/g) ?? [],
-      "os cinco consumidores do layout raiz são `generateMetadata` (aba), " +
+      "os seis consumidores do layout raiz são `generateMetadata` (aba), " +
+        "`generateViewport` (a barra do navegador segue o fundo escolhido, 0707), " +
         "`EstiloDaMarca` (cor), `MarcaNoNavegador` (`window.__PUBLIC_ENV__`), " +
         "`MarcaDosClientComponents` (o contexto que os `\"use client\"` leem) e " +
         "`neutrosDaInstalacao` (o atributo `data-neutros` do `<html>`). " +
         "Consumidor a mais é legítimo — atualize o número. Consumidor a MENOS " +
         "significa que alguém voltou a montar a pilha por fora.",
-    ).toHaveLength(5);
+    ).toHaveLength(6);
   });
 
   it("os client components recebem a marca por PROP, não por fonte só-do-navegador", () => {
@@ -243,8 +244,22 @@ const MARCA_CONGELADA: Record<string, EntradaDeMarca> = {
   "lib/mcp/servidor-externo/chamada.ts": {
     categoria: "PROTOCOLO",
     motivo:
-      "clientInfo do handshake `initialize` do MCP que este cliente manda ao servidor REMOTO: ele registra quem conectou e é comum haver regra de acesso por identificação do cliente lá do lado. Não é texto de interface — a tela nunca mostra — e renomear muda a identidade reportada no fio do protocolo",
-    marcas: ["deskcomm-crm"],
+      "clientInfo do handshake `initialize` do MCP que este cliente manda ao servidor REMOTO: ele registra quem conectou e é comum haver regra de acesso por identificação do cliente lá do lado. Não é texto de interface — a tela nunca mostra — e renomear muda a identidade reportada no fio do protocolo. E os cabeçalhos `X-Deskcomm-Contato-*`/`X-Deskcomm-Canal` (#2147): o servidor externo FILTRA os dados do cliente da conversa por esses nomes exatos; renomear faz o servidor deixar de achar a identidade e, conforme a implementação dele, responder sem filtro",
+    marcas: ["deskcomm-crm", "x-deskcomm-canal", "x-deskcomm-contato-id", "x-deskcomm-contato-telefone"],
+  },
+  "lib/mcp/servidor-externo/externo.test.ts": {
+    categoria: "PROTOCOLO",
+    motivo:
+      "é a guarda do contrato acima (#2147): o teste de não-forjamento tenta passar os nomes `X-Deskcomm-*` por argumento de ferramenta, em caixas diferentes, e confere o que chega no fio. Trocar a string aqui desarmaria a prova de que o argumento não alcança o cabeçalho",
+    marcas: [
+      "x-deskcomm-canal",
+      "x-deskcomm-contato-id",
+      "x-deskcomm-contato-id",
+      "x-deskcomm-contato-telefone",
+      "x-deskcomm-contato-telefone",
+      "x-deskcomm-extra",
+      "x-deskcomm-extra",
+    ],
   },
   "lib/supabase/admin.ts": {
     categoria: "PROTOCOLO",
@@ -829,9 +844,9 @@ type EntradaDeHost = { categoria: CategoriaDeHost; motivo: string };
 
 const HOSTS_DECLARADOS: Record<string, EntradaDeHost> = {
   "chatgpt.com": {
-    categoria: "FORNECEDOR",
+    categoria: "CONSOLE",
     motivo:
-      "é o serviço da conta ChatGPT nos DOIS papéis deste provedor: o destino do link que leva o operador a conectar a conta por Sign in with ChatGPT E o endpoint de listagem de modelos da assinatura (`lib/ai/catalogo/modelos-da-assinatura.ts` chama `chatgpt.com/backend-api/codex/models`, medido 200 na issue #2602 — a API pública devolve 403 Missing scopes para o mesmo token). O código FALA com ele; trocar pelo domínio do revendedor faria login e listagem não chegarem a lugar nenhum.",
+      "é o serviço da conta ChatGPT que o operador abre para conectar a assinatura. O produto não faz requests para este host; a consulta do catálogo e a inferência SIWC usam a API pública oficial em api.openai.com.",
   },
   "datamanager.googleapis.com": {
     categoria: "FORNECEDOR",
@@ -876,7 +891,7 @@ const HOSTS_DECLARADOS: Record<string, EntradaDeHost> = {
   "api.openai.com": {
     categoria: "FORNECEDOR",
     motivo:
-      "endpoint da API da OpenAI (embeddings da busca e transcrição de áudio). É o destino do request: trocar pelo domínio do revendedor faria a chamada não chegar a lugar nenhum.",
+      "endpoint da API pública da OpenAI para embeddings, transcrição e os fluxos Sign in with ChatGPT (catálogo de modelos e inferência). É o destino dos requests: trocar pelo domínio do revendedor faria as chamadas não chegarem a lugar nenhum.",
   },
   "auth.openai.com": {
     categoria: "FORNECEDOR",
@@ -1208,10 +1223,9 @@ describe("catraca de host de terceiro no código que embarca", () => {
       // Decisão escrita: painel de chaves da Requesty, o mesmo caso dos outros
       // CONSOLE (o link "Onde pegar a chave" da tela de Credenciais).
       "app.requesty.ai",
-      // `chatgpt.com` saiu daqui para FORNECEDOR (#2602): o código passou a
-      // FALAR com ele (a listagem de modelos da assinatura chama o backend do
-      // Codex), e quem fala com o host é FORNECEDOR — a categoria fechada
-      // perde o host no mesmo diff em que a lista de call sites o ganha.
+      // A pessoa abre o produto ChatGPT para autenticar a conta; o CRM chama
+      // apenas `api.openai.com` no fluxo SIWC.
+      "chatgpt.com",
       "console.anthropic.com",
       // Decisão escrita: é o painel de chaves do Jev, o mesmo caso dos outros
       // CONSOLE — o link "Onde pegar a chave" da tela de Credenciais.

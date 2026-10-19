@@ -53,6 +53,7 @@
 import { GRAUS, stop } from "./rampa";
 import { ehFormaDeValorPermitida, ehNomeDeToken } from "./formas-de-valor";
 import type { CorResolvida } from "./resolve";
+import { TOKENS_DE_COR_DO_TEMA, type CoresDoTema, type TemaDasCores } from "./schema";
 
 export type CodigoDoCss =
   | "nome_de_token_invalido"
@@ -256,7 +257,9 @@ export const ESCOPO_DA_ORGANIZACAO = [
  * de herança dos blocos de cima) e as duas vencem o globals sem depender de ordem.
  * O descendente (espaço) não casa o `<html>`: o bloco da página escura inteira
  * continua sendo o de cima. Mesmo conjunto de tokens do bloco escuro — nunca
- * `--color-bg`/`--color-surface*`: a barra usa as superfícies escuras do globals.
+ * `--color-bg`/`--color-surface*` POR ESTE CAMINHO (o do accent): a barra usa as
+ * superfícies escuras do globals, ou as que a marca escolheu pelo caminho das
+ * CORES DO TEMA (`cssDasCores`, abaixo), que é outro emissor, validado pela trava.
  */
 
 export type EscopoDaMarca = typeof ESCOPO_DA_INSTALACAO | typeof ESCOPO_DA_ORGANIZACAO;
@@ -341,5 +344,155 @@ export function cssDaMarca(
     return { css: null, motivos };
   }
 
+  return { css, motivos };
+}
+
+// ── As CORES DO TEMA (migration 0707) ────────────────────────────────────────
+//
+// O segundo emissor deste módulo, e o ÚNICO que declara superfície
+// (`--color-bg`, `--color-surface*`). Até a decisão de 2026-10-15 nenhum
+// emissor da marca tocava o fundo; o caminho do accent (`cssDaMarca`) continua
+// sem tocar — `tests/unit/branding-cores-css-e-resolucao.test.ts` vigia as duas
+// metades. Este só recebe cores que a TRAVA de contraste já aprovou
+// (`resolverMarca` deixa de lado a camada que reprova), e ainda assim passa
+// cada valor pela mesma régua de forma e pela mesma rede de segurança.
+//
+// ── A especificidade, medida ────────────────────────────────────────────────
+//
+// O que disputa com estes blocos no MESMO elemento são os blocos de neutros do
+// `globals.css`. O mais específico deles é
+// `:root[data-neutros="cinza"]:not([data-theme="dark"])` = (0,3,0); os outros
+// (`[data-theme="dark"][data-neutros=…]`, `[data-neutros=…] [data-theme="light"]`)
+// são (0,2,0), e `:root`/`[data-theme=…]` são (0,1,0). O teto é medido no teste
+// sobre o arquivo de verdade, não copiado daqui.
+//
+//   instalação, página clara  `:root:root:root:not([data-theme="dark"])` = (0,4,0)
+//   instalação, página escura `:root:root:root[data-theme="dark"]`       = (0,4,0)
+//   instalação, subárvore     `:root:root:root [data-theme="dark|light"]` = (0,4,0)
+//
+// As duas primeiras casam o `<html>` e são MUTUAMENTE EXCLUSIVAS (`:not` contra
+// o atributo): o claro nunca vence o escuro por ordem, porque nunca casam juntos.
+// É a mesma lição do cabeçalho deste arquivo ("um token emitido só no bloco
+// claro venceria o escuro"), resolvida pela exclusão em vez de pelo par.
+//
+// A empresa pinta o `<body>` — proximidade de herança, como o accent dela:
+//   página clara   `:root:not([data-theme="dark"]) body:has([data-marca-org]):not(:has([data-tema-extensao]))` = (0,4,1)
+//   página escura  `[data-theme="dark"] body:has([data-marca-org]):not(:has([data-tema-extensao]))`          = (0,3,1)
+//   subárvore      `:root:root:root body:has([data-marca-org]):not(:has([data-tema-extensao])) [data-theme="…"]` = (0,6,1)
+// Na subárvore a empresa e a instalação casam o MESMO elemento, então a
+// especificidade decide: (0,6,1) > (0,4,0), a empresa vence. Também é por isso
+// que a empresa PRECISA dos blocos de subárvore: sem eles, o bloco da
+// instalação, que casa a própria barra lateral, sombrearia o que o `<body>`
+// herdou.
+//
+// ── O tema de extensão vence dentro da própria subárvore ─────────────────────
+//
+// `:not(:has([data-tema-extensao]))`: quando a empresa ATIVOU um tema de
+// extensão, ela escolheu aquele visual explicitamente, e as cores do tema dela
+// se recolhem por inteiro enquanto ele vale (sem a guarda, (0,4,1) venceria o
+// `body:has([data-tema-extensao])` do tema, (0,1,1), e a extensão não
+// apareceria). A instalação mora no `<html>` e perde para o tema por proximidade.
+
+/** Os apelidos do shadcn que o `:root` do `globals.css` declara SOBRE as cores do tema. */
+export const ALIASES_DAS_CORES = [
+  ["--background", "var(--color-bg)"],
+  ["--foreground", "var(--color-text)"],
+  ["--card", "var(--color-surface)"],
+  ["--card-foreground", "var(--color-text)"],
+  ["--popover", "var(--color-surface)"],
+  ["--popover-foreground", "var(--color-text)"],
+  ["--secondary", "var(--color-surface-elevated)"],
+  ["--secondary-foreground", "var(--color-text)"],
+  ["--muted", "var(--color-surface-elevated)"],
+  ["--muted-foreground", "var(--color-text-muted)"],
+  ["--destructive", "var(--color-error)"],
+  ["--border", "var(--color-border)"],
+  ["--input", "var(--color-border)"],
+] as const;
+
+export const ESCOPO_DAS_CORES_DA_INSTALACAO = [
+  [':root:root:root:not([data-theme="dark"])', "claro"],
+  [':root:root:root[data-theme="dark"]', "escuro"],
+  [':root:root:root [data-theme="dark"]', "escuro"],
+  [':root:root:root [data-theme="light"]', "claro"],
+] as const satisfies readonly (readonly [string, TemaDasCores])[];
+
+const CORPO_DA_EMPRESA = "body:has([data-marca-org]):not(:has([data-tema-extensao]))";
+
+export const ESCOPO_DAS_CORES_DA_ORGANIZACAO = [
+  [`:root:not([data-theme="dark"]) ${CORPO_DA_EMPRESA}`, "claro"],
+  [`[data-theme="dark"] ${CORPO_DA_EMPRESA}`, "escuro"],
+  [`:root:root:root ${CORPO_DA_EMPRESA} [data-theme="dark"]`, "escuro"],
+  [`:root:root:root ${CORPO_DA_EMPRESA} [data-theme="light"]`, "claro"],
+] as const satisfies readonly (readonly [string, TemaDasCores])[];
+
+/**
+ * As cores do tema em CSS, ou `null` com o motivo. Vazio é `null` sem motivo —
+ * o produto fica com as dele. Falha FECHADA como `cssDaMarca`: um valor fora da
+ * forma derruba o bloco inteiro, nunca sai CSS parcial.
+ *
+ * O escopo é uma união de dois LITERAIS pelo mesmo motivo do `EscopoDaMarca`:
+ * o seletor entra no texto sem validação, e texto de usuário nunca chega aqui.
+ *
+ * Os apelidos do shadcn (`--background: var(--color-bg)` & cia.) saem só no
+ * escopo da EMPRESA: `var()` resolve onde é DECLARADO, e o `globals.css` os
+ * declara no `<html>` e nas subárvores — o `<body>` herda o valor já calculado
+ * com o fundo de cima, e o `bg-background` do shadcn mostraria a cor da
+ * instalação sob o fundo da empresa.
+ */
+export function cssDasCores(
+  cores: CoresDoTema,
+  escopo: "instalacao" | "organizacao",
+): CssDaMarca {
+  const temAlgo = (["claro", "escuro"] as const).some(
+    (t) => Object.keys(cores[t] ?? {}).length > 0,
+  );
+  if (!temAlgo) return { css: null, motivos: [] };
+
+  const seletores =
+    escopo === "instalacao" ? ESCOPO_DAS_CORES_DA_INSTALACAO : ESCOPO_DAS_CORES_DA_ORGANIZACAO;
+  const motivos: MotivoDoCss[] = [];
+  const blocos: string[] = [];
+  for (const [seletor, tema] of seletores) {
+    const escolhidas = cores[tema] ?? {};
+    const decls: Declaracao[] = [];
+    for (const [chave, valor] of Object.entries(escolhidas)) {
+      const nome = `--color-${chave}`;
+      // A allowlist de NOME vem antes da de forma: chave fora da lista nunca
+      // vira custom property, nem com valor perfeito.
+      if (!(TOKENS_DE_COR_DO_TEMA as readonly string[]).includes(chave) || !ehNomeDeToken(nome)) {
+        motivos.push({
+          codigo: "nome_de_token_invalido",
+          alvo: paraDiagnostico(nome),
+          detalhe: "cor do tema fora da lista do que a marca pode mudar",
+        });
+        return { css: null, motivos };
+      }
+      if (typeof valor !== "string" || !/^#[0-9a-f]{6}$/.test(valor) || !ehFormaDeValorPermitida(valor)) {
+        motivos.push({
+          codigo: "valor_fora_da_allowlist",
+          alvo: nome,
+          detalhe: `valor não é #rrggbb: ${paraDiagnostico(String(valor))}`,
+        });
+        return { css: null, motivos };
+      }
+      decls.push([nome, valor]);
+    }
+    if (decls.length === 0) continue;
+    if (escopo === "organizacao") decls.push(...ALIASES_DAS_CORES);
+    blocos.push(montarBloco(seletor, decls));
+  }
+  if (blocos.length === 0) return { css: null, motivos: [] };
+
+  const css = blocos.join("\n");
+  const suspeita = SEQUENCIAS_SUSPEITAS.find((sq) => css.includes(sq));
+  if (suspeita !== undefined) {
+    motivos.push({
+      codigo: "saida_suspeita",
+      alvo: null,
+      detalhe: `a saída montada contém ${JSON.stringify(suspeita)}`,
+    });
+    return { css: null, motivos };
+  }
   return { css, motivos };
 }

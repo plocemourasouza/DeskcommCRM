@@ -10,12 +10,13 @@ const uploadResult = {
 };
 const uploadMock = vi.fn(async () => uploadResult);
 const sendMock = vi.fn();
+const sequenciaMock = vi.fn();
 
 vi.mock("@/hooks/inbox/useUploadMedia", () => ({
   useUploadMedia: () => ({ mutateAsync: uploadMock, isPending: false }),
 }));
 vi.mock("@/hooks/inbox/useSendMessage", () => ({
-  useSendMessage: () => ({ mutate: sendMock, isPending: false }),
+  useSendMessage: () => ({ mutate: sendMock, enviarEmSequencia: sequenciaMock, isPending: false }),
 }));
 
 import { Composer } from "@/components/inbox/Composer";
@@ -33,6 +34,7 @@ describe("Composer + anexos", () => {
   beforeEach(() => {
     uploadMock.mockClear();
     sendMock.mockClear();
+    sequenciaMock.mockClear();
   });
 
   it("botão Anexar abre o menu com as duas opções", () => {
@@ -54,9 +56,9 @@ describe("Composer + anexos", () => {
     fireEvent.click(screen.getByRole("button", { name: /^enviar$/i }));
 
     await waitFor(() =>
-      expect(sendMock).toHaveBeenCalledWith(
+      expect(sequenciaMock).toHaveBeenCalledWith([
         expect.objectContaining({ conversation_id: "conv-1", body: "olha isso", file }),
-      ),
+      ]),
     );
     // o upload agora acontece DENTRO do envio (hook), não mais no composer
     expect(uploadMock).not.toHaveBeenCalled();
@@ -73,7 +75,7 @@ describe("Composer + anexos", () => {
     fireEvent.click(screen.getByRole("button", { name: /^enviar$/i }));
 
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
-    expect(sendMock).toHaveBeenCalledTimes(1);
+    expect(sequenciaMock).toHaveBeenCalledTimes(1);
   });
 });
 

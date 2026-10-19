@@ -1,0 +1,28 @@
+{
+  "empresa_fraunces": {
+    "arquivos": [
+      "atkinson_hyperlegible_400_latin_latin_ext-s.p.368oqrcoftntr.woff2",
+      "atkinson_hyperlegible_700_latin_latin_ext-s.p.2ou0y1g--1t_w.woff2",
+      "fraunces_100_900_latin-s.20jfceqj9zyw9.woff2",
+      "ibm_plex_mono_400_latin_latin_ext-s.p.3c2ofbkjkpdws.woff2",
+      "ibm_plex_mono_500_latin_latin_ext-s.p.1ypnwab5aijtg.woff2"
+    ],
+    "familias": [
+      "atkinson",
+      "fraunces",
+      "plex-mono"
+    ]
+  },
+  "empresa_herdar_atkinson": {
+    "arquivos": [
+      "atkinson_hyperlegible_400_latin_latin_ext-s.p.368oqrcoftntr.woff2",
+      "atkinson_hyperlegible_700_latin_latin_ext-s.p.2ou0y1g--1t_w.woff2",
+      "ibm_plex_mono_400_latin_latin_ext-s.p.3c2ofbkjkpdws.woff2",
+      "ibm_plex_mono_500_latin_latin_ext-s.p.1ypnwab5aijtg.woff2"
+    ],
+    "familias": [
+      "atkinson",
+      "plex-mono"
+    ]
+  }
+}

@@ -134,7 +134,7 @@ describe("updateMarcaDaOrganizacao — raio e barra lateral", () => {
 
   it("tudo vazio, raio e barra explicitamente null: limpa a marca inteira", async () => {
     await updateMarcaDaOrganizacao({
-      app_name: null, accent_hex: null, accent_dark_hex: null, neutros: null, raio: null, barra_lateral: null, densidade: null, fonte: null,
+      app_name: null, accent_hex: null, accent_dark_hex: null, neutros: null, raio: null, barra_lateral: null, densidade: null, fonte: null, cores: null,
     });
     expect(mocks.rpc.mock.calls[0]?.[1].p_marca).toBeNull();
   });
