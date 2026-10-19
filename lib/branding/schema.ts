@@ -104,7 +104,7 @@ export function neutrosEscolhidos(valor: unknown): NeutrosDaMarca | null {
  * O raio dos cantos (`--radius-sm..xl`): `padrao` e o de sempre, `suave` aperta
  * (nunca chega a zero) e `arredondado` folga. Independe do tema. Vocabulario
  * fechado no CHECK `platform_branding_raio` e em `fn_definir_marca_da_organizacao`
- * (migration 0687); o invariante vocabulario-banco-x-typescript cobre a igualdade.
+ * (migration 0704); o invariante vocabulario-banco-x-typescript cobre a igualdade.
  */
 export const RAIOS_DA_MARCA = ["suave", "padrao", "arredondado"] as const;
 export type RaioDaMarca = (typeof RAIOS_DA_MARCA)[number];
@@ -146,7 +146,7 @@ export function raioEscolhido(valor: unknown): RaioDaMarca | null {
 
 /**
  * A barra lateral: `padrao` acompanha o tema, `escura` e sempre escura. CHECK
- * `platform_branding_barra_lateral` e a mesma guarda da funcao (migration 0687).
+ * `platform_branding_barra_lateral` e a mesma guarda da funcao (migration 0704).
  */
 export const BARRAS_LATERAIS_DA_MARCA = ["padrao", "escura"] as const;
 export type BarraLateralDaMarca = (typeof BARRAS_LATERAIS_DA_MARCA)[number];
@@ -167,7 +167,7 @@ export function barraLateralEscolhida(valor: unknown): BarraLateralDaMarca | nul
  * A densidade dos controles: `aerada` e o visual de hoje, `equilibrada` e
  * `compacta` apertam a altura de botoes, campos, linhas de tabela e itens do menu
  * lateral. Vocabulario fechado no CHECK `platform_branding_densidade` e em
- * `fn_definir_marca_da_organizacao` (migration 0688); o invariante
+ * `fn_definir_marca_da_organizacao` (migration 0705); o invariante
  * vocabulario-banco-x-typescript cobre a igualdade.
  */
 export const DENSIDADES_DA_MARCA = ["aerada", "equilibrada", "compacta"] as const;
@@ -224,7 +224,7 @@ export function densidadeEscolhida(valor: unknown): DensidadeDaMarca | null {
  * A fonte da interface: `atkinson` e a de sempre (e o default do banco), as
  * outras seis sao familias OFL versionadas em `app/fonts/`. Vocabulario fechado
  * no CHECK `platform_branding_fonte` e em `fn_definir_marca_da_organizacao`
- * (migration 0689); o invariante vocabulario-banco-x-typescript cobre a
+ * (migration 0706); o invariante vocabulario-banco-x-typescript cobre a
  * igualdade. O primeiro item e o padrao.
  */
 export const FONTES_DA_MARCA = [
@@ -299,7 +299,7 @@ export function fonteEscolhida(valor: unknown): FonteDaMarca | null {
     : null;
 }
 
-// ── As cores do tema (migration 0690) ────────────────────────────────────────
+// ── As cores do tema (migration 0707) ────────────────────────────────────────
 
 /**
  * As cores do tema que a marca pode mudar — lista FECHADA, a mesma nos dois temas,
@@ -310,7 +310,7 @@ export function fonteEscolhida(valor: unknown): FonteDaMarca | null {
  *
  * Cada nome existe no `:root` e no `[data-theme="dark"]` do `app/globals.css`
  * (`tests/unit/branding-cores-do-tema.test.ts` reprova token inventado ou sumido).
- * A MESMA lista mora na função SQL `fn_definir_marca_da_organizacao` (0690):
+ * A MESMA lista mora na função SQL `fn_definir_marca_da_organizacao` (0707):
  * mudar aqui sem mudar lá faz a RPC recusar o que a tela aceita.
  */
 export const TOKENS_DE_COR_DO_TEMA = [

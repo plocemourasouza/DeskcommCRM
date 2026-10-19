@@ -71,7 +71,7 @@ export type CodigoDaResolucao =
   /** A cor do TEMA ESCURO (#2482) é neutra: o escuro pinta com a escala do produto. */
   | "cor_escura_acromatica"
   /**
-   * As cores do tema de uma camada (0690) deixam algum par abaixo do piso sobre a
+   * As cores do tema de uma camada (0707) deixam algum par abaixo do piso sobre a
    * pilha de HOJE — a instalação mudou por baixo da empresa. A camada perde as
    * cores dela (as de baixo valem) e a tela diz por quê.
    */
@@ -130,7 +130,7 @@ export type CamadaDeMarca = {
   readonly densidade?: DensidadeDaMarca | null;
   /** A fonte desta camada; mesma regra. */
   readonly fonte?: FonteDaMarca | null;
-  /** As cores do tema escolhidas por ESTA camada (0690). Lidas defensivamente na resolução. */
+  /** As cores do tema escolhidas por ESTA camada (0707). Lidas defensivamente na resolução. */
   readonly cores?: unknown;
 };
 
@@ -163,7 +163,7 @@ export type MarcaResolvida = Branding & {
   /** A fonte em vigor (`atkinson` quando nenhuma camada escolheu). */
   readonly fonte: FonteDaMarca;
   /**
-   * As cores do tema em vigor (0690), por token, já empilhadas e já TRAVADAS:
+   * As cores do tema em vigor (0707), por token, já empilhadas e já TRAVADAS:
    * toda camada que sobrou aqui passou na trava de contraste. `{}` = o produto.
    */
   readonly cores: CoresDoTema;
@@ -783,16 +783,16 @@ export type LinhaDaInstalacao = {
   readonly accent_dark_hex?: string | null;
   /** A paleta de neutros (migration 0650). Linha anterior a coluna: ausente = `quente`. */
   readonly neutros?: string | null;
-  /** O raio dos cantos (migration 0687). Linha anterior a coluna: ausente = `padrao`. */
+  /** O raio dos cantos (migration 0704). Linha anterior a coluna: ausente = `padrao`. */
   readonly raio?: string | null;
-  /** A barra lateral (migration 0687). Linha anterior a coluna: ausente = `padrao`. */
+  /** A barra lateral (migration 0704). Linha anterior a coluna: ausente = `padrao`. */
   readonly barra_lateral?: string | null;
-  /** A densidade (migration 0688). Linha anterior a coluna: ausente = `aerada`. */
+  /** A densidade (migration 0705). Linha anterior a coluna: ausente = `aerada`. */
   readonly densidade?: string | null;
-  /** A fonte (migration 0689). Linha anterior a coluna: ausente = `atkinson`. */
+  /** A fonte (migration 0706). Linha anterior a coluna: ausente = `atkinson`. */
   readonly fonte?: string | null;
   /**
-   * As cores do tema (migration 0690), jsonb `{claro?, escuro?}`. `unknown` de
+   * As cores do tema (migration 0707), jsonb `{claro?, escuro?}`. `unknown` de
    * propósito: o banco é lido sem confiança, e quem dá forma é
    * `coresDoTemaEscolhidas` — linha anterior à coluna: ausente = o produto.
    */
@@ -930,7 +930,7 @@ export type MarcaDaOrganizacao = {
   readonly densidade?: string | null;
   /** A fonte desta organizacao; ausente = herda da instalacao. */
   readonly fonte?: string | null;
-  /** As cores do tema desta organizacao (0690); ausente = herda token a token. */
+  /** As cores do tema desta organizacao (0707); ausente = herda token a token. */
   readonly cores?: unknown;
 };
 

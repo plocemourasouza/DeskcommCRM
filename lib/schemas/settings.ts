@@ -177,12 +177,29 @@ export const customFieldSchema = z.object({
     "date",
     "select",
     "multiselect",
+    "searchable_select",
     "boolean",
     "email",
     "phone",
     "url",
   ]),
   required: z.boolean().optional(),
+  /**
+   * A QUE PERTENCE O CAMPO (issue #2791): ao NEGÓCIO (`negocio`) ou ao CONTATO
+   * (`contato`).
+   *
+   * A AUSÊNCIA é `negocio` — o comportamento de sempre: toda definição que já
+   * existe aparece no card e no dossiê do negócio e é gravada em
+   * `crm_leads.custom_fields`. `contato` tira o campo do card e o leva para a
+   * ficha do contato, cujo valor mora em `contacts.custom_fields`.
+   *
+   * Sem `.default()` de propósito: gravar `negocio` em cima de um funil que não
+   * tem a chave faria toda definição existente mudar de forma ao salvar (o
+   * `handleSave` regrava `fields` inteiro). A ausência é LIDA como `negocio` em
+   * `lib/leads/campos-do-funil.ts`, e a tela só escreve a chave quando é
+   * `contato`.
+   */
+  escopo: z.enum(["negocio", "contato"]).optional(),
   /**
    * QUANDO este campo passa a OBRIGAR (issue #1536).
    *
@@ -205,7 +222,20 @@ export const customFieldSchema = z.object({
     })
     .optional(),
   options: z
-    .array(z.object({ value: z.string().min(1), label: z.string().min(1) }))
+    .array(
+      z.object({
+        value: z.string().min(1),
+        label: z.string().min(1),
+        /**
+         * APELIDOS da opção (issue #2521): outras grafias que devem casar com
+         * ela. `Nova York` ← `New York`, `NY`, `NYC`. Alimentam a busca e a
+         * normalização do `searchable_select` (iguais a `value`/`label`, sem
+         * caixa, acento nem espaço a mais). Opcional e ausente por padrão — a
+         * lista de quem só digitou valores continua idêntica à de antes.
+         */
+        aliases: z.array(z.string().min(1).max(80)).max(20).optional(),
+      }),
+    )
     .optional(),
   /**
    * QUANDO este campo aparece (issue #2728) — "mostrar só quando outro tem
@@ -220,6 +250,17 @@ export const customFieldSchema = z.object({
    * opt-in, igual a `obrigatorio_em`.
    */
   mostrar_quando: mostrarQuandoSchema.optional(),
+  /**
+   * PERMITIR VALOR NOVO (issue #2521) — só faz sentido no `searchable_select`.
+   *
+   * LIGADO, a pessoa pode cadastrar na ficha um valor que não está na lista e
+   * ele é gravado como digitado. DESLIGADO (o padrão, e a chave ausente em toda
+   * definição que já existe), a escrita só aceita um valor que case com uma
+   * opção (por `value`, `label` ou apelido), gravando o `value` CANÔNICO.
+   * Hoje a régua vale na ficha (CustomFieldsEditor); `validarValorPesquisavel`
+   * existe pronta para as escritas do servidor, ainda não plugada (#2521).
+   */
+  allow_new: z.boolean().optional(),
 });
 export type CustomFieldDef = z.infer<typeof customFieldSchema>;
 
@@ -341,16 +382,16 @@ export const platformBrandingSchema = z.object({
    * valor), porque a coluna e `not null` — nao existe "apague", so "escolha".
    */
   neutros: z.enum(NEUTROS_DA_MARCA).optional(),
-  /** O raio dos cantos (migration 0687). Opcional pelo mesmo motivo: coluna `not null`. */
+  /** O raio dos cantos (migration 0704). Opcional pelo mesmo motivo: coluna `not null`. */
   raio: z.enum(RAIOS_DA_MARCA).optional(),
-  /** A barra lateral (migration 0687). Opcional pelo mesmo motivo. */
+  /** A barra lateral (migration 0704). Opcional pelo mesmo motivo. */
   barra_lateral: z.enum(BARRAS_LATERAIS_DA_MARCA).optional(),
-  /** A densidade (migration 0688). Opcional pelo mesmo motivo: coluna `not null`. */
+  /** A densidade (migration 0705). Opcional pelo mesmo motivo: coluna `not null`. */
   densidade: z.enum(DENSIDADES_DA_MARCA).optional(),
-  /** A fonte (migration 0689). Opcional pelo mesmo motivo: coluna `not null`. */
+  /** A fonte (migration 0706). Opcional pelo mesmo motivo: coluna `not null`. */
   fonte: z.enum(FONTES_DA_MARCA).optional(),
   /**
-   * As cores do tema (migration 0690): `{claro?, escuro?}`, só a allowlist, só
+   * As cores do tema (migration 0707): `{claro?, escuro?}`, só a allowlist, só
    * `#rrggbb` minúsculo. Opcional: ausente = não mexa (coluna `not null default
    * '{}'`); `{}` = volte tudo ao padrão. A action ainda passa a TRAVA de
    * contraste — forma certa não é cor legível.
@@ -398,19 +439,19 @@ export const marcaDaOrganizacaoSchema = z.object({
    */
   neutros: z.enum(NEUTROS_DA_MARCA).nullable(),
   /**
-   * O raio e a barra lateral desta organizacao (migration 0687). TRES estados,
+   * O raio e a barra lateral desta organizacao (migration 0704). TRES estados,
    * ao contrario dos irmaos: valor = escolhe, `null` = "herde da instalacao"
    * (a chave sai do jsonb) e AUSENTE = "nao mexa" — a RPC preserva a chave
    * gravada. Salvar so o nome nunca apaga o que o formulario nao enviou.
    */
   raio: z.enum(RAIOS_DA_MARCA).nullable().optional(),
   barra_lateral: z.enum(BARRAS_LATERAIS_DA_MARCA).nullable().optional(),
-  /** A densidade desta organizacao (0688): mesmos tres estados do raio. */
+  /** A densidade desta organizacao (0705): mesmos tres estados do raio. */
   densidade: z.enum(DENSIDADES_DA_MARCA).nullable().optional(),
-  /** A fonte desta organizacao (0689): mesmos tres estados do raio. */
+  /** A fonte desta organizacao (0706): mesmos tres estados do raio. */
   fonte: z.enum(FONTES_DA_MARCA).nullable().optional(),
   /**
-   * As cores do tema desta organizacao (0690): os mesmos tres estados do raio
+   * As cores do tema desta organizacao (0707): os mesmos tres estados do raio
    * (objeto = grava, `null` = herda tudo da instalacao, ausente = nao mexa). Token
    * que a empresa nao escolheu desce para a instalacao, um por um.
    */

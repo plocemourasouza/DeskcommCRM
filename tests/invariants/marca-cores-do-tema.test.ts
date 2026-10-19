@@ -4,7 +4,7 @@ import { lastLine, sql } from "./gov-helpers";
 import { motivoDoErro } from "./psql-transporte";
 
 /**
- * CORES DO TEMA DA MARCA (migration 0690).
+ * CORES DO TEMA DA MARCA (migration 0707).
  *
  *  - instalacao: `platform_branding.cores` jsonb `not null default '{}'` + CHECK
  *    de que e um objeto.

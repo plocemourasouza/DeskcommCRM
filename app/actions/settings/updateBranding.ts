@@ -93,7 +93,7 @@ export async function updateBranding(
   if (!escrita.ok) return escrita;
   const { user: authUser } = escrita.ctx;
 
-  // A TRAVA de contraste das cores do tema (0690). A tela roda a mesma função e
+  // A TRAVA de contraste das cores do tema (0707). A tela roda a mesma função e
   // desabilita o Salvar, mas tela não é fronteira: um POST direto chega aqui.
   //
   // Mede a INSTALAÇÃO SOZINHA (esta linha como ficaria + o `.env` embaixo) e de
@@ -141,12 +141,12 @@ export async function updateBranding(
     // Ausente = "nao mexa": a coluna e `not null default 'quente'`, entao omitir
     // preserva a escolha gravada (e a linha nova nasce `quente`).
     ...(parsed.data.neutros ? { neutros: parsed.data.neutros } : {}),
-    // Idem raio e barra lateral (0687): colunas `not null default 'padrao'`.
+    // Idem raio e barra lateral (0704): colunas `not null default 'padrao'`.
     ...(parsed.data.raio ? { raio: parsed.data.raio } : {}),
     ...(parsed.data.barra_lateral ? { barra_lateral: parsed.data.barra_lateral } : {}),
     ...(parsed.data.densidade ? { densidade: parsed.data.densidade } : {}),
     ...(parsed.data.fonte ? { fonte: parsed.data.fonte } : {}),
-    // Cores do tema (0690): ausente = não mexa; `{}` = volte tudo ao padrão.
+    // Cores do tema (0707): ausente = não mexa; `{}` = volte tudo ao padrão.
     ...(parsed.data.cores !== undefined ? { cores: parsed.data.cores } : {}),
     // A linha passa a ser HUMANA. É o que impede a semeadura do `.env` de
     // reescrever a escolha no render seguinte — inclusive quando a escolha foi

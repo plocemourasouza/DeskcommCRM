@@ -4,7 +4,7 @@ import { lastLine, sql } from "./gov-helpers";
 import { motivoDoErro } from "./psql-transporte";
 
 /**
- * FONTE DA MARCA (migration 0689).
+ * FONTE DA MARCA (migration 0706).
  *
  *  - instalacao: `platform_branding.fonte`
  *    (atkinson|manrope|jakarta|plex-sans|bricolage|fraunces|source-serif),
