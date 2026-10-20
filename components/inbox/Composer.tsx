@@ -45,7 +45,8 @@ import {
 import { apiClient } from "@/lib/api/client";
 import { ApiError } from "@/lib/api/types";
 import { showApiError } from "@/components/feedback/ApiErrorToast";
-import { mimeDaMidia, type MidiaDeTemplate } from "@/lib/templates/midias";
+import { MAXIMO_DE_MIDIAS, mimeDaMidia, type MidiaDeTemplate } from "@/lib/templates/midias";
+import { validateOutboundMedia } from "@/lib/messaging/media/upload-validation";
 import { embutirMencoes, podarMencoes, type MencaoEscolhida } from "@/lib/notifications/mentions";
 import { cn } from "@/lib/utils";
 import { resolveSharedContact } from "@/lib/messaging/contact-card";
@@ -256,9 +257,44 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
   // (`respostaBarrada`) NÃO recebe o curinga — ver acima.
   const envioBarrado = respostaBarrada || !!motivoCuringa;
 
-  /** Escolhe o arquivo e MARCA o modo da escolha (ver `pendingEm`). */
-  function escolherArquivo(file: File) {
-    setPendingFiles([file]);
+  /**
+   * Escolhe um ou vários arquivos (o "+" pede `multiple`; a colagem entrega
+   * um) e MARCA o modo da escolha (ver `pendingEm`).
+   *
+   * Cada arquivo passa pela MESMA régua da rota de upload
+   * (`validateOutboundMedia`: vazio, acima de 50MB, tipo sem destino): o que a
+   * rota recusaria fica de fora aqui, com o nome no aviso, e os válidos seguem
+   * — um arquivo ruim no meio da seleção não derruba os bons. A régua é a da
+   * rota e não uma cópia: aviso antes do upload, nunca autorização.
+   *
+   * O lote tem o teto da resposta rápida (`MAXIMO_DE_MIDIAS`, #2526): é o
+   * mesmo diálogo e a mesma fila em sequência; entram os primeiros na ordem
+   * da escolha e o excedente é avisado, não descartado em silêncio.
+   *
+   * Com arquivos PENDENTES a escolha é recusada, como a colagem (`onPaste`):
+   * o diálogo é modal e já tapa o "+", então isto só guarda o invariante —
+   * uma segunda escolha nunca troca nem engorda, sem aviso, a fila que a
+   * pessoa está vendo.
+   */
+  function escolherArquivos(files: readonly File[]) {
+    if (pendingFiles.length > 0) return;
+    const validos: File[] = [];
+    for (const file of files) {
+      const veredito = validateOutboundMedia(file.type, file.size);
+      if (veredito.ok) validos.push(file);
+      else toast.error(`${file.name}: ${t(veredito.message)}`);
+    }
+    if (validos.length > MAXIMO_DE_MIDIAS) {
+      toast.warning(
+        t("Dá para enviar até {n} arquivos de uma vez. Os demais ficaram de fora.").replace(
+          "{n}",
+          String(MAXIMO_DE_MIDIAS),
+        ),
+      );
+    }
+    const fila = validos.slice(0, MAXIMO_DE_MIDIAS);
+    if (fila.length === 0) return;
+    setPendingFiles(fila);
     setLegendaInicial(null);
     setPendingEm(mode);
   }
@@ -539,7 +575,7 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
    *
    * O MODO saiu da guarda (#1863, F3): "Nota interna" passou a aceitar anexo,
    * e a imagem colada ali vira exatamente o mesmo preview de sempre — com o
-   * modo congelado na escolha (`escolherArquivo`), para ela não escapar para o
+   * modo congelado na escolha (`escolherArquivos`), para ela não escapar para o
    * cliente se o operador trocar de aba no meio. `respostaBarrada` já cobre os
    * dois modos: em nota ele é só `isDisabled` (a janela fechada barra a
    * RESPOSTA, e só ela — a nota continua sendo o lugar onde se registra por que
@@ -550,7 +586,7 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
     const imagem = imagemDoClipboard(e.clipboardData, new Date());
     if (!imagem) return; // colagem de texto segue o caminho normal do browser
     e.preventDefault();
-    escolherArquivo(imagem);
+    escolherArquivos([imagem]);
   }
 
   function onKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
@@ -736,7 +772,7 @@ export const Composer = forwardRef<ComposerHandle, Props>(function Composer(
               `isDisabled`, e a janela fechada barra a resposta, não a nota. */}
           <AttachMenu
             disabled={respostaBarrada}
-            onPick={escolherArquivo}
+            onPick={escolherArquivos}
             onPickContact={mode === "reply" ? () => setContactPickerOpen(true) : undefined}
           />
           <EmojiButton

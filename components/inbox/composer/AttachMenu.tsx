@@ -8,7 +8,8 @@ import { FileText, ImageSquare, Plus, UserCircle } from "@/lib/ui/icons";
 
 interface Props {
   disabled?: boolean;
-  onPick: (file: File) => void;
+  /** Os arquivos na ordem em que o seletor do sistema os entregou (um ou vários). */
+  onPick: (files: File[]) => void;
   onPickContact?: () => void;
 }
 
@@ -19,8 +20,8 @@ export function AttachMenu({ disabled, onPick, onPickContact }: Props) {
   const docRef = useRef<HTMLInputElement | null>(null);
 
   const handle = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) onPick(file);
+    const files = Array.from(e.target.files ?? []);
+    if (files.length) onPick(files);
     e.target.value = ""; // permite re-selecionar o mesmo arquivo
   };
 
@@ -72,11 +73,12 @@ export function AttachMenu({ disabled, onPick, onPickContact }: Props) {
           popover ao fechar, e um input desmontado no meio do clique perde o
           file picker ("nada acontece"). Aqui os refs seguem válidos após o
           fechamento — o .click() síncrono no onClick preserva o user-gesture. */}
-      <input ref={mediaRef} type="file" accept="image/*,video/*" className="hidden" onChange={handle} />
+      <input ref={mediaRef} type="file" accept="image/*,video/*" multiple className="hidden" onChange={handle} />
       <input
         ref={docRef}
         type="file"
         accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip"
+        multiple
         className="hidden"
         onChange={handle}
       />
