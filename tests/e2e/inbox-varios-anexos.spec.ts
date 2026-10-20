@@ -240,3 +240,78 @@ test("(2) o primeiro falha: o segundo não sai e a bolha dele diz por quê", asy
   await expect(page.getByRole("tooltip")).toContainText("Não saiu porque o arquivo anterior falhou.");
   await page.screenshot({ path: evidencia("4-segunda-nao-saiu.png") });
 });
+
+/** N cópias PNG válidas com nomes distintos — para medir o teto da leva. */
+function fotos(n: number) {
+  return Array.from({ length: n }, (_, i) => ({ ...FOTO_1, name: `leva-${i + 1}-${SUFIXO}.png` }));
+}
+
+test("(3) nota interna com duas fotos: duas notas, na ordem da escolha", async ({ page }) => {
+  await login(page);
+  await abrirConversa(page);
+  await page.getByRole("button", { name: "Nota interna" }).click();
+
+  const legenda = `nota-${SUFIXO}`;
+  await escolherDuasEEnviar(page, legenda, "5-nota-dialogo-com-as-duas.png");
+
+  // A nota não é otimista: o diálogo só fecha depois de as duas gravarem.
+  // Quem diz a ordem é o banco (created_at), medido pelo tamanho de cada anexo.
+  const linhas = async () => {
+    const { data, error } = await db
+      .from("conversation_notes")
+      .select("body, media_size_bytes, media_storage_path, created_at")
+      .eq("conversation_id", conversa)
+      .not("media_storage_path", "is", null)
+      .order("created_at", { ascending: true });
+    if (error) throw new Error(`conversation_notes: ${error.message}`);
+    return data as { body: string; media_size_bytes: number; media_storage_path: string }[];
+  };
+  await expect.poll(async () => (await linhas()).length, { timeout: 15_000 }).toBe(2);
+  const notas = await linhas();
+  console.info(`[inbox-varios-anexos] notas = ${JSON.stringify(notas.map((n) => ({ body: n.body, bytes: n.media_size_bytes })))}`);
+  expect(notas.map((n) => n.media_size_bytes)).toEqual([FOTO_1.buffer.length, FOTO_2.buffer.length]);
+  expect(notas[0]!.body).toBe(legenda);
+
+  const imagens = page.getByRole("img", { name: "Imagem da nota interna" });
+  await expect(imagens).toHaveCount(2, { timeout: 15_000 });
+  await imagens.nth(1).scrollIntoViewIfNeeded();
+  await page.screenshot({ path: evidencia("6-duas-notas.png") });
+});
+
+test("(4) seis fotos pelo \"+\": entram cinco e o aviso diz por quê", async ({ page }) => {
+  await login(page);
+  await abrirConversa(page);
+
+  await page.getByRole("button", { name: "Anexar" }).click();
+  const seis = fotos(6);
+  await page.locator('input[type="file"][accept^="image"]').setInputFiles(seis);
+
+  await expect(page.getByText("Dá para enviar até 5 arquivos de uma vez. Os demais ficaram de fora.")).toBeVisible();
+  const dialogo = page.getByRole("dialog", { name: "Enviar anexo" });
+  await expect(dialogo).toBeVisible();
+  const nomes = await dialogo.locator("img").evaluateAll((imgs) => imgs.map((i) => (i as HTMLImageElement).alt));
+  expect(nomes).toEqual(seis.slice(0, 5).map((f) => f.name));
+  await page.screenshot({ path: evidencia("7-teto-de-cinco.png") });
+  await dialogo.getByRole("button", { name: "Cancelar" }).click();
+  await expect(dialogo).toBeHidden();
+});
+
+test("(5) arquivo inválido na leva: sai com aviso nomeado e o válido segue", async ({ page }) => {
+  await login(page);
+  await abrirConversa(page);
+
+  await page.getByRole("button", { name: "Anexar" }).click();
+  const vazio = { name: `vazio-${SUFIXO}.png`, mimeType: "image/png", buffer: Buffer.alloc(0) };
+  const estranho = { name: `programa-${SUFIXO}.exe`, mimeType: "application/x-msdownload", buffer: Buffer.from("MZ") };
+  await page.locator('input[type="file"][accept^="image"]').setInputFiles([vazio, FOTO_1, estranho]);
+
+  await expect(page.getByText(`${vazio.name}: Arquivo vazio.`)).toBeVisible();
+  await expect(page.getByText(`${estranho.name}: Tipo de arquivo não suportado.`)).toBeVisible();
+  const dialogo = page.getByRole("dialog", { name: "Enviar anexo" });
+  await expect(dialogo).toBeVisible();
+  const nomes = await dialogo.locator("img").evaluateAll((imgs) => imgs.map((i) => (i as HTMLImageElement).alt));
+  expect(nomes).toEqual([FOTO_1.name]);
+  await page.screenshot({ path: evidencia("8-invalidos-fora-da-leva.png") });
+  await dialogo.getByRole("button", { name: "Cancelar" }).click();
+  await expect(dialogo).toBeHidden();
+});
