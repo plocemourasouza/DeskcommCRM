@@ -1,0 +1,11 @@
+[inbox-rola-ate-o-envio] (1) antes={"scrollTop":1988,"scrollHeight":2276,"clientHeight":288,"distanciaDoFim":0,"bolhaTopo":458,"bolhaBase":529,"scrollerTopo":253,"scrollerBase":541,"dentro":true} depois={"scrollTop":2013,"scrollHeight":2569,"clientHeight":288,"distanciaDoFim":268,"bolhaTopo":516,"bolhaBase":797,"scrollerTopo":253,"scrollerBase":541,"dentro":false}
+  ✘  1 [chromium] › tests/e2e/inbox-rola-ate-o-envio.spec.ts:178:5 › (1) anexo com upload em 500: a bolha 'Falhou' fica à vista no fio (5.0s)
+[inbox-rola-ate-o-envio] (2) depois={"scrollTop":2058,"scrollHeight":2379,"clientHeight":290,"distanciaDoFim":31,"bolhaTopo":471,"bolhaBase":562,"scrollerTopo":253,"scrollerBase":543,"dentro":false}
+  ✘  2 [chromium] › tests/e2e/inbox-rola-ate-o-envio.spec.ts:207:5 › (2) controle: texto curto continua rolando até a bolha (4.2s)
+      201 |   console.info(`[inbox-rola-ate-o-envio] (1) antes=${JSON.stringify(antes)} depois=${JSON.stringify(depois)}`);
+    test-results/inbox-rola-ate-o-envio--1--2b8c1--Falhou-fica-à-vista-no-fio-chromium/test-failed-1.png
+      221 |   console.info(`[inbox-rola-ate-o-envio] (2) depois=${JSON.stringify(depois)}`);
+    test-results/inbox-rola-ate-o-envio--2--815b2-ontinua-rolando-até-a-bolha-chromium/test-failed-1.png
+  2 failed
+[diag] queued {"scrollTop":2058,"scrollHeight":2359,"clientHeight":290,"distanciaDoFim":11,"bolhaTopo":471,"bolhaBase":542,"scrollerTopo":253,"scrollerBase":543,"dentro":true} h= 71.234375
+[diag] failed {"scrollTop":2058,"scrollHeight":2379,"clientHeight":290,"distanciaDoFim":31,"bolhaTopo":471,"bolhaBase":562,"scrollerTopo":253,"scrollerBase":543,"dentro":false} h= 90.953125

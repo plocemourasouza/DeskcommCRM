@@ -108,6 +108,15 @@ export function ChatThread({
    * pode valer, porque ninguém rolou nada ainda. Ver o efeito abaixo.
    */
   const jaAncorou = useRef(false);
+  /**
+   * Quem está lendo segue o FIM do fio? Verdadeiro na abertura; vira falso
+   * quando a pessoa ROLA PARA CIMA para além de 120px do fim, e volta a
+   * verdadeiro quando ela desce de novo até perto do fim. Ver o efeito do
+   * `ResizeObserver` abaixo.
+   */
+  const segueOFim = useRef(true);
+  const topoAnterior = useRef(0);
+  const conteudoRef = useRef<HTMLDivElement | null>(null);
   const activeOrg = useActiveOrg();
   const currentUser = useUser();
   const deleteNote = useDeleteNote(conversationId ?? "");
@@ -181,13 +190,59 @@ export function ChatThread({
   );
 
   const paginas = q.data?.pages.length ?? 0;
+  /** O fio de verdade (scroller + conteúdo) está montado — os outros ramos não montam os refs. */
+  const temFio = items.length > 0;
 
   // Conversa nova: a contagem de páginas recomeça, senão a primeira carga da
   // próxima conversa seria confundida com um "carregar mais antigas".
   useEffect(() => {
     paginasVistas.current = 0;
     jaAncorou.current = false;
+    segueOFim.current = true;
+    topoAnterior.current = 0;
   }, [conversationId]);
+
+  /**
+   * O FIO SEGUE O FIM QUANDO O QUE ESTÁ NO FIM CRESCE.
+   *
+   * O efeito de ancoragem abaixo só roda quando CHEGA item, e a guarda dele
+   * mede a distância DEPOIS de o item entrar. Medido em 2026-10-19 pela tela
+   * (`tests/e2e/inbox-rola-ate-o-envio.spec.ts`): a bolha de um texto enviado
+   * nasce com 71px e, ao falhar, ganha "Falhou · Tentar de novo" (91px) — o
+   * fio ficava 31px aquém do fim; a de um anexo cresce depois de entrar e o
+   * fio ficava 268px aquém, com o "Tentar de novo" fora da tela de quem
+   * acabou de enviar. Item novo mais alto que 120px, para aquela guarda,
+   * parece "usuário lendo o histórico".
+   *
+   * Aqui a pergunta é feita pelo GESTO, não pela geometria depois do
+   * crescimento: `segueOFim` só cai quando a pessoa rola PARA CIMA (o
+   * `scrollTop` diminui) e fica além de 120px do fim. Rolagem do próprio fio
+   * até o fim só aumenta o `scrollTop`, e crescimento do conteúdo não mexe
+   * nele — nenhum dos dois desliga o seguimento. "Carregar mais antigas" é
+   * clicado no topo, logo depois de subir: não puxa ninguém de volta.
+   */
+  useEffect(() => {
+    const sc = scrollerRef.current;
+    const conteudo = conteudoRef.current;
+    if (!sc || !conteudo || typeof ResizeObserver === "undefined") return;
+    const aoRolar = () => {
+      const distancia = sc.scrollHeight - sc.scrollTop - sc.clientHeight;
+      if (distancia <= 120) segueOFim.current = true;
+      else if (sc.scrollTop < topoAnterior.current - 1) segueOFim.current = false;
+      topoAnterior.current = sc.scrollTop;
+    };
+    const observador = new ResizeObserver(() => {
+      if (!jaAncorou.current || !segueOFim.current) return;
+      bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    });
+    topoAnterior.current = sc.scrollTop;
+    sc.addEventListener("scroll", aoRolar, { passive: true });
+    observador.observe(conteudo);
+    return () => {
+      sc.removeEventListener("scroll", aoRolar);
+      observador.disconnect();
+    };
+  }, [conversationId, q.isLoading, q.isError, temFio]);
 
   // Rola ao fim na primeira carga e quando chega mensagem/nota nova — mas NÃO
   // quando o crescimento veio do "Carregar mais antigas".
@@ -349,6 +404,8 @@ export function ChatThread({
         </div>
       )}
       <div ref={scrollerRef} className="min-w-0 flex-1 overflow-y-auto py-2">
+        {/* O que o `ResizeObserver` mede: o conteúdo, não o scroller (cuja caixa não muda). */}
+        <div ref={conteudoRef}>
         {q.hasNextPage && (
           <div className="flex justify-center py-2">
             <Button
@@ -437,7 +494,8 @@ export function ChatThread({
           </div>
         ))}
 
-        <div ref={bottomRef} />
+          <div ref={bottomRef} />
+        </div>
       </div>
     </div>
   );

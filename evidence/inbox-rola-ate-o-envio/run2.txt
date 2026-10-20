@@ -1,0 +1,10 @@
+
+Running 2 tests using 1 worker
+
+[inbox-rola-ate-o-envio] (1) antes={"scrollTop":1981,"scrollHeight":2276,"clientHeight":288,"distanciaDoFim":7,"bolhaTopo":465,"bolhaBase":536,"scrollerTopo":253,"scrollerBase":541,"dentro":true} depois={"scrollTop":2274,"scrollHeight":2569,"clientHeight":288,"distanciaDoFim":7,"bolhaTopo":255,"bolhaBase":536,"scrollerTopo":253,"scrollerBase":541,"dentro":true}
+  ✓  1 [chromium] › tests/e2e/inbox-rola-ate-o-envio.spec.ts:183:5 › (1) anexo com upload em 500: a bolha 'Falhou' fica à vista no fio (5.9s)
+[inbox-rola-ate-o-envio] (2) depois={"scrollTop":2082,"scrollHeight":2379,"clientHeight":290,"distanciaDoFim":7,"bolhaTopo":447,"bolhaBase":538,"scrollerTopo":253,"scrollerBase":543,"dentro":true}
+  ✓  2 [chromium] › tests/e2e/inbox-rola-ate-o-envio.spec.ts:212:5 › (2) texto com envio em 500: a bolha que cresce ao falhar fica à vista (5.0s)
+[cleanup-e2e-channel-sessions] escrevendo em LOCAL: http://127.0.0.1:56321 (origem: ambiente)
+
+  2 passed (14.6s)
