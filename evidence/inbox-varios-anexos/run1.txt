@@ -1,9 +1,12 @@
-
-Running 2 tests using 1 worker
-
-[inbox-varios-anexos] envios = [{"body":"duas-d9ab5ed7","media_size_bytes":187},{"body":null,"media_size_bytes":263}]
-  ✓  1 [chromium] › tests/e2e/inbox-varios-anexos.spec.ts:180:5 › (1) duas fotos pelo "+": duas bolhas na ordem da escolha, legenda só na primeira (4.0s)
-  ✓  2 [chromium] › tests/e2e/inbox-varios-anexos.spec.ts:212:5 › (2) o primeiro falha: o segundo não sai e a bolha dele diz por quê (3.4s)
+Running 5 tests using 1 worker
+[1/5] [chromium] › tests/e2e/inbox-varios-anexos.spec.ts:180:5 › (1) duas fotos pelo "+": duas bolhas na ordem da escolha, legenda só na primeira
+[chromium] › tests/e2e/inbox-varios-anexos.spec.ts:180:5 › (1) duas fotos pelo "+": duas bolhas na ordem da escolha, legenda só na primeira
+[inbox-varios-anexos] envios = [{"body":"duas-6d6bbbc6","media_size_bytes":187},{"body":null,"media_size_bytes":263}]
+[2/5] [chromium] › tests/e2e/inbox-varios-anexos.spec.ts:212:5 › (2) o primeiro falha: o segundo não sai e a bolha dele diz por quê
+[3/5] [chromium] › tests/e2e/inbox-varios-anexos.spec.ts:249:5 › (3) nota interna com duas fotos: duas notas, na ordem da escolha
+[chromium] › tests/e2e/inbox-varios-anexos.spec.ts:249:5 › (3) nota interna com duas fotos: duas notas, na ordem da escolha
+[inbox-varios-anexos] notas = [{"body":"nota-6d6bbbc6","bytes":187},{"body":"nota-6d6bbbc6","bytes":263}]
+[4/5] [chromium] › tests/e2e/inbox-varios-anexos.spec.ts:281:5 › (4) seis fotos pelo "+": entram cinco e o aviso diz por quê
+[5/5] [chromium] › tests/e2e/inbox-varios-anexos.spec.ts:299:5 › (5) arquivo inválido na leva: sai com aviso nomeado e o válido segue
 [cleanup-e2e-channel-sessions] escrevendo em LOCAL: http://127.0.0.1:56321 (origem: ambiente)
-
-  2 passed (9.9s)
+  5 passed (30.9s)
