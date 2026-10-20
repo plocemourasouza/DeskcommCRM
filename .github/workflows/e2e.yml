@@ -1260,6 +1260,7 @@ jobs:
       SPECS_PARTE_6: >-
         marca-neutros.spec.ts
         inbox-anexo-feedback.spec.ts
+        inbox-varios-anexos.spec.ts
         marca-aparencia.spec.ts
         agenda-google-meet.spec.ts
         agenda-presenca-recuperacao.spec.ts

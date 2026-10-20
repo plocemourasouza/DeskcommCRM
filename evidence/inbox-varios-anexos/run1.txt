@@ -1,0 +1,9 @@
+
+Running 2 tests using 1 worker
+
+[inbox-varios-anexos] envios = [{"body":"duas-d9ab5ed7","media_size_bytes":187},{"body":null,"media_size_bytes":263}]
+  ✓  1 [chromium] › tests/e2e/inbox-varios-anexos.spec.ts:180:5 › (1) duas fotos pelo "+": duas bolhas na ordem da escolha, legenda só na primeira (4.0s)
+  ✓  2 [chromium] › tests/e2e/inbox-varios-anexos.spec.ts:212:5 › (2) o primeiro falha: o segundo não sai e a bolha dele diz por quê (3.4s)
+[cleanup-e2e-channel-sessions] escrevendo em LOCAL: http://127.0.0.1:56321 (origem: ambiente)
+
+  2 passed (9.9s)
