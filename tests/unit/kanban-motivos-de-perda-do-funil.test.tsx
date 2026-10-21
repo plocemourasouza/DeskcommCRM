@@ -18,8 +18,9 @@
  *
  * O primeiro caso é o defeito: a lista não é a do produto, é a do funil. O
  * segundo prova que o motivo escolhido CHEGA no endpoint, com o texto dele. O
- * terceiro é a VALIDAÇÃO: com funil configurado, "Outro" vazio não passa e
- * texto fora da lista é recusado ANTES do clique. O quarto é a volta: sem nada
+ * terceiro é o "Outro": vazio grava `other`, e com detalhe livre grava `other`
+ * E leva o detalhe à parte — nunca o detalhe como motivo, que o trigger recusa
+ * (medido em 2026-10-21: era o beco sem saída da tela). O quarto é a volta: sem nada
  * cadastrado, o padrão do produto e o `other` vazio continuam como sempre
  * foram — a correção não pode ter consertado um caso quebrando o outro.
  */
@@ -33,7 +34,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { LoseLeadDialog } from "@/components/kanban/LoseLeadDialog";
 import { chaveDoQuadro } from "@/hooks/kanban/useBoard";
 import { CANONICAL_LOST_REASONS } from "@/lib/schemas/leads";
-import { motivosDoFunil } from "@/lib/leads/motivos-de-perda-do-funil";
+import { motivoEscolhidoNaPerda, motivosDoFunil } from "@/lib/leads/motivos-de-perda-do-funil";
 import { MOTIVO_DA_TRANSFERENCIA } from "@/lib/leads/motivo-da-perda";
 import type { BoardData } from "@/lib/kanban/types";
 
@@ -137,24 +138,81 @@ describe("motivos de perda configurados no funil", () => {
     expect(apiPost).toHaveBeenCalledWith(`/api/v1/leads/${LEAD}/lose`, { lost_reason: "other" });
   });
 
-  it("com funil configurado, 'Outro' recusa ANTES DO CLIQUE o texto que o servidor negaria", () => {
+  it("⭐ 2026-10-21: com funil configurado, 'Outro' + detalhe livre GRAVA `other` e leva o detalhe junto", async () => {
+    // O defeito medido: o detalhe digitado ia COMO `lost_reason`, e o trigger
+    // `fn_validate_lost_reason_required` só aceita canônico ∪ cadastrado — então
+    // todo texto livre era recusado ("Esse motivo de perda não está na lista…") e
+    // o "Confirmar" ficava desligado. "Outro" com detalhe era beco sem saída em
+    // todo funil. Agora o motivo é o canônico `other` (que o trigger aceita em
+    // qualquer funil) e o detalhe viaja à parte, para a linha da timeline.
     abrir(comFunil({ lost_reasons: ["Sem orçamento"] }));
 
     fireEvent.click(radio("other"));
-    // O rótulo é "opcional" nos dois casos: deixar em branco é uma saída válida.
     const detalhe = screen.getByLabelText(/Detalhe \(opcional\)/);
-    fireEvent.change(detalhe, { target: { value: "Sem orçamento" } });
-    expect(confirmar().disabled).toBe(false); // valor que o funil aceita
+    fireEvent.change(detalhe, { target: { value: "  Contato de teste  " } });
 
-    fireEvent.change(detalhe, { target: { value: "Cliente mudou de ideia" } });
-    expect(confirmar().disabled).toBe(true); // fora da lista: o trigger recusaria
-    expect(apiPost).not.toHaveBeenCalled();
-    // A MESMA frase que `lib/leads/motivo-da-perda.ts` (#935) devolve para esta
-    // recusa pela API. Duas frases quase idênticas para o mesmo "não" fariam o
-    // operador achar que tropeçou em dois problemas diferentes.
-    expect(screen.getByRole("alert").textContent).toBe(
-      "Esse motivo de perda não está na lista deste funil — escolha um dos motivos configurados.",
+    expect(confirmar().disabled).toBe(false);
+    expect(screen.queryByRole("alert")).toBeNull();
+
+    fireEvent.click(confirmar());
+    await waitFor(() => expect(apiPost).toHaveBeenCalledTimes(1));
+    expect(apiPost).toHaveBeenCalledWith(`/api/v1/leads/${LEAD}/lose`, {
+      lost_reason: "other",
+      lost_reason_detail: "Contato de teste",
+    });
+  });
+
+  it("sem funil configurado, 'Outro' + detalhe livre também grava `other` com o detalhe (crm.fabrasoftware.com.br)", async () => {
+    // O caso de produção: "Lead optou em outra solução" num funil sem cadastro.
+    // Antes era recusado na tela; o servidor nunca o aceitaria como motivo.
+    abrir(comFunil({}));
+
+    fireEvent.click(radio("other"));
+    fireEvent.change(screen.getByLabelText(/Detalhe \(opcional\)/), {
+      target: { value: "Lead optou em outra solução" },
+    });
+    expect(confirmar().disabled).toBe(false);
+    expect(screen.queryByRole("alert")).toBeNull();
+
+    fireEvent.click(confirmar());
+    await waitFor(() => expect(apiPost).toHaveBeenCalledTimes(1));
+    expect(apiPost).toHaveBeenCalledWith(`/api/v1/leads/${LEAD}/lose`, {
+      lost_reason: "other",
+      lost_reason_detail: "Lead optou em outra solução",
+    });
+  });
+
+  it("detalhe IGUAL a um motivo cadastrado grava o próprio motivo (sem detalhe à parte)", async () => {
+    abrir(comFunil({ lost_reasons: ["Sem orçamento"] }));
+
+    fireEvent.click(radio("other"));
+    fireEvent.change(screen.getByLabelText(/Detalhe \(opcional\)/), {
+      target: { value: "Sem orçamento" },
+    });
+    fireEvent.click(confirmar());
+    await waitFor(() => expect(apiPost).toHaveBeenCalledTimes(1));
+    expect(apiPost).toHaveBeenCalledWith(`/api/v1/leads/${LEAD}/lose`, {
+      lost_reason: "Sem orçamento",
+    });
+  });
+
+  it("modo LOTE: 'Outro' + detalhe entrega `other` E o detalhe a quem chamou", async () => {
+    const onConfirm = vi.fn(async (..._args: unknown[]) => undefined);
+    const qc = comFunil({ lost_reasons: ["Sem orçamento"] });
+    render(
+      <QueryClientProvider client={qc}>
+        <LoseLeadDialog open onOpenChange={() => {}} pipelineId={PIL} onConfirm={onConfirm} />
+      </QueryClientProvider>,
     );
+
+    fireEvent.click(radio("other"));
+    fireEvent.change(screen.getByLabelText(/Detalhe \(opcional\)/), {
+      target: { value: "Contato de teste" },
+    });
+    fireEvent.click(confirmar());
+    await waitFor(() => expect(onConfirm).toHaveBeenCalledTimes(1));
+    expect(onConfirm).toHaveBeenCalledWith("other", "Contato de teste");
+    expect(apiPost).not.toHaveBeenCalled();
   });
 
   it("com funil configurado, 'Outro' diz ONDE se cadastra um motivo novo", () => {
@@ -169,26 +227,6 @@ describe("motivos de perda configurados no funil", () => {
     abrir(comFunil({}));
     fireEvent.click(radio("other"));
     expect(screen.queryByText(/cadastre em Configurações/)).toBeNull();
-  });
-
-  it("BUG REPRODUZIDO (crm.fabrasoftware.com.br): sem funil configurado, texto livre em 'Outro' é recusado ANTES do clique, não 500 depois", () => {
-    // `fn_validate_lost_reason_required` não abre exceção para funil sem
-    // `lost_reasons` cadastrado — o conjunto aceito ali é só o canônico (8
-    // códigos em inglês). Um texto livre em português nunca é um deles, então
-    // a API sempre recusava com 22023 `lost_reason_invalid` — só que DEPOIS do
-    // clique, porque a tela só validava isto quando o funil tinha cadastro.
-    abrir(comFunil({}));
-
-    fireEvent.click(radio("other"));
-    const detalhe = screen.getByLabelText(/Detalhe \(opcional\)/);
-    fireEvent.change(detalhe, { target: { value: "Lead optou em outra solução" } });
-
-    expect(confirmar().disabled).toBe(true);
-    expect(apiPost).not.toHaveBeenCalled();
-    expect(screen.getByRole("alert").textContent).toBe(
-      "Esse motivo de perda não está na lista deste funil — escolha um dos motivos configurados.",
-    );
-    expect(screen.getByText(/cadastre em Configurações/)).toBeTruthy();
   });
 
   it("sem funil configurado, o padrão do produto e o 'other' vazio continuam valendo", async () => {
@@ -264,12 +302,59 @@ describe("motivosDoFunil (a régua da leitura)", () => {
     // a literal antiga no próprio texto do caso, e cobrá-la aqui seria o teste
     // reprovando a si mesmo.
     const hook = readFileSync(join(raiz, "hooks/kanban/useMotivosDePerdaDoFunil.ts"), "utf8");
-    expect(hook.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, "")).not.toContain("\"board\"");
+    expect(hook.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, "")).not.toContain('"board"');
   });
 
   it("lixo no settings vira lista vazia, não motivo na tela", () => {
     expect(motivosDoFunil(null)).toEqual([]);
     expect(motivosDoFunil({})).toEqual([]);
     expect(motivosDoFunil({ lost_reasons: "Sem orçamento" })).toEqual([]);
+  });
+});
+
+describe("motivoEscolhidoNaPerda (o que a janela grava)", () => {
+  const cadastrados = ["Sem orçamento"];
+  it("motivo da lista vai como está; 'Outro' vazio vale `other`", () => {
+    expect(
+      motivoEscolhidoNaPerda({
+        escolhido: "Sem orçamento",
+        textoOutro: "",
+        motivosCadastrados: cadastrados,
+      }),
+    ).toEqual({ lostReason: "Sem orçamento" });
+    expect(
+      motivoEscolhidoNaPerda({
+        escolhido: "other",
+        textoOutro: "   ",
+        motivosCadastrados: cadastrados,
+      }),
+    ).toEqual({ lostReason: "other" });
+  });
+
+  it("'Outro' com texto livre NUNCA vira motivo: `other` + detalhe", () => {
+    expect(
+      motivoEscolhidoNaPerda({
+        escolhido: "other",
+        textoOutro: " Contato de teste ",
+        motivosCadastrados: cadastrados,
+      }),
+    ).toEqual({ lostReason: "other", detalhe: "Contato de teste" });
+    expect(
+      motivoEscolhidoNaPerda({
+        escolhido: "other",
+        textoOutro: "Contato de teste",
+        motivosCadastrados: [],
+      }),
+    ).toEqual({ lostReason: "other", detalhe: "Contato de teste" });
+  });
+
+  it("o motivo de SISTEMA digitado no detalhe não vira atalho para fora da métrica", () => {
+    expect(
+      motivoEscolhidoNaPerda({
+        escolhido: "other",
+        textoOutro: MOTIVO_DA_TRANSFERENCIA,
+        motivosCadastrados: [],
+      }),
+    ).toEqual({ lostReason: "other", detalhe: MOTIVO_DA_TRANSFERENCIA });
   });
 });

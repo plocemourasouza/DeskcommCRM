@@ -51,6 +51,14 @@ export interface EncerraDemandaInput {
    */
   motivo?: string | null;
   /**
+   * Só em `lost`: o detalhe de "Outro motivo" (2026-10-21) — o texto livre que a
+   * pessoa digitou ao escolher o canônico `other`. Não vai para `lost_reason` (o
+   * trigger `fn_validate_lost_reason_required` o recusaria, e era esse o beco sem
+   * saída da janela de perder): fica na linha da timeline ("Perdido — other
+   * (<detalhe>)"), no `payload.lost_reason_detail` dela e no audit `lead.lost`.
+   */
+  detalhe?: string | null;
+  /**
    * A razão da linha na timeline, quando o desfecho padrão ("Ganho" /
    * "Perdido — <motivo>") diria algo FALSO a quem lê. Hoje só a troca de funil a
    * usa: a origem fecha como perda porque é o único desfecho que o schema oferece
@@ -243,6 +251,7 @@ export async function encerraDemanda(
     updated_at: new Date().toISOString(),
   };
   if (input.desfecho === "lost") patch.lost_reason = input.motivo;
+  const detalheDaPerda = input.desfecho === "lost" ? (input.detalhe ?? "").trim() : "";
   // O ganho espelha a perda na MESMA escrita: `won_reason` só entra quando há
   // motivo (a coluna é nullable e sem CHECK — a obrigatoriedade é do funil,
   // decidida acima, nunca do banco).
@@ -303,10 +312,13 @@ export async function encerraDemanda(
     // bloco "vocabulario de dominio persistido" em `lib/i18n/dicionario.ts`.
     reason:
       input.razaoNaTimeline ??
-      (input.desfecho === "won" ? "Ganho" : razaoDaPerdaNaTimeline(input.motivo ?? "")),
+      (input.desfecho === "won"
+        ? "Ganho"
+        : razaoDaPerdaNaTimeline(input.motivo ?? "", detalheDaPerda)),
     payload: {
       ...(input.payloadNaTimeline ?? {}),
       desfecho: input.desfecho,
+      ...(detalheDaPerda ? { lost_reason_detail: detalheDaPerda } : {}),
       from_stage_id: (lead as { stage_id: string }).stage_id,
       to_stage_id: (stage as { id: string }).id,
     },
@@ -336,6 +348,7 @@ export async function encerraDemanda(
       from_stage_id: (lead as { stage_id: string }).stage_id,
       to_stage_id: (stage as { id: string }).id,
       ...(input.desfecho === "lost" ? { lost_reason: input.motivo } : {}),
+      ...(detalheDaPerda ? { lost_reason_detail: detalheDaPerda } : {}),
       ...(input.desfecho === "won" && input.motivo?.trim()
         ? { won_reason: input.motivo.trim() }
         : {}),

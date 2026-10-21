@@ -49,7 +49,13 @@ export async function POST(
         requestId,
         idioma: authz.user.idioma,
       },
-      { leadId, desfecho: "lost", motivo: input.lost_reason },
+      {
+        leadId,
+        desfecho: "lost",
+        motivo: input.lost_reason,
+        // O detalhe de "Outro motivo" viaja à parte do motivo — ver `loseLeadSchema`.
+        ...(input.lost_reason_detail ? { detalhe: input.lost_reason_detail } : {}),
+      },
     );
     return ok(lead, { requestId });
   } catch (err) {

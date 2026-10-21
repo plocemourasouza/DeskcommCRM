@@ -123,8 +123,13 @@ export type VereditoDoMotivoDaPerda =
  * lote (`leads/bulk`). Enquanto o lote escrevia só "Movido de X para Perdido",
  * o dossiê de quem foi perdido em lote não dizia por quê (#2868).
  */
-export function razaoDaPerdaNaTimeline(motivo: string): string {
-  return `Perdido — ${motivo}`;
+export function razaoDaPerdaNaTimeline(motivo: string, detalhe?: string | null): string {
+  // O detalhe de "Outro motivo" (2026-10-21) entra entre parênteses: o motivo
+  // gravado continua sendo o que a coluna tem (`other`), e o texto que a pessoa
+  // digitou — que não é motivo e o trigger recusaria como tal — fica legível
+  // ao lado dele, no dossiê do negócio.
+  const extra = (detalhe ?? "").trim();
+  return extra ? `Perdido — ${motivo} (${extra})` : `Perdido — ${motivo}`;
 }
 
 /** Esta etapa fecha o negócio como PERDA? (Coluna do banco, nunca o nome da etapa.) */

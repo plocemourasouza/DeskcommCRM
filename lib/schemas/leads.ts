@@ -176,6 +176,15 @@ export function categoriaPadraoDoMotivo(valor: string): CategoriaDePerda | undef
  */
 export const loseLeadSchema = z.object({
   lost_reason: z.string().min(1, "lost_reason é obrigatório").max(500),
+  /**
+   * O detalhe de "Outro motivo" (2026-10-21): o texto livre que a pessoa digitou.
+   * NÃO é motivo — o motivo é o canônico `other`, que o trigger
+   * `fn_validate_lost_reason_required` aceita em qualquer funil — e por isso não
+   * vai para `lost_reason`. Ele mora na linha da timeline e no audit da perda
+   * (`lib/leads/encerramento.ts`). O lote (`bulkLeadActionSchema`, ação `move`)
+   * leva o mesmo campo.
+   */
+  lost_reason_detail: z.string().trim().max(500).optional(),
 });
 export type LoseLeadInput = z.infer<typeof loseLeadSchema>;
 
@@ -260,6 +269,8 @@ export const bulkLeadActionSchema = z.discriminatedUnion("action", [
        * `lib/leads/motivo-da-perda.ts`.
        */
       lost_reason: z.string().max(500).optional(),
+      /** O detalhe de "Outro motivo" — o mesmo campo da `/lose`; só vale para quem perde agora. */
+      lost_reason_detail: z.string().trim().max(500).optional(),
     }),
   }),
   z.object({

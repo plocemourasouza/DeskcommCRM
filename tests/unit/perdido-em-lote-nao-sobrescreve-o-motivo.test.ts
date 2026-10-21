@@ -198,14 +198,14 @@ function sessao(estado: Estado) {
   vi.mocked(createAdminClient).mockReturnValue(adminStub() as never);
 }
 
-function pedido() {
+function pedido(params: Record<string, unknown> = { lost_reason: MOTIVO_DO_LOTE }) {
   return new NextRequest("http://local/api/v1/leads/bulk", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
       action: "move",
       lead_ids: [CARD_ABERTO, CARD_JA_PERDIDO],
-      params: { stage_id: PERDIDO_ID, lost_reason: MOTIVO_DO_LOTE },
+      params: { stage_id: PERDIDO_ID, ...params },
     }),
   });
 }
@@ -287,5 +287,37 @@ describe("perder em lote (#2887) não sobrescreve o motivo de quem já estava pe
     // O agregado da OPERAÇÃO continua: ele não é a perda de ninguém, é o
     // registro de que N negócios foram alterados numa chamada só.
     expect(chamadas.filter((c) => c.action === "lead.bulk_action")).toHaveLength(1);
+  });
+
+  it("'Outro motivo' em lote (2026-10-21): o banco recebe `other`, o detalhe vai para a linha e o audit de quem perdeu agora", async () => {
+    const res = await POST(
+      pedido({ lost_reason: "other", lost_reason_detail: "Contato de teste" }),
+    );
+    expect(res.status).toBe(200);
+
+    // O detalhe NUNCA vai para a função do banco como motivo — o trigger o recusaria.
+    expect(estado.rpcArgs?.p_lost_reason).toBe("other");
+
+    const atividades = vi.mocked(emitLeadActivity).mock.calls.map((c) => c[1]);
+    const doAberto = atividades.find((a) => a.leadId === CARD_ABERTO);
+    expect(doAberto?.reason).toBe("Perdido — other (Contato de teste)");
+    expect(doAberto?.payload).toMatchObject({
+      desfecho: "lost",
+      lost_reason_detail: "Contato de teste",
+    });
+
+    // Quem JÁ estava perdido não ganhou motivo novo — nem detalhe.
+    const doJaPerdido = atividades.find((a) => a.leadId === CARD_JA_PERDIDO);
+    expect(doJaPerdido?.reason).not.toContain("Contato de teste");
+    expect(doJaPerdido?.payload).not.toHaveProperty("lost_reason_detail");
+
+    const porLead = vi
+      .mocked(audit)
+      .mock.calls.map((c) => c[0])
+      .filter((c) => c.action === "lead.lost");
+    expect(porLead[0]?.metadata).toMatchObject({
+      lost_reason: "other",
+      lost_reason_detail: "Contato de teste",
+    });
   });
 });

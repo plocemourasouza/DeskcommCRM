@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { requireRole } from "@/lib/auth/require-role";
 import { createClient } from "@/lib/supabase/server";
+import { encerraDemanda } from "@/lib/leads/encerramento";
 
 vi.mock("@/lib/auth/require-role", () => ({ requireRole: vi.fn() }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: vi.fn() }));
@@ -48,6 +49,24 @@ describe("POST /api/v1/leads/[id]/lose", () => {
     });
   });
 
+  it("'Outro motivo': repassa o detalhe à parte para o encerramento, com o motivo canônico", async () => {
+    vi.mocked(encerraDemanda).mockResolvedValue({ lead: { id: LEAD_ID }, jaEstava: false });
+    const { POST } = await import("./route");
+
+    const response = await POST(
+      request(JSON.stringify({ lost_reason: "other", lost_reason_detail: "Contato de teste" })),
+      { params: Promise.resolve({ id: LEAD_ID }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect(vi.mocked(encerraDemanda)).toHaveBeenCalledWith(expect.anything(), expect.anything(), {
+      leadId: LEAD_ID,
+      desfecho: "lost",
+      motivo: "other",
+      detalhe: "Contato de teste",
+    });
+  });
+
   it("mantém body malformado como erro de JSON", async () => {
     const { POST } = await import("./route");
 
@@ -66,3 +85,7 @@ vi.mock("@/lib/impersonate/support", async (importOriginal) => ({
   requireSupportWrite: vi.fn(async () => null),
   authenticatedSessionId: vi.fn(async () => "f2200000-0000-4000-8000-000000000099"),
 }));
+
+// O encerramento é medido na suíte dele (`lib/leads/encerramento.test.ts`);
+// aqui só importa O QUE a rota entrega a ele.
+vi.mock("@/lib/leads/encerramento", () => ({ encerraDemanda: vi.fn() }));

@@ -10,6 +10,8 @@ vi.mock("@/lib/leads/activity-write-failure", () => ({
 }));
 
 import { encerraDemanda } from "./encerramento";
+import { audit as auditMock } from "@/lib/audit";
+import { emitLeadActivity as emitMock } from "@/lib/leads/activity-emitter";
 
 const ORG = "11111111-1111-4111-8111-111111111111";
 const OTHER_ORG = "22222222-2222-4222-8222-222222222222";
@@ -404,5 +406,53 @@ describe("encerraDemanda", () => {
     await expect(
       encerraDemanda(db.client as never, ctx, { leadId: LEAD, desfecho: "lost", motivo: "price" }),
     ).rejects.toMatchObject({ code: "internal_error", status: 500 });
+  });
+});
+
+describe("encerraDemanda — 'Outro motivo' com detalhe (2026-10-21)", () => {
+  beforeEach(() => {
+    vi.mocked(emitMock).mockClear();
+    vi.mocked(auditMock).mockClear();
+  });
+
+  it("grava `other` na coluna e guarda o detalhe na timeline e no audit — nunca como motivo", async () => {
+    const db = makeDb({ leads: [baseLead()], stages: baseStages() });
+
+    await encerraDemanda(db.client as never, ctx, {
+      leadId: LEAD,
+      desfecho: "lost",
+      motivo: "other",
+      detalhe: "  Contato de teste  ",
+    });
+
+    // A escrita que muda a etapa leva SÓ o motivo canônico — o trigger o aceita.
+    expect(db.updates[0]).toMatchObject({ lost_reason: "other", stage_id: LOST_STAGE });
+    expect(Object.values(db.updates[0] ?? {})).not.toContain("Contato de teste");
+
+    const linha = vi.mocked(emitMock).mock.calls[0]?.[1];
+    expect(linha?.type).toBe("demand_closed");
+    expect(linha?.reason).toBe("Perdido — other (Contato de teste)");
+    expect(linha?.payload).toMatchObject({
+      desfecho: "lost",
+      lost_reason_detail: "Contato de teste",
+    });
+
+    const registro = vi.mocked(auditMock).mock.calls.find((c) => c[0].action === "lead.lost")?.[0];
+    expect(registro?.metadata).toMatchObject({
+      lost_reason: "other",
+      lost_reason_detail: "Contato de teste",
+    });
+  });
+
+  it("sem detalhe a linha segue como sempre foi (controle)", async () => {
+    const db = makeDb({ leads: [baseLead()], stages: baseStages() });
+    await encerraDemanda(db.client as never, ctx, {
+      leadId: LEAD,
+      desfecho: "lost",
+      motivo: "other",
+    });
+    const linha = vi.mocked(emitMock).mock.calls[0]?.[1];
+    expect(linha?.reason).toBe("Perdido — other");
+    expect(linha?.payload).not.toHaveProperty("lost_reason_detail");
   });
 });

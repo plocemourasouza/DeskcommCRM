@@ -374,11 +374,18 @@ export async function POST(req: NextRequest): Promise<Response> {
       // sem motivo novo — a coluna não muda).
       const motivoQueFicou = (row: LeadMovidoEmLote) =>
         (motivoDoLote ?? "").trim() || (motivoDoCard.get(row.lead_id) ?? "").trim();
+      // O detalhe de "Outro motivo" (2026-10-21) acompanha o motivo DO LOTE — e só
+      // ele: o banco recebe o canônico (`other`), e o texto livre, que o trigger
+      // recusaria como motivo, fica na linha e no audit de quem perde agora.
+      const detalheDoLote = (motivoDoLote ?? "").trim()
+        ? (input.params.lost_reason_detail ?? "").trim()
+        : "";
 
       await Promise.all(
         movidos.map(async (row) => {
           const perdaNova = ehPerdaNova(row);
           const motivo = perdaNova ? motivoQueFicou(row) : "";
+          const detalhe = perdaNova ? detalheDoLote : "";
           const r = await emitLeadActivity(supabase, {
             organizationId,
             leadId: row.lead_id,
@@ -397,7 +404,7 @@ export async function POST(req: NextRequest): Promise<Response> {
             actor: { type: "user", id: user.id },
             reason:
               perdaNova && motivo.length > 0
-                ? razaoDaPerdaNaTimeline(motivo)
+                ? razaoDaPerdaNaTimeline(motivo, detalhe)
                 : stageChangeReason(
                     nomesEstagio.get(row.from_stage_id) ?? null,
                     nomesEstagio.get(input.params.stage_id) ?? null,
@@ -407,6 +414,7 @@ export async function POST(req: NextRequest): Promise<Response> {
               // `desfecho` que a `/lose` põe no payload da linha dela, e é o
               // que separa, para quem lê depois, "movido" de "perdido".
               ...(perdaNova ? { desfecho: "lost" } : {}),
+              ...(detalhe ? { lost_reason_detail: detalhe } : {}),
               from_stage_id: row.from_stage_id,
               to_stage_id: input.params.stage_id,
               pipeline_id: row.pipeline_id,
@@ -444,6 +452,7 @@ export async function POST(req: NextRequest): Promise<Response> {
                 from_stage_id: row.from_stage_id,
                 to_stage_id: input.params.stage_id,
                 lost_reason: motivo,
+                ...(detalhe ? { lost_reason_detail: detalhe } : {}),
               },
             });
           }

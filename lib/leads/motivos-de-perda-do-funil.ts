@@ -189,13 +189,54 @@ export function opcoesDeMotivoDePerda(motivosCadastrados: readonly string[]): Op
   return opcoes;
 }
 
+/** O que a janela de perder grava: o motivo e, só em "Outro", o detalhe à parte. */
+export interface MotivoEscolhido {
+  /** Vai para `lost_reason` — sempre um valor que o trigger aceita. */
+  lostReason: string;
+  /** O texto livre de "Outro", quando ele não é um motivo do vocabulário. */
+  detalhe?: string;
+}
+
+/**
+ * A escolha da janela de perder vira o que se grava (2026-10-21).
+ *
+ * ⚠️ O DETALHE DE "OUTRO" NÃO É MOTIVO. Até aqui ele ia COMO `lost_reason`, e
+ * `fn_validate_lost_reason_required` só aceita canônico ∪ cadastrado — então
+ * todo texto livre era recusado (na tela, antes do clique, desde a #918) e
+ * "Outro motivo" com detalhe era beco sem saída em TODO funil, configurado ou
+ * não. Um usuário real bateu nele em 2026-10-21.
+ *
+ * Agora: "Outro" grava o canônico `other` — que o trigger aceita em qualquer
+ * funil — e o texto digitado viaja à parte (`lost_reason_detail`), para a linha
+ * da timeline e o audit da perda (`lib/leads/encerramento.ts`). A única exceção
+ * é o texto que JÁ é um motivo aceito (um rótulo cadastrado, ou um código
+ * canônico): aí ele mesmo é o motivo, e a perda conta no lugar certo do
+ * relatório em vez de cair em "Outro". O motivo de SISTEMA
+ * (`moved_to_another_pipeline`) não entra por aí — mesma razão de
+ * `opcoesDeMotivoDePerda` não oferecê-lo.
+ */
+export function motivoEscolhidoNaPerda(input: {
+  escolhido: string;
+  textoOutro: string;
+  motivosCadastrados: readonly string[];
+}): MotivoEscolhido {
+  if (input.escolhido !== OUTRO) return { lostReason: input.escolhido };
+  const texto = input.textoOutro.trim();
+  if (!texto) return { lostReason: OUTRO };
+  if (texto !== MOTIVO_DA_TRANSFERENCIA && motivoDePerdaAceito(texto, input.motivosCadastrados)) {
+    return { lostReason: texto };
+  }
+  return { lostReason: OUTRO, detalhe: texto };
+}
+
 /**
  * Este valor passa pelo trigger?
  *
  * `fn_validate_lost_reason_required` aceita canônico ∪ cadastrado no funil do
  * card. Repetir a regra aqui é o que evita o texto livre virar erro 22023
- * (`lost_reason_invalid`) DEPOIS do clique: a tela recusa antes, dizendo o que
- * fazer — que é o que a issue #918 pede por "validar os motivos do funil".
+ * (`lost_reason_invalid`) DEPOIS do clique. A janela não recusa mais nada com
+ * ela: decide só se o detalhe de "Outro" já é um motivo do vocabulário
+ * (`motivoEscolhidoNaPerda`) ou se vai à parte, com o motivo `other`.
  */
 export function motivoDePerdaAceito(valor: string, motivosCadastrados: readonly string[]): boolean {
   const texto = valor.trim();

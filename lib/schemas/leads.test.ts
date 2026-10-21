@@ -48,6 +48,21 @@ describe("loseLeadSchema", () => {
     const r = loseLeadSchema.safeParse({ lost_reason: "Sem orçamento" });
     expect(r.success).toBe(true);
   });
+
+  it("keeps the 'Outro motivo' detail apart from the reason (trimmed, ≤500)", () => {
+    const r = loseLeadSchema.safeParse({
+      lost_reason: "other",
+      lost_reason_detail: "  Contato de teste ",
+    });
+    expect(r.success && r.data).toEqual({
+      lost_reason: "other",
+      lost_reason_detail: "Contato de teste",
+    });
+    expect(
+      loseLeadSchema.safeParse({ lost_reason: "other", lost_reason_detail: "x".repeat(501) })
+        .success,
+    ).toBe(false);
+  });
 });
 
 describe("bulkLeadActionSchema", () => {
