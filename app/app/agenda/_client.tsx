@@ -13,6 +13,7 @@ import { addDays, format, startOfDay, startOfMonth, startOfWeek } from "date-fns
 import * as React from "react";
 
 import { AvisoDaConexaoGoogle } from "./_components/AvisoDaConexaoGoogle";
+import { AvisoDaEquipeSemAutorizacaoGoogle } from "./_components/AvisoDaEquipeSemAutorizacaoGoogle";
 import { CartaoDaConexaoGoogle } from "./_components/CartaoDaConexaoGoogle";
 
 import { AgendaInterativa } from "@/components/agenda/AgendaInterativa";
@@ -28,6 +29,7 @@ import { janelaDoMesVisivel } from "@/lib/agenda/janela-do-mes-visivel";
 import { recorteDaGrade as recorteDaGradeDe } from "@/lib/agenda/recorte-da-grade";
 import { resolverResponsavelDoPainel } from "@/lib/agenda/responsavel-do-painel";
 import { useVinculoDaMarcacao } from "@/lib/agenda/vinculo-da-marcacao";
+import type { SituacaoDaConexao } from "@/lib/agenda/tipos";
 import { Button } from "@/components/ui/button";
 import { PainelDeMarcacao } from "@/components/agenda/PainelDeMarcacao";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -81,6 +83,8 @@ export function AgendaClient({
   usuarioId,
   googleConfigurado,
   contaConectada,
+  situacaoDaConexao,
+  equipeSemAutorizacao = [],
   enderecoDeRetorno,
   faltaNoGoogle,
   linkDeConfiguracaoDoGoogle,
@@ -104,6 +108,10 @@ export function AgendaClient({
   usuarioId: string;
   googleConfigurado: boolean;
   contaConectada?: string | null;
+  /** Pior situação das conexões de quem está logado — ver `page.tsx`. */
+  situacaoDaConexao?: SituacaoDaConexao | null;
+  /** `user_id` de colegas cuja conexão Google perdeu a autorização. */
+  equipeSemAutorizacao?: string[];
   enderecoDeRetorno?: string;
   faltaNoGoogle: string[];
   /** Preenchido só para quem administra a instalação — ver `page.tsx`. */
@@ -475,11 +483,14 @@ export function AgendaClient({
         <EntradaDaAgenda onContext={onContext} />
       </React.Suspense>
 
+      <AvisoDaEquipeSemAutorizacaoGoogle donosIds={equipeSemAutorizacao} pessoas={pessoas} />
+
       <CartaoDaConexaoGoogle
         configurado={googleConfigurado}
         falta={faltaNoGoogle}
         linkDeConfiguracao={linkDeConfiguracaoDoGoogle}
         contaConectada={contaConectada}
+        situacaoDaConexao={situacaoDaConexao}
         enderecoDeRetorno={enderecoDeRetorno}
       />
 

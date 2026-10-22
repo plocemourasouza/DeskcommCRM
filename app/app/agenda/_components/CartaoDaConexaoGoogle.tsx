@@ -6,6 +6,11 @@ import { Button } from "@/components/ui/button";
 import * as React from "react";
 import { useRouter } from "next/navigation";
 
+import {
+  CONEXOES_SEM_AUTORIZACAO,
+  ROTULO_DA_SITUACAO_DA_CONEXAO,
+  type SituacaoDaConexao,
+} from "@/lib/agenda/tipos";
 import { GoogleLogo } from "@/lib/ui/icons";
 
 /**
@@ -29,6 +34,7 @@ export function CartaoDaConexaoGoogle({
   configurado,
   falta,
   contaConectada,
+  situacaoDaConexao,
   enderecoDeRetorno,
   linkDeConfiguracao,
 }: {
@@ -42,6 +48,12 @@ export function CartaoDaConexaoGoogle({
   /** O que falta, PELO NOME — para a tela dizer em vez de só esconder o botão. */
   falta: string[];
   contaConectada?: string | null;
+  /**
+   * A pior situação entre as conexões de quem está logado. `token_expired`,
+   * `scope_missing` e `error` NÃO são "conectada": o cartão diz o rótulo e
+   * oferece reconectar. Ausente = saudável (compatível com quem não passa).
+   */
+  situacaoDaConexao?: SituacaoDaConexao | null;
   /** O endereço EXATO que o Google exige registrado. Ver o bloco no JSX. */
   enderecoDeRetorno?: string;
 }) {
@@ -119,6 +131,8 @@ export function CartaoDaConexaoGoogle({
   }
 
   if (contaConectada) {
+    const semAutorizacao =
+      !!situacaoDaConexao && CONEXOES_SEM_AUTORIZACAO.includes(situacaoDaConexao);
     return (
       <div
         data-testid="google-conectado"
@@ -126,9 +140,24 @@ export function CartaoDaConexaoGoogle({
       >
         <GoogleLogo size={16} weight="bold" className="shrink-0 text-text-muted" aria-hidden />
         <p className="min-w-0 flex-1 truncate text-sm">
-          <span className="text-text-muted">{t("Agenda conectada:")} </span>
+          {semAutorizacao ? (
+            <span className="font-medium text-warning">
+              {t(ROTULO_DA_SITUACAO_DA_CONEXAO[situacaoDaConexao])}:{" "}
+            </span>
+          ) : (
+            <span className="text-text-muted">{t("Agenda conectada:")} </span>
+          )}
           <span className="font-medium">{contaConectada}</span>
         </p>
+        {semAutorizacao ? (
+          <a
+            href="/api/v1/agenda/google/connect"
+            data-testid="google-reconectar"
+            className="text-xs font-medium text-accent underline underline-offset-2 hover:text-accent-strong"
+          >
+            {t("Reconectar")}
+          </a>
+        ) : null}
         <a href="/app/settings/tenant/agenda" className="text-xs underline">{t("Configurar suas agendas")}</a>
         <Button
           variant="outline"

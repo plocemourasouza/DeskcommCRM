@@ -9,7 +9,11 @@ import {
 } from "@/lib/agenda/google/config";
 import { donosDaAgenda } from "@/lib/agenda/donos-da-agenda";
 import { lerOcupacaoExterna } from "@/lib/agenda/ocupacao-externa";
-import { PROVEDOR_GOOGLE } from "@/lib/agenda/tipos";
+import {
+  CONEXOES_SEM_AUTORIZACAO,
+  PROVEDOR_GOOGLE,
+  type SituacaoDaConexao,
+} from "@/lib/agenda/tipos";
 import { requireAuth, resolveActiveOrg } from "@/lib/auth/server";
 import { diaDeHojeNoFuso, semanaSemente } from "@/lib/agenda/semana-semente";
 import { fusoUtilizavel } from "@/lib/tempo/fusos";
@@ -239,6 +243,28 @@ export default async function AgendaPage() {
     .neq("status", "disconnected")
     .order("account_email");
 
+  // A pior situação entre as conexões de quem está logado: uma `token_expired`
+  // não pode ser chamada de "conectada" só porque há linha (o cartão decide).
+  const situacaoDaConexao =
+    (conexoes ?? [])
+      .map((c) => c.status as SituacaoDaConexao)
+      .find((st) => CONEXOES_SEM_AUTORIZACAO.includes(st)) ?? null;
+
+  // A equipe: conexões de OUTRAS pessoas que perderam a autorização. A RLS
+  // (`calendar_connections_dono_ou_manager_read`) entrega todas a manager+ e só
+  // as próprias aos demais — então para um membro isto devolve vazio, e está certo.
+  // `organization_id` explícito, nunca inferido pela RLS.
+  const { data: conexoesDaEquipe } = await supabase
+    .from("calendar_connections")
+    .select("user_id")
+    .eq("organization_id", activeOrg.orgId)
+    .eq("provider", PROVEDOR_GOOGLE)
+    .in("status", [...CONEXOES_SEM_AUTORIZACAO])
+    .neq("user_id", user.id);
+  const equipeSemAutorizacao = [
+    ...new Set((conexoesDaEquipe ?? []).map((c) => c.user_id as string)),
+  ];
+
   // `await`: a credencial pode vir do BANCO agora (migration 0201), não só do
   // `.env`. `faltaParaConectarOGoogle` já só devolve nomes de variável quando as
   // DUAS fontes estão vazias — mandar editar o `.env` de uma instalação que
@@ -266,6 +292,8 @@ export default async function AgendaPage() {
       usuarioId={user.id}
       googleConfigurado={googleConfigurado}
       contaConectada={conexoes?.map((c) => c.account_email).join(", ") || null}
+      situacaoDaConexao={situacaoDaConexao}
+      equipeSemAutorizacao={equipeSemAutorizacao}
       enderecoDeRetorno={enderecoDeRetorno(origemLocal ?? undefined)}
       faltaNoGoogle={faltaNoGoogle}
       // SÓ para quem administra a INSTALAÇÃO. A tela do app OAuth vive em

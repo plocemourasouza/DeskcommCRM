@@ -233,6 +233,18 @@ export const CONEXAO_CONTA_COMO_OCUPACAO: Record<SituacaoDaConexao, boolean> = {
 export const CONEXOES_QUE_NAO_CONTAM: readonly SituacaoDaConexao[] =
   SITUACOES_DA_CONEXAO.filter((s) => !CONEXAO_CONTA_COMO_OCUPACAO[s]);
 
+/**
+ * As situações em que a conexão EXISTE mas perdeu a autorização: o sistema não
+ * consegue mais ler nem escrever na agenda do Google até a pessoa reconectar.
+ * A tela não pode chamar isso de "conectada" — é o que decide o cartão e o
+ * aviso da equipe na Agenda.
+ */
+export const CONEXOES_SEM_AUTORIZACAO: readonly SituacaoDaConexao[] = [
+  "token_expired",
+  "scope_missing",
+  "error",
+];
+
 /** Quem fornece a agenda conectada. */
 export const PROVEDORES_DE_AGENDA = ["google_calendar"] as const;
 export type ProvedorDeAgenda = (typeof PROVEDORES_DE_AGENDA)[number];

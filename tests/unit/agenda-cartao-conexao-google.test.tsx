@@ -124,4 +124,46 @@ describe("cartão da conexão do Google", () => {
     expect(screen.getByTestId("o-que-falta").textContent).toContain("GOOGLE_CALENDAR_CLIENT_ID");
     expect(screen.queryByTestId("desconectar-google")).toBeNull();
   });
+
+  // ---- a conexão que NÃO está saudável não pode se passar por conectada ----
+  // `calendar_connections.status` tem sete valores e a tela só lia "há linha".
+  // Uma conexão `token_expired` mostrava "Agenda conectada" e escondia
+  // "Conectar Google": a pessoa não tinha por onde reconectar.
+  it.each([
+    ["token_expired", "Reconecte sua agenda"],
+    ["scope_missing", "Falta permissão"],
+    ["error", "Com erro"],
+  ] as const)("situação %s: não diz 'conectada', diz o rótulo e oferece reconectar", (situacao, rotulo) => {
+    render(
+      <CartaoDaConexaoGoogle
+        configurado
+        falta={[]}
+        contaConectada="ana@clinica.com.br"
+        situacaoDaConexao={situacao}
+      />,
+    );
+    expect(screen.queryByText(/Agenda conectada:/)).toBeNull();
+    expect(screen.getByTestId("google-conectado").textContent).toContain(rotulo);
+    expect(screen.getByTestId("google-conectado").textContent).toContain("ana@clinica.com.br");
+    expect(screen.getByTestId("google-reconectar").getAttribute("href")).toBe(
+      "/api/v1/agenda/google/connect",
+    );
+    expect(screen.getByTestId("desconectar-google")).toBeTruthy();
+  });
+
+  it.each(["healthy", "connecting", "rate_limited"] as const)(
+    "situação %s: segue como conectada, sem botão de reconectar",
+    (situacao) => {
+      render(
+        <CartaoDaConexaoGoogle
+          configurado
+          falta={[]}
+          contaConectada="ana@clinica.com.br"
+          situacaoDaConexao={situacao}
+        />,
+      );
+      expect(screen.getByText(/Agenda conectada:/)).toBeTruthy();
+      expect(screen.queryByTestId("google-reconectar")).toBeNull();
+    },
+  );
 });
