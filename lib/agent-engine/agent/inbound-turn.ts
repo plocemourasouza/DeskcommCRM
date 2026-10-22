@@ -1595,6 +1595,80 @@ export async function avisarCapacidadesAusentes(
 }
 
 /**
+ * Fase 3: grava a decisão de roteamento e a aderência da conversa ao agente.
+ * Fire-and-forget — falha de telemetria nunca derruba a resposta ao lead.
+ *
+ * UM ESCRITOR, CHAMADO ANTES DE O AGENTE ESCOLHIDO AGIR. Só existia no fim do
+ * caminho automático, e o assistido devolve antes dele, no rascunho. Só que
+ * `fn_reply_begin` recusa rascunho de agente diferente do aderido
+ * (`reply_agent_stale`, a guarda contra troca de agente no meio da geração) —
+ * então a passagem de um agente automático para um assistido na mesma conversa
+ * morria em todas as tentativas: o roteador escolhia o assistido, a aderência
+ * seguia no automático, e nem a escolha deixava linha em `ai_router_decisions`.
+ * Medido numa instalação local em 2026-10-22 (todo `inbound_turn` da conversa
+ * `dead` com `reply_agent_stale`); prova em
+ * `tests/unit/assistido-herda-a-decisao-do-roteador.test.ts`.
+ *
+ * Os ramos que chamam são mutuamente exclusivos (o assistido devolve depois do
+ * rascunho), então cada turno grava no máximo uma decisão. Sem roteador
+ * (`routerId === null`) não há o que gravar, como sempre foi.
+ */
+async function gravarDecisaoDoRoteador(
+  pool: pg.Pool,
+  args: {
+    tenantId: string;
+    conversationId: string;
+    jobId: string;
+    routed: {
+      config: PublishedAgentConfig | null;
+      routerId: string | null;
+      intentName: string | null;
+      confidence: number | null;
+      outcome: string;
+    };
+    log: Logger;
+  },
+): Promise<void> {
+  const { tenantId, conversationId, jobId, routed, log } = args;
+  if (routed.routerId === null) return;
+  const agentConfig = routed.config;
+  try {
+    if (agentConfig !== null) {
+      await pool.query(
+        `update conversations
+         set active_ai_agent_id = $3, active_intent = $4, active_agent_set_at = now()
+         where organization_id = $1 and id = $2`,
+        [tenantId, conversationId, agentConfig.agentId, routed.intentName],
+      );
+    }
+    // A intenção e a confiança que ROTEARAM — do classificador, ou do Jev
+    // quando a tarefa do roteador dele decide (`resolve-turn-agent.ts`). Quem
+    // decidiu mora em `llm_calls` do mesmo `job_id` (purpose `intent_router`,
+    // `origem_da_escolha = 'jev'`); o único leitor desta tabela
+    // (`app/api/v1/ai/evolution`) conta roteamento, não quem o fez.
+    await pool.query(
+      `insert into ai_router_decisions
+         (organization_id, router_id, conversation_id, intent_name, confidence, agent_id, outcome, job_id)
+       values ($1,$2,$3,$4,$5,$6,$7,$8)`,
+      [
+        tenantId,
+        routed.routerId,
+        conversationId,
+        routed.intentName,
+        routed.confidence,
+        agentConfig?.agentId ?? null,
+        routed.outcome,
+        jobId,
+      ],
+    );
+  } catch (err) {
+    log.warn('decisão do router não gravada', {
+      error: (err instanceof Error ? err.message : String(err)).slice(0, 120),
+    });
+  }
+}
+
+/**
  * AS DETERMINÍSTICAS DO INBOUND, TAMBÉM ANTES DO RASCUNHO DO ASSISTIDO (#1648).
  *
  * O ramo assistido devolvia ANTES das detecções de STOP/opt-out e de pedido de
@@ -2166,6 +2240,14 @@ async function executarTurnoDoAgente(
     ) {
       return;
     }
+    // A escolha do roteador vale ANTES do rascunho — ver `gravarDecisaoDoRoteador`.
+    await gravarDecisaoDoRoteador(pool, {
+      tenantId,
+      conversationId: input.conversationId,
+      jobId: job.id,
+      routed,
+      log: runLog,
+    });
     const { generateReplyDraft } = await import('./reply-drafts');
     await generateReplyDraft(pool, deps, {
       organizationId: tenantId,
@@ -2270,42 +2352,14 @@ async function executarTurnoDoAgente(
   }
 
   // Fase 3: grava a decisão de roteamento e a aderência da conversa ao agente.
-  // Fire-and-forget — falha de telemetria nunca derruba a resposta ao lead.
-  if (!preview && routed.routerId !== null) {
-    try {
-      if (agentConfig !== null) {
-        await pool.query(
-          `update conversations
-           set active_ai_agent_id = $3, active_intent = $4, active_agent_set_at = now()
-           where organization_id = $1 and id = $2`,
-          [tenantId, input.conversationId, agentConfig.agentId, routed.intentName],
-        );
-      }
-      // A intenção e a confiança que ROTEARAM — do classificador, ou do Jev
-      // quando a tarefa do roteador dele decide (`resolve-turn-agent.ts`). Quem
-      // decidiu mora em `llm_calls` do mesmo `job_id` (purpose `intent_router`,
-      // `origem_da_escolha = 'jev'`); o único leitor desta tabela
-      // (`app/api/v1/ai/evolution`) conta roteamento, não quem o fez.
-      await pool.query(
-        `insert into ai_router_decisions
-           (organization_id, router_id, conversation_id, intent_name, confidence, agent_id, outcome, job_id)
-         values ($1,$2,$3,$4,$5,$6,$7,$8)`,
-        [
-          tenantId,
-          routed.routerId,
-          input.conversationId,
-          routed.intentName,
-          routed.confidence,
-          agentConfig?.agentId ?? null,
-          routed.outcome,
-          liveJob().id,
-        ],
-      );
-    } catch (err) {
-      runLog.warn('decisão do router não gravada', {
-        error: (err instanceof Error ? err.message : String(err)).slice(0, 120),
-      });
-    }
+  if (!preview) {
+    await gravarDecisaoDoRoteador(pool, {
+      tenantId,
+      conversationId: input.conversationId,
+      jobId: liveJob().id,
+      routed,
+      log: runLog,
+    });
   }
   // #2155 — A INTENÇÃO TAMBÉM DIZ PARA ONDE O CARD VAI. O roteador escolhia o
   // agente e o card ficava no funil de entrada: o agente do produto não escrevia
@@ -5720,6 +5774,14 @@ export function createInboundTurnHandler(deps: InboundTurnDeps) {
       ) {
         return;
       }
+      // A escolha do roteador vale ANTES do rascunho — ver `gravarDecisaoDoRoteador`.
+      await gravarDecisaoDoRoteador(pool, {
+        tenantId: job.organization_id,
+        conversationId: payload.conversation_id,
+        jobId: job.id,
+        routed: resolvedAgent,
+        log: deps.log,
+      });
       const { generateReplyDraft } = await import('./reply-drafts');
       if (!job.contact_id) throw new Error('reply_without_contact');
       await generateReplyDraft(pool, deps, {

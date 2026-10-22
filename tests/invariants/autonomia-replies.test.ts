@@ -332,3 +332,34 @@ it("feedback estruturado preserva correção e nova mensagem admite segunda apro
   expect(second.id).not.toBe(d.id);
   expect(await approve(f, second)).toBeTruthy();
 });
+
+// Passagem automático → assistido na mesma conversa (medido em 2026-10-22):
+// `fn_reply_begin` recusa o rascunho enquanto a aderência é de OUTRO agente — a
+// guarda é legítima e fica. Quem tem de mudar a aderência ANTES de rascunhar é
+// o turno, com o mesmo UPDATE de `gravarDecisaoDoRoteador` (inbound-turn.ts);
+// a ordem do lado TypeScript é medida em
+// tests/unit/assistido-herda-a-decisao-do-roteador.test.ts.
+it("aderência a outro agente barra o rascunho; a aderência gravada pelo turno o libera", async () => {
+  const f = await fixture();
+  const automatico = randomUUID();
+  await pool.query(
+    "insert into ai_agents(id,organization_id,name,system_prompt,operation_mode) values($1,$2,'Recepção','Atenda.','automatic')",
+    [automatico, f.org],
+  );
+  await pool.query(
+    "update conversations set active_ai_agent_id=$3 where organization_id=$1 and id=$2",
+    [f.org, f.conversation, automatico],
+  );
+  await expect(begin(f)).rejects.toMatchObject({ message: "reply_agent_stale", code: "PT409" });
+  expect(
+    (await pool.query("select count(*)::int as n from ai_reply_drafts where organization_id=$1", [f.org])).rows[0].n,
+  ).toBe(0);
+  await pool.query(
+    `update conversations
+     set active_ai_agent_id = $3, active_intent = $4, active_agent_set_at = now()
+     where organization_id = $1 and id = $2`,
+    [f.org, f.conversation, f.agent, "orcamento"],
+  );
+  const d = await begin(f);
+  expect(d).toMatchObject({ agent_id: f.agent, status: "generating" });
+});
