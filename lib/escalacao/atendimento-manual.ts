@@ -118,7 +118,8 @@ export const PRAZO_DO_SILENCIO_MS = PRAZO_PADRAO_DO_SILENCIO_MINUTOS * 60 * 1000
  * Lê `settings.routing.manual_reply_silence_minutes` sem nunca lançar.
  *
  * Ausente, nulo, não-número, não-finito ou fora da faixa (5 min a 24 h) é o
- * padrão de 60. Defensivo porque `settings` é jsonb livre: um valor estragado
+ * padrão de 60. A exceção é `0`: "não silenciar" — a IA continua atendendo
+ * depois de uma resposta pelo celular (decisão do dono do produto). Defensivo porque `settings` é jsonb livre: um valor estragado
  * gravado à mão não pode virar `NaN` em `bot_silenced_until` — o efeito seria
  * a IA falando por cima do humano, que é o defeito que este módulo existe para
  * não ter.
@@ -128,6 +129,7 @@ export function lerPrazoDoSilencioManualMinutos(settings: unknown): number {
   const valor = (routing as { manual_reply_silence_minutes?: unknown } | null)
     ?.manual_reply_silence_minutes;
   if (typeof valor !== "number" || !Number.isFinite(valor)) return PRAZO_PADRAO_DO_SILENCIO_MINUTOS;
+  if (valor === 0) return 0;
   if (valor < PRAZO_MIN_MINUTOS || valor > PRAZO_MAX_MINUTOS) return PRAZO_PADRAO_DO_SILENCIO_MINUTOS;
   return Math.floor(valor);
 }
@@ -202,7 +204,8 @@ export interface PausaPorAtendimentoManualInput {
  * Pausa a IA numa conversa porque uma pessoa respondeu por fora do CRM, pelo
  * prazo da empresa (`lerPrazoDoSilencioManualMinutos`; padrão de 60 min) a
  * contar de `agora`. Devolve `true` se gravou (pausa nova ou prazo renovado),
- * `false` se havia silêncio mais longo em vigor ou se falhou.
+ * `false` se havia silêncio mais longo em vigor, se a empresa ajustou o prazo
+ * para 0 (não silenciar; nunca vale para a pausa `duravel`) ou se falhou.
  */
 export async function pausarIaPorAtendimentoManual(
   admin: SupabaseClient,
@@ -213,9 +216,18 @@ export async function pausarIaPorAtendimentoManual(
 
   try {
     // Dentro do `try`: um instante inválido não pode derrubar a ingestão.
-    const propostoMs = input.duravel
+    const prazoMs = input.duravel
       ? Number.POSITIVE_INFINITY
-      : agora.getTime() + (await prazoDoSilencioDaEmpresaMs(admin, input.organizationId));
+      : await prazoDoSilencioDaEmpresaMs(admin, input.organizationId);
+    if (prazoMs === 0) {
+      // Empresa configurada com 0 = "não silenciar": a IA segue atendendo.
+      logger.info("[atendimento-manual] prazo 0 — IA não pausada", {
+        organization_id: input.organizationId,
+        conversation_id: input.conversationId,
+      });
+      return false;
+    }
+    const propostoMs = input.duravel ? Number.POSITIVE_INFINITY : agora.getTime() + prazoMs;
     const gravado = input.duravel ? "infinity" : new Date(propostoMs).toISOString();
 
     const { data: atual, error: readErr } = await admin

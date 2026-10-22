@@ -317,6 +317,32 @@ describe("pausarIaPorAtendimentoManual — o prazo é o da EMPRESA (#2005)", () 
     expect(silenciadaAte(updates[0]!).getTime()).toBe(T0.getTime() + PRAZO_DO_SILENCIO_MS);
   });
 
+  it("empresa com 0 NÃO silencia: não grava nada e devolve false", async () => {
+    const { admin, updates } = adminComAjuste({
+      settings: { routing: { manual_reply_silence_minutes: 0 } },
+    });
+    const pausou = await pausarIaPorAtendimentoManual(admin, {
+      organizationId: ORG,
+      conversationId: CONV,
+      agora: T0,
+    });
+    expect(pausou).toBe(false);
+    expect(updates).toHaveLength(0);
+  });
+
+  it("empresa com 0 AINDA pausa de forma durável (#off do celular)", async () => {
+    const { admin, updates } = adminComAjuste({
+      settings: { routing: { manual_reply_silence_minutes: 0 } },
+    });
+    await pausarIaPorAtendimentoManual(admin, {
+      organizationId: ORG,
+      conversationId: CONV,
+      agora: T0,
+      duravel: true,
+    });
+    expect(updates[0]!.bot_silenced_until).toBe("infinity");
+  });
+
   it("pausa durável (#off) nem consulta o ajuste: grava 'infinity'", async () => {
     const { admin, updates } = adminComAjuste({
       settings: { routing: { manual_reply_silence_minutes: 15 } },

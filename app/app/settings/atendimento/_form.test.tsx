@@ -120,7 +120,19 @@ describe("Distribuição de atendimento — silêncio da IA depois de resposta p
     expect(corpoDoPatch()).toMatchObject({ manual_reply_silence_minutes: 15 });
   });
 
-  it("empresa com 15 min salvos vê 15 no campo", () => {
+  it("o campo aceita 0 (não silenciar): min=0, ajuda explica, e o corpo salvo leva 0", async () => {
+  render(<AtendimentoForm initial={inicial} />);
+  const campo = screen.getByLabelText(ROTULO);
+  expect(campo).toHaveAttribute("min", "0");
+  expect(
+    screen.getByText(/0 = a IA não fica calada; ela continua atendendo e lê a sua mensagem como da equipe\./),
+  ).toBeInTheDocument();
+  fireEvent.change(campo, { target: { value: "0" } });
+  fireEvent.click(screen.getByRole("button", { name: "Salvar" }));
+  expect(corpoDoPatch()).toMatchObject({ manual_reply_silence_minutes: 0 });
+});
+
+it("empresa com 15 min salvos vê 15 no campo", () => {
     render(<AtendimentoForm initial={{ ...inicial, manual_reply_silence_minutes: 15 }} />);
     expect(screen.getByLabelText(ROTULO)).toHaveValue(15);
   });

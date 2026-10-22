@@ -58,6 +58,7 @@ import { emitirFalhaDeEntrega } from "@/lib/messaging/falha-de-entrega";
 import { previaDaMensagem } from "@/lib/messaging/previa-da-mensagem";
 import { aplicarAssinatura, configAssinatura, linhaDeAssinatura } from "@/lib/messaging/assinatura";
 import { nomeDoContato } from "@/lib/contacts/rotulo-do-contato";
+import { lerPrazoDoSilencioManualMinutos } from "@/lib/escalacao/atendimento-manual";
 import { nomesDosAtendentes } from "@/lib/users/nome-do-atendente";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Message } from "@/lib/types/messaging";
@@ -414,13 +415,30 @@ export function previewFrom(input: {
 const HUMAN_REPLY_SILENCE_MS = 5 * 60 * 1000;
 
 /**
+ * O silêncio que o Inbox aplica: o ajuste da empresa
+ * (`routing.manual_reply_silence_minutes`, o mesmo do celular) quando ela o
+ * configurou — `0` é "não silenciar" —, e os 5 min de sempre quando nunca o
+ * tocou (compatibilidade: quem não abriu a tela não vê mudança).
+ */
+export function prazoDoSilencioDoInboxMs(settings: unknown): number {
+  const valor = (settings as { routing?: { manual_reply_silence_minutes?: unknown } } | null)
+    ?.routing?.manual_reply_silence_minutes;
+  if (typeof valor !== "number" || !Number.isFinite(valor)) return HUMAN_REPLY_SILENCE_MS;
+  return lerPrazoDoSilencioManualMinutos(settings) * 60 * 1000;
+}
+
+/**
  * Postgres 'infinity' (handoff permanente — regex/tool/orquestrador) chega do PostgREST
  * como o literal texto "infinity", que `new Date(...)` não parseia. Nunca encurtar isso
  * para uma janela de 5min: se já está travado pra sempre, este helper não mexe.
  */
-function extendBotSilence(current: string | null, now: string): string | undefined {
-  if (current === "infinity") return undefined;
-  const candidate = new Date(new Date(now).getTime() + HUMAN_REPLY_SILENCE_MS);
+function extendBotSilence(
+  current: string | null,
+  now: string,
+  prazoMs: number,
+): string | undefined {
+  if (current === "infinity" || prazoMs === 0) return undefined;
+  const candidate = new Date(new Date(now).getTime() + prazoMs);
   if (current && new Date(current) >= candidate) return undefined;
   return candidate.toISOString();
 }
@@ -642,12 +660,14 @@ export async function sendMessageHandler(
   // nome do atendente com iniciais em maiúsculo; a IA, o nome configurável.
   const origemDoEmissor = origemDaMensagem(ctx.actor);
   let assinatura: string | null = null;
+  let settingsDaOrg: unknown = null;
   if (origemDoEmissor === "user" || origemDoEmissor === "ai") {
     const { data: orgAssinatura } = await supabase
       .from("organizations")
       .select("settings")
       .eq("id", ctx.organization_id)
       .maybeSingle();
+    settingsDaOrg = orgAssinatura?.settings ?? null;
     const configAss = configAssinatura(orgAssinatura?.settings);
     const coberta =
       (origemDoEmissor === "user" && configAss.humanos) ||
@@ -1354,7 +1374,11 @@ export async function sendMessageHandler(
     awaiting_since: c.last_inbound_at,
   };
   if (ctx.actor.type === "user") {
-    const silenceUntil = extendBotSilence(c.bot_silenced_until, now);
+    const silenceUntil = extendBotSilence(
+      c.bot_silenced_until,
+      now,
+      prazoDoSilencioDoInboxMs(settingsDaOrg),
+    );
     if (silenceUntil) conversationUpdate.bot_silenced_until = silenceUntil;
   }
 

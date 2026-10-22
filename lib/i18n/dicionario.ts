@@ -7113,14 +7113,14 @@ export const DICIONARIO: Traducoes = {
   "Quando alguém responde pelo celular, a IA espera quanto tempo?": {
     es: "Cuando alguien responde desde el celular, ¿cuánto tiempo espera la IA?",
   },
-  "Quando alguém da equipe responde o cliente direto pelo celular, fora do sistema, o agente de IA fica calado naquela conversa por este tempo. Cada nova resposta pelo celular recomeça a contagem.": {
-    es: "Cuando alguien del equipo responde al cliente directamente desde el celular, fuera del sistema, el agente de IA se queda callado en esa conversación durante este tiempo. Cada nueva respuesta desde el celular reinicia la cuenta.",
+  "Quando alguém da equipe responde o cliente direto pelo celular, fora do sistema, o agente de IA fica calado naquela conversa por este tempo. Cada nova resposta pelo celular recomeça a contagem. Uma resposta dada pela caixa de entrada do sistema segue o mesmo tempo assim que você o define aqui; enquanto não definir, ela silencia a IA por 5 minutos.": {
+    es: "Cuando alguien del equipo responde al cliente directamente desde el celular, fuera del sistema, el agente de IA se queda callado en esa conversación durante este tiempo. Cada nueva respuesta desde el celular reinicia la cuenta. Una respuesta dada desde la bandeja de entrada del sistema sigue el mismo tiempo en cuanto lo defines aquí; mientras no lo definas, silencia a la IA por 5 minutos.",
   },
   "Minutos de silêncio da IA depois de uma resposta pelo celular": {
     es: "Minutos de silencio de la IA después de una respuesta desde el celular",
   },
-  "Entre 5 minutos e 24 horas. O padrão é 60. Quem atende o dia inteiro pelo celular costuma preferir um prazo curto, como 15, para a IA voltar a responder entre um atendimento e outro.": {
-    es: "Entre 5 minutos y 24 horas. El valor predeterminado es 60. Quien atiende todo el día desde el celular suele preferir un plazo corto, como 15, para que la IA vuelva a responder entre una atención y otra.",
+  "Entre 5 minutos e 24 horas. O padrão é 60. Quem atende o dia inteiro pelo celular costuma preferir um prazo curto, como 15, para a IA voltar a responder entre um atendimento e outro. 0 = a IA não fica calada; ela continua atendendo e lê a sua mensagem como da equipe.": {
+    es: "Entre 5 minutos y 24 horas. El valor predeterminado es 60. Quien atiende todo el día desde el celular suele preferir un plazo corto, como 15, para que la IA vuelva a responder entre una atención y otra. 0 = la IA no se queda callada; sigue atendiendo y lee tu mensaje como del equipo.",
   },
   "Quando alguém responde, a conversa fica com essa pessoa?": {
     es: "Cuando alguien responde, ¿la conversación se queda con esa persona?",
@@ -11442,6 +11442,13 @@ export const DICIONARIO: Traducoes = {
   "Cancelando…": { es: "Cancelando…" },
   "Agenda conectada:": { es: "Agenda conectada:" },
   "Conectar Google": { es: "Conectar Google" },
+"uma pessoa da equipe": { es: "una persona del equipo" },
+"A agenda Google de {nomes} perdeu a autorização": { es: "La agenda de Google de {nomes} perdió la autorización" },
+"os compromissos de {nomes} não chegam ao Google até a conexão ser refeita.": { es: "los compromisos de {nomes} no llegan a Google hasta que se rehaga la conexión." },
+"Reconecte sua agenda": { es: "Reconecta tu agenda" },
+"Falta permissão de calendário": { es: "Falta permiso de calendario" },
+"Desconectada": { es: "Desconectada" },
+"O Google pediu para esperar": { es: "Google pidió esperar" },
   "atendido por": { es: "atendido por" },
 
   // ─── Agenda (módulo inteiro: grade, marcação, histórico, tipos, Google) ───

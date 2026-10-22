@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { atendimentoConfigPatchSchema, routingConfigSchema } from "@/lib/schemas/routing";
 import { lerPrazoDoSilencioManualMinutos } from "@/lib/escalacao/atendimento-manual";
 
 /**
@@ -40,6 +41,10 @@ describe("lerPrazoDoSilencioManualMinutos — ajuste por empresa", () => {
     expect(lerPrazoDoSilencioManualMinutos(comValor(1441))).toBe(PADRAO_MIN);
   });
 
+  it("ZERO é valor válido: 'não silenciar' (a IA segue atendendo)", () => {
+    expect(lerPrazoDoSilencioManualMinutos(comValor(0))).toBe(0);
+  });
+
   // ── Os casos que caem no padrão. Cada um deles, se vazasse, colocaria NaN ou
   // um prazo absurdo em `bot_silenced_until` — e a IA passaria a falar por
   // cima do humano.
@@ -48,12 +53,30 @@ describe("lerPrazoDoSilencioManualMinutos — ajuste por empresa", () => {
     ["só espaços", "   "],
     ["texto", "quinze"],
     ["número em texto", "15"],
-    ["zero", 0],
     ["negativo", -15],
     ["lixo com numero", "15 min"],
     ["NaN", Number.NaN],
     ["Infinity", Number.POSITIVE_INFINITY],
   ])("valor inválido (%s) cai no padrão de 60 min", (_rotulo, valor) => {
     expect(lerPrazoDoSilencioManualMinutos(comValor(valor))).toBe(PADRAO_MIN);
+  });
+});
+
+describe("schema de routing — 0 só para o silêncio do celular", () => {
+  it("manual_reply_silence_minutes aceita 0 (nos dois schemas) e continua recusando 1..4", () => {
+    expect(routingConfigSchema.parse({ manual_reply_silence_minutes: 0 }).manual_reply_silence_minutes).toBe(0);
+    expect(
+      atendimentoConfigPatchSchema.parse({ mode: "manual", manual_reply_silence_minutes: 0 })
+        .manual_reply_silence_minutes,
+    ).toBe(0);
+    expect(routingConfigSchema.safeParse({ manual_reply_silence_minutes: 3 }).success).toBe(false);
+    expect(routingConfigSchema.safeParse({ manual_reply_silence_minutes: -1 }).success).toBe(false);
+  });
+
+  it("os OUTROS prazos (devolução automática) seguem sem aceitar 0", () => {
+    expect(routingConfigSchema.safeParse({ handoff_return_after_minutes: 0 }).success).toBe(false);
+    expect(
+      atendimentoConfigPatchSchema.safeParse({ mode: "manual", handoff_return_after_minutes: 0 }).success,
+    ).toBe(false);
   });
 });

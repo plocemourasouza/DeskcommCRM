@@ -28,6 +28,19 @@ export type RoutingMode = (typeof ROUTING_MODES)[number];
  * organizations.settings.routing. Default mode = "manual" (round_robin é opt-in,
  * derivado de G1-06b). Defaults dos knobs = spec 13 §3.5.
  */
+/**
+ * Prazo do silêncio da IA depois de resposta pelo celular: 0 ("não silenciar")
+ * ou a faixa de sempre (5 min a 24 h). O 0 vale só para este knob —
+ * `PRAZO_MIN_MINUTOS` segue mandando nos demais.
+ */
+const prazoDoSilencioManual = z
+  .number()
+  .int()
+  .max(PRAZO_MAX_MINUTOS)
+  .refine((v) => v === 0 || v >= PRAZO_MIN_MINUTOS, {
+    message: "Use 0 (não silenciar) ou de 5 minutos a 24 horas",
+  });
+
 export const routingConfigSchema = z.object({
   mode: z.enum(ROUTING_MODES).default("manual"),
   max_retries: z.number().int().min(0).max(20).default(5),
@@ -56,11 +69,7 @@ export const routingConfigSchema = z.object({
    * @gaberaldo-svg (#2005): a clínica que atende o dia inteiro pelo celular
    * renovava os 60 min a cada fala, e a IA não respondia ninguém o dia todo.
    */
-  manual_reply_silence_minutes: z
-    .number()
-    .int()
-    .min(PRAZO_MIN_MINUTOS)
-    .max(PRAZO_MAX_MINUTOS)
+  manual_reply_silence_minutes: prazoDoSilencioManual
     .nullable()
     .default(null),
   /**
@@ -134,11 +143,7 @@ export const atendimentoConfigPatchSchema = routingConfigSchema.extend({
   /** Opcional pela mesma razão: cliente antigo não desliga o ajuste por omissão. */
   conversation_stays_with_attendant: z.boolean().optional(),
   /** Opcional pela mesma razão: cliente antigo não volta o prazo para 60 por omissão. */
-  manual_reply_silence_minutes: z
-    .number()
-    .int()
-    .min(PRAZO_MIN_MINUTOS)
-    .max(PRAZO_MAX_MINUTOS)
+  manual_reply_silence_minutes: prazoDoSilencioManual
     .nullable()
     .optional(),
 });

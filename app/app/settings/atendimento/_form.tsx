@@ -317,7 +317,7 @@ export function AtendimentoForm({ initial }: { initial: AtendimentoConfig }) {
           </h2>
           <p className="text-xs text-muted-foreground">
             {t(
-              "Quando alguém da equipe responde o cliente direto pelo celular, fora do sistema, o agente de IA fica calado naquela conversa por este tempo. Cada nova resposta pelo celular recomeça a contagem.",
+              "Quando alguém da equipe responde o cliente direto pelo celular, fora do sistema, o agente de IA fica calado naquela conversa por este tempo. Cada nova resposta pelo celular recomeça a contagem. Uma resposta dada pela caixa de entrada do sistema segue o mesmo tempo assim que você o define aqui; enquanto não definir, ela silencia a IA por 5 minutos.",
             )}
           </p>
         </div>
@@ -328,7 +328,7 @@ export function AtendimentoForm({ initial }: { initial: AtendimentoConfig }) {
           <Input
             id="manual_reply_silence_minutes"
             type="number"
-            min={PRAZO_MIN_MINUTOS}
+            min={0}
             max={PRAZO_MAX_MINUTOS}
             value={form.manual_reply_silence_minutes ?? PRAZO_PADRAO_DO_SILENCIO_MINUTOS}
             disabled={isPending}
@@ -338,7 +338,7 @@ export function AtendimentoForm({ initial }: { initial: AtendimentoConfig }) {
           />
           <p className="text-xs text-muted-foreground">
             {t(
-              "Entre 5 minutos e 24 horas. O padrão é 60. Quem atende o dia inteiro pelo celular costuma preferir um prazo curto, como 15, para a IA voltar a responder entre um atendimento e outro.",
+              "Entre 5 minutos e 24 horas. O padrão é 60. Quem atende o dia inteiro pelo celular costuma preferir um prazo curto, como 15, para a IA voltar a responder entre um atendimento e outro. 0 = a IA não fica calada; ela continua atendendo e lê a sua mensagem como da equipe.",
             )}
           </p>
         </div>
