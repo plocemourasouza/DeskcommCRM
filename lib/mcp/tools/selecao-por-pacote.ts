@@ -79,8 +79,19 @@ import { entraPorPacote, type ToolBundle, type ToolRisk } from "./pacotes";
  * argumento (a heurística de degradação) que ninguém mediu, que é exatamente o
  * que o bloco ⚠️ acima diz. O dia em que o `evoluir` exigir 28, o passo volta a
  * ser ele.
+ *
+ * ═══ 27 → 28: o agente põe o cliente no convite da agenda ═══════════════════
+ *
+ * `crm_add_contact_to_appointment_invite` entrou no `vender` (risco `atencao`,
+ * então automática), e o agente que NASCE ganhou uma capacidade. Medido pelo
+ * caso "a partir do agente que nasce hoje, ALGUM outro pacote ainda cabe" de
+ * `tests/unit/pacote-reserva-vaga-da-critica.test.ts`: o menor segundo pacote
+ * passou a exigir 28 — evoluir 28, reter 31, escalar 36, atender 39,
+ * organizar 42. É o caso que a frase acima deixou decidido ("o dia em que o
+ * `evoluir` exigir 28, o passo volta a ser ele"): 28 é o menor passo que
+ * resolve, e a próxima capacidade automática do `vender` reabre a mesma conta.
  */
-export const TETO_TOOLS_POR_AGENTE = 27;
+export const TETO_TOOLS_POR_AGENTE = 28;
 
 /** O mínimo que a regra precisa saber de uma capacidade. */
 export interface CapacidadeSelecionavel {

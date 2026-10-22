@@ -12,6 +12,7 @@ const FERRAMENTAS_DE_AGENDA = new Set([
   "crm_cancel_appointment",
   "crm_confirm_appointment",
   "crm_set_appointment_outcome",
+  "crm_add_contact_to_appointment_invite",
 ]);
 
 /** Só paga outra leitura quando a agenda participou deste turno. */

@@ -252,6 +252,18 @@ export const TOOLS_AGENDAMENTO = declararTools([
     pacotes: ["vender"],
   },
   {
+    name: "crm_add_contact_to_appointment_invite",
+    category: "write",
+    rotulo: "Pôr o cliente no convite da agenda",
+    explicacao:
+      "Quando o cliente manda o e-mail na conversa, guarda esse e-mail no cadastro dele (se ainda não tinha nenhum) e o inclui no convite do Google Agenda do horário marcado. Se o cadastro já tem outro e-mail, não troca: deixa para alguém da equipe confirmar.",
+    oQueToca: "Cadastro do cliente e agenda da equipe",
+    // `atencao`: altera dados (o e-mail da ficha e o convite), mas nunca troca um
+    // e-mail que já existia — esse caso vira proposta que uma pessoa confirma.
+    risco: "atencao",
+    pacotes: ["vender"],
+  },
+  {
     name: "crm_cancel_appointment",
     category: "write",
     rotulo: "Desmarcar um compromisso",

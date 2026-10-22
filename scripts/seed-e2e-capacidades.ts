@@ -146,6 +146,8 @@ async function main(): Promise<void> {
     "crm_list_event_types",
     "crm_list_human_cases",
     "crm_list_knowledge_sources",
+    // Espelho de `TOOLS_DO_SEED` da spec: a nona entrou com o teto 28.
+    "crm_list_followups",
   ];
 
   // REPÕE TODAS AS VERSÕES DRAFT DESTE AGENTE, não só a de maior número.

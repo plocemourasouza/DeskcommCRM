@@ -644,7 +644,18 @@ async function semDerrubarOTurno<T>(
 const DESCRICAO_DO_CONVIDADO =
   "e-mail de alguém DA EQUIPE (usuário desta empresa) que também participa do compromisso — por " +
   "exemplo, o consultor que conduz a reunião. E-mail de cliente ou de terceiro é RECUSADO: o contato " +
-  "atendido já entra no convite pelo e-mail da ficha, quando ele existe.";
+  "atendido já entra no convite pelo e-mail da ficha, quando ele existe. Se o CLIENTE quer receber o " +
+  "convite e a ficha não tem e-mail, peça o e-mail a ele e chame `crm_add_contact_to_appointment_invite`.";
+
+/**
+ * Como o CLIENTE entra no convite do Google: pelo e-mail da ficha. Quando a
+ * ficha não tem e-mail, o caminho é perguntar e chamar a ferramenta própria —
+ * nunca `guest_email`, que é da equipe (#2077).
+ */
+const CONVITE_DO_CLIENTE =
+  "Para o cliente receber o convite do Google Agenda, ele precisa de e-mail na ficha: se não tiver, " +
+  "pergunte o e-mail e chame `crm_add_contact_to_appointment_invite`. Se ele não quiser informar, o " +
+  "compromisso continua marcado do mesmo jeito.";
 
 async function convidadoEhDaEquipe(ctx: McpContext, email: string): Promise<boolean> {
   const { data, error } = await ctx.supabase
@@ -720,7 +731,8 @@ export const crmBookAppointment: McpToolDefinition<typeof marcarShape> = {
     "não está livre é recusado, e a recusa manda você consultar de novo. " +
     "⚠️ Alguns atendimentos exigem que uma pessoa da equipe aprove: nesses, o horário fica " +
     "RESERVADO e o retorno traz `aguarda_confirmacao: true`. Quando vier assim, NÃO diga que está " +
-    "confirmado — diga que separou o horário e que a equipe confirma.",
+    "confirmado — diga que separou o horário e que a equipe confirma. " +
+    CONVITE_DO_CLIENTE,
   inputSchema: marcarShape,
   category: "write",
   requiresRole: "ai_operator",
@@ -911,7 +923,8 @@ export const crmFindAndBookAppointment: McpToolDefinition<typeof consultarEMarca
     "retorno ao falar com a pessoa. " +
     "⚠️ Alguns atendimentos exigem aprovação da equipe: nesses o retorno traz " +
     "`aguarda_confirmacao: true` — diga que separou o horário e que a equipe confirma, nunca que " +
-    "está confirmado.",
+    "está confirmado. " +
+    CONVITE_DO_CLIENTE,
   inputSchema: consultarEMarcarShape,
   category: "write",
   requiresRole: "ai_operator",

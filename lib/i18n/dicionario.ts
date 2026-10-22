@@ -12591,6 +12591,15 @@ export const DICIONARIO: Traducoes = {
     es: "Cancela un seguimiento que aún no se ha realizado, para que el agente no insista con quien ya respondió.",
   },
   "Desmarcar um compromisso": { es: "Cancelar un compromiso" },
+  "Pôr o cliente no convite da agenda": {
+    es: "Poner al cliente en la invitación de la agenda",
+  },
+  "Quando o cliente manda o e-mail na conversa, guarda esse e-mail no cadastro dele (se ainda não tinha nenhum) e o inclui no convite do Google Agenda do horário marcado. Se o cadastro já tem outro e-mail, não troca: deixa para alguém da equipe confirmar.": {
+    es: "Cuando el cliente envía su correo en la conversación, lo guarda en su ficha (si aún no tenía ninguno) y lo incluye en la invitación de Google Calendar del horario agendado. Si la ficha ya tiene otro correo, no lo cambia: lo deja para que alguien del equipo lo confirme.",
+  },
+  "Cadastro do cliente e agenda da equipe": {
+    es: "Ficha del cliente y agenda del equipo",
+  },
   "Devolve a conversa para o atendimento automático depois que uma pessoa atendeu, levando junto o que ficou combinado com o cliente. Só uma pessoa pode acionar.": {
     es: "Devuelve la conversación a la atención automática una vez que una persona terminó de atender, junto con lo que se acordó con el cliente. Solo una persona puede hacerlo.",
   },

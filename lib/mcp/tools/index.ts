@@ -82,6 +82,7 @@ import {
   crmRescheduleAppointment,
   crmSetAppointmentOutcome,
 } from "./agendamento";
+import { crmAddContactToAppointmentInvite } from "./convite-do-cliente";
 import {
   crmScheduleFollowup,
   crmEnrollFollowupFlow,
@@ -151,6 +152,7 @@ export const allTools: ReadonlyArray<McpToolDefinition> = [
   crmCancelAppointment,
   crmConfirmAppointment,
   crmSetAppointmentOutcome,
+  crmAddContactToAppointmentInvite,
   crmCreateLead,
   crmUpdateLead,
   crmMoveLeadStage,

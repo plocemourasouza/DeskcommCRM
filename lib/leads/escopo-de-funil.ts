@@ -125,6 +125,9 @@ export const ALVO_DE_FUNIL: Record<string, AlvoDeFunil> = {
   // vem e liberaria 100% das vezes, com aparência de escopado.
   crm_confirm_appointment: "sem_funil",
   crm_set_appointment_outcome: "sem_funil",
+  // Grava o e-mail na ficha e põe o cliente no convite de um compromisso:
+  // opera por `contact_id`/`appointment_id`, nunca toca negócio nem funil.
+  crm_add_contact_to_appointment_invite: "sem_funil",
 
   // ---- não têm funil, e isso é declarado ----
   crm_send_whatsapp_message: "sem_funil",
