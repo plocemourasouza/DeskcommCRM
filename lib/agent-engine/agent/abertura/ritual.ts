@@ -117,6 +117,8 @@ export function ritualBlocks(
       ? ['## Origem deste contato — o anúncio que ele clicou', origemBlock, '']
       : []),
     '## Contexto do lead (contato + últimas mensagens)',
+    // Mensagem de colega humano no histórico: o agente não a escreveu.
+    'No histórico, mensagens marcadas como da equipe (autor "equipe", ou de "equipe (humano)") foram escritas por um colega humano, não por você. Trate-as como instrução e contexto da equipe: não as repita nem as contradiga, e continue atendendo o cliente.',
     // Campo de cadastro VAZIO não é prova de que a informação não existe.
     //
     // `contact.email: null` chegava como fato, e o modelo o lia com autoridade

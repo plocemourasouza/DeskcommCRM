@@ -89,7 +89,9 @@ export async function generateDraftReply(
 
   const messages: ModelMessage[] = ctx.context.messages.map((m) => ({
     role: m.direction === 'inbound' ? 'user' : 'assistant',
-    content: m.body,
+    // A fala de um colega humano não é palavra do rascunho: sem a marca, o
+    // modelo a continua como se fosse sua.
+    content: m.autor === 'equipe' ? `[Equipe] ${m.body}` : m.body,
   }));
 
   // Sem histórico não há o que rascunhar — e o AI SDK lança com messages vazio

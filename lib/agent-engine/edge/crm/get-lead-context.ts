@@ -55,6 +55,13 @@ export interface LeadContextMessage {
   type?: string;
   media_storage_path?: string | null;
   media_mime?: string | null;
+  /**
+   * Quem escreveu, quando NÃO foi o agente: `equipe` = uma pessoa da equipe
+   * (celular da empresa ou Inbox do CRM). Ausente = IA, automação ou sistema —
+   * a ausência de `ai_actor_id` NÃO decide isso, automação e sistema também não
+   * têm. Sem esta marca o agente lia a frase de um colega como palavra sua.
+   */
+  autor?: 'equipe';
 }
 
 /**
@@ -209,6 +216,16 @@ interface HistoryRow {
   media_mime: string | null;
   media_derived_text: string | null;
   sent_at: Date;
+  sent_via?: string | null;
+  sent_by_user_id?: string | null;
+}
+
+/** Uma pessoa escreveu esta outbound? (aparelho externo, Inbox, ou autor humano gravado) */
+function foiEscritaPorPessoa(m: Pick<HistoryRow, 'direction' | 'sent_via' | 'sent_by_user_id'>): boolean {
+  return (
+    m.direction === 'outbound' &&
+    (m.sent_via === 'user' || m.sent_via === 'external_device' || m.sent_by_user_id != null)
+  );
 }
 
 export async function getLeadContext(
@@ -261,7 +278,7 @@ export async function getLeadContext(
         ? db
             .query<HistoryRow>(
               `select direction, type, body, media_url, media_storage_path, media_mime,
-                      media_derived_text, sent_at
+                      media_derived_text, sent_at, sent_via, sent_by_user_id
                from messages
                where organization_id = $1 and conversation_id = $2
                  and direction in ('inbound', 'outbound')
@@ -442,6 +459,7 @@ function fitToBudget(
       // Hora de PAREDE do tenant, não UTC cru — ver o comentário de `sent_at` na
       // interface acima e o cabeçalho de `isoLocalComOffset`.
       sent_at: isoLocalComOffset(m.sent_at, fuso),
+      ...(foiEscritaPorPessoa(m) ? { autor: 'equipe' as const } : {}),
       ...(hasMedia ? { type: m.type, media_storage_path: m.media_storage_path, media_mime: m.media_mime } : {}),
     };
   });

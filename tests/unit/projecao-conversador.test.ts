@@ -94,6 +94,20 @@ describe("projeção — o que o Conversador pode ver", () => {
       ],
     };
 
+    it("fala da equipe humana sai como 'equipe (humano)'; a da IA segue 'nós'", () => {
+      // Quem escreve do celular da empresa ou do Inbox é um COLEGA, não o agente.
+      // Mostrá-la como "nós" fazia o agente tomar a frase do dono por palavra sua.
+      const p = projetarContexto({
+        ...cru,
+        messages: [
+          { direction: "inbound", body: "oi", sent_at: "2026-08-05T10:00:00Z" },
+          { direction: "outbound", body: "recebi aqui, vou ver", sent_at: "2026-08-05T10:01:00Z", autor: "equipe" },
+          { direction: "outbound", body: "olá, posso ajudar?", sent_at: "2026-08-05T10:02:00Z" },
+        ],
+      });
+      expect(p.mensagens.map((m) => m.de)).toEqual(["cliente", "equipe (humano)", "nós"]);
+    });
+
     it("nenhum UUID sobrevive — foi por eles que id de usuário chegou à tela do cliente", () => {
       const json = JSON.stringify(projetarContexto(cru));
       expect(json).not.toMatch(RE_UUID);

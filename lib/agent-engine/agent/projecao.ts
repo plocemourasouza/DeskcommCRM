@@ -54,7 +54,7 @@ export function turnoProjeta(toolNamesDoCatalogo: readonly string[]): boolean {
 
 /** Uma mensagem como o Conversador a lê — sem endereço interno de nada. */
 export interface MensagemProjetada {
-  de: 'cliente' | 'nós';
+  de: 'cliente' | 'nós' | 'equipe (humano)';
   texto: string;
   quando: string;
   /** marcador legível quando houve mídia ("[imagem]"); nunca o caminho dela. */
@@ -130,7 +130,7 @@ export function projetarContexto(ctx: LeadContext): ContextoProjetado {
       const base: MensagemProjetada = {
         // 'inbound'/'outbound' é vocabulário de sistema e já apareceu parafraseado
         // em resposta de modelo. Quem fala com uma pessoa pensa "ela disse" / "eu disse".
-        de: m.direction === 'inbound' ? 'cliente' : 'nós',
+        de: m.direction === 'inbound' ? 'cliente' : m.autor === 'equipe' ? 'equipe (humano)' : 'nós',
         // O corpo passa INTACTO — e isto é decisão, não omissão. A tradução de
         // erro é calibrada para texto que o SISTEMA produziu; aplicá-la à fala
         // reescreveria o cliente. "Meu site tem um webhook quebrado" é frase
