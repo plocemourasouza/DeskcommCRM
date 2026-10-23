@@ -79,6 +79,13 @@ import type { ChannelProvider } from '@/lib/channels/capabilities';
 import { aplicarAjustesDeEstilo, lerAjustesDeEstiloDaOrg } from './ajustes-de-estilo-da-org';
 import type { AjusteDeEstilo, LeituraDosAjustes } from './ajustes-de-estilo-da-org';
 import { renderVetoDeAfirmacao, type ConferenciaDeFato } from './factual-claim';
+import {
+  CODIGO_ACAO_NAO_EXECUTADA,
+  CODIGO_ACAO_OBSERVADA,
+  acoesNaoComprovadas,
+  renderVetoDeAcaoNaoExecutada,
+  type ModoDaAcaoAfirmada,
+} from './acao-afirmada';
 
 /** O que os gates enxergam — carregado UMA vez sob o lock, por tentativa de envio. */
 export interface GateContext {
@@ -303,6 +310,24 @@ export interface GateContext {
    * não põe ninguém da empresa para trabalhar.
    */
   followup?: { disponivel: boolean; agendadoNesteTurno: boolean };
+  /**
+   * Arma o `acaoNaoExecutadaGate` (`./acao-afirmada.ts`). Ausente = no-op — a mesma
+   * direção segura de `internalVocabularyEnforced`: no caminho determinístico
+   * (follow-up, template, resposta aprovada) o texto não é do modelo e veto ali é
+   * drop silencioso. Só o `send_message` do turno (e a prévia) o arma.
+   *
+   * `modo` é o knob da organização (`organizations.settings.agente.acao_afirmada_modo`,
+   * padrão `observar`). `comprovantes` é o que as ferramentas deste turno
+   * COMPROVARAM pelo retorno (`comprovantesDoResultado`) — chamar e falhar não
+   * comprova, ao contrário do `agenda.toolCalledThisTurn`. `temCompromissoFuturo`
+   * libera a forma de estado ("está confirmado para segunda") quando o contato
+   * já tem compromisso.
+   */
+  acaoAfirmada?: {
+    modo: ModoDaAcaoAfirmada;
+    comprovantes: readonly string[];
+    temCompromissoFuturo: boolean;
+  };
 }
 
 /**
@@ -322,11 +347,16 @@ export type GateVerdict =
   // `skipped: 'sandbox_send_embargo'` só nasce no Testar do agente (`preview.ts`, kind
   // `sandbox`): o veto de pacing virou aviso porque ali não existe envio. Nunca na cadeia
   // de produção.
+  //
+  // `observacao` (só o `acaoNaoExecutadaGate` em modo `observar`): o gate PASSA e deixa
+  // código + rótulos no trace (`verdict: 'pass'` COM `code`) — é a medição que decide
+  // depois se o modo `bloquear` se paga. Nunca o corpo.
   | {
       pass: true;
       waitMs?: number;
       amendBody?: string;
       skipped?: 'not_applicable' | 'sandbox_send_embargo' | 'nao_conferido';
+      observacao?: { code: string; detail?: Record<string, string | number> };
     }
   | {
       pass: false;
@@ -760,6 +790,49 @@ export const agendaStallGate: Gate = {
 };
 
 /**
+ * Gate de AÇÃO AFIRMADA SEM FERRAMENTA (`./acao-afirmada.ts`) — "e-mail registrado",
+ * "agendei", "cancelei", "convite enviado", "passei para a equipe" só saem se uma
+ * ferramenta deste turno COMPROVOU o efeito pelo retorno. Medido em produção
+ * (2026-10-22): "Anotado, Willian! E-mail registrado. 👍" sem ferramenta nenhuma.
+ *
+ * Desarmado (`acaoAfirmada` ausente) = no-op. Em `observar` (padrão de toda
+ * organização) passa e deixa a observação no trace; em `bloquear` veta com ensino.
+ * O fail-safe da insistência mora no `send_message` (inbound-turn.ts), como o do
+ * `case_promise`.
+ *
+ * Posição 6.95: DEPOIS do `agendaStallGate` — ele veta primeiro, com o ensino dele,
+ * o "está confirmado" sem ferramenta de agenda chamada; uma tentativa nunca leva
+ * dois vetos. Este pega o que sobra (ferramenta chamada que FALHOU, e as demais
+ * categorias). ANTES do `disclosureGate`, pelo motivo de sempre: o texto julgado é
+ * o do MODELO, não o emendado.
+ */
+export const acaoNaoExecutadaGate: Gate = {
+  name: 'acao_nao_executada',
+  evaluate: (ctx) => {
+    const armado = ctx.acaoAfirmada;
+    if (armado === undefined) return { pass: true };
+    const falta = acoesNaoComprovadas(ctx.body, {
+      comprovantes: armado.comprovantes,
+      casoAberto: ctx.hasOpenCase || ctx.openedCaseThisTurn,
+      temCompromissoFuturo: armado.temCompromissoFuturo,
+      ...(ctx.humanPromiseExtraTargets !== undefined ? { alvosHumanos: ctx.humanPromiseExtraTargets } : {}),
+    });
+    if (falta.length === 0) return { pass: true };
+    // detail é LOGADO e persistido: só as categorias (rótulos nossos, fechados).
+    const detail = { categorias: falta.join(',') };
+    if (armado.modo === 'observar') {
+      return { pass: true, observacao: { code: CODIGO_ACAO_OBSERVADA, detail } };
+    }
+    return {
+      pass: false,
+      code: CODIGO_ACAO_NAO_EXECUTADA,
+      reason: renderVetoDeAcaoNaoExecutada(falta),
+      detail,
+    };
+  },
+};
+
+/**
  * Gate de disclosure (F4-05; blueprint 5.7) — garante que a PRIMEIRA mensagem outbound a um
  * lead novo se apresenta como assistente virtual (template versionado por org). Decisão de
  * produto que blinda hoje (CDC) e amanhã (PL 2338), não exigência da Meta. Sem template
@@ -919,8 +992,13 @@ const spinningGate: Gate = {
  * assistente. Nasce DESARMADO (ver `GateContext.clinicalClaimEnforced`): só arma no turno
  * do agente de uma organização que ligou a camada `afirmacao_clinica`, então a v8 não
  * muda o destino de nenhum envio de quem não ligou.
+ * v10 = insere `acaoNaoExecutadaGate` entre `agenda_stall` e `disclosure` — a afirmação
+ * de ação concluída ("e-mail registrado", "agendei", "passei para a equipe") sem
+ * ferramenta que a comprove. Nasce DESARMADO (só o `send_message` do turno arma) e,
+ * armado, em `observar` por padrão: a v10 não muda o destino de nenhum envio de quem
+ * não pôs a organização em `bloquear` — muda o TRACE.
  */
-export const BEFORE_SEND_CHAIN_VERSION = 9;
+export const BEFORE_SEND_CHAIN_VERSION = 10;
 
 /**
  * Gate 6.3 — CONFERÊNCIA DE FATO (#2231): a afirmação de FATO da resposta
@@ -972,6 +1050,8 @@ export const factualClaimGate: Gate = {
  *         câncer escritos pelo modelo; só arma com a camada `afirmacao_clinica` ligada;
  *   (6.9) agenda_stall — "vou verificar/confirmar horário" sem ter chamado a ferramenta de
  *         agenda neste turno; antes do disclosure pelo mesmo motivo do internal_vocabulary;
+ *   (6.95) acao_nao_executada — afirmação de ação concluída sem ferramenta que a comprove;
+ *         depois do agenda_stall (que veta primeiro o que é dele), antes do disclosure;
  *   (8) disclosure — 1ª mensagem se apresenta como assistente virtual (F4-05).
  * (O anti-jailbreak F4-04 é INBOUND advisório, não gate de before_send — não entra aqui.)
  */
@@ -988,6 +1068,7 @@ export const BEFORE_SEND_GATES: readonly Gate[] = [
   internalVocabularyGate,
   clinicalClaimGate,
   agendaStallGate,
+  acaoNaoExecutadaGate,
   disclosureGate,
 ];
 
@@ -1129,6 +1210,8 @@ export interface RunBeforeSendArgs {
   agenda?: GateContext['agenda'];
   /** Ver `GateContext.followup`. Ausente = o `casePromiseGate` não alivia nada. */
   followup?: GateContext['followup'];
+  /** Arma o `acaoNaoExecutadaGate` — ver `GateContext.acaoAfirmada`. Ausente = no-op. */
+  acaoAfirmada?: GateContext['acaoAfirmada'];
   /**
    * Pausa humana do turno, paga ANTES de o guardrail tomar conexão/transação
    * (issue #654) — o porquê está no corpo de `runBeforeSend`. Ausente (default)
@@ -1163,10 +1246,19 @@ export function evaluateBeforeSend(
       // Gate que não se aplicava ao canal entra no trace como 'skipped' COM código
       // (invariante 4): o 'skipped' sem código acima é o outro caso — gate não avaliado
       // porque um anterior vetou. Passar como 'pass' apagaria a distinção na auditoria.
+      // `observacao` (modo `observar`): passa, mas o trace leva o código e os rótulos —
+      // é a linha que se conta depois em `before_send_traces`.
       trace.push(
         verdict.skipped !== undefined
           ? { gate: gate.name, verdict: 'skipped', code: verdict.skipped }
-          : { gate: gate.name, verdict: 'pass' },
+          : verdict.observacao !== undefined
+            ? {
+                gate: gate.name,
+                verdict: 'pass',
+                code: verdict.observacao.code,
+                ...(verdict.observacao.detail !== undefined ? { detail: verdict.observacao.detail } : {}),
+              }
+            : { gate: gate.name, verdict: 'pass' },
       );
       if (verdict.waitMs !== undefined && verdict.waitMs > throttleWaitMs)
         throttleWaitMs = verdict.waitMs;
@@ -1447,6 +1539,7 @@ export async function runBeforeSend(args: RunBeforeSendArgs): Promise<BeforeSend
       clinicalClaimEnforced: args.enforceClinicalClaim ?? false,
       ...(args.agenda !== undefined ? { agenda: args.agenda } : {}),
       ...(args.followup !== undefined ? { followup: args.followup } : {}),
+      ...(args.acaoAfirmada !== undefined ? { acaoAfirmada: args.acaoAfirmada } : {}),
     };
 
     const { body: evaluatedBody, trace: traceDaCadeia, veto, throttleWaitMs } = evaluateBeforeSend(ctx, gates);

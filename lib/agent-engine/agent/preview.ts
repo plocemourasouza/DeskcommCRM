@@ -23,6 +23,8 @@ import { SPINNING_DEFAULTS } from '../spinning/defaults';
 import { loadRecentCopies, loadSpinningKnobs } from '../spinning/store';
 import { loadPromiseTable } from '../guardrails/promise/table';
 import { camadaLigada, lerCamadasDaOrg } from '../guardrails/camadas-da-org';
+import { lerModoDaAcaoAfirmadaDaOrg } from '../guardrails/acao-afirmada';
+import { compromissosDoContato } from './compromissos-do-contato';
 import { loadDisclosureTemplate, countPriorAcceptedSends } from '../guardrails/disclosure/template';
 import { DEFAULT_CHANNEL_PROVIDER } from '@/lib/channels/capabilities';
 import { getToolByName } from '@/lib/mcp/tools';
@@ -159,6 +161,19 @@ export async function previewGateContext(
     // Um Testar que arma diferente da produção faz quem afina o prompt testar contra
     // outro sistema — o mesmo motivo do `agenda` logo acima.
     clinicalClaimEnforced: camadaLigada((await lerCamadasDaOrg(db, org)).afirmacao_clinica, false),
+    // A MESMA escolha da organização do turno real (`acao_afirmada_modo`). Os
+    // comprovantes chegam vivos pelo `liveContext` do turno; o compromisso futuro só
+    // existe com contato real (o Testar não tem contato).
+    acaoAfirmada: {
+      modo: await lerModoDaAcaoAfirmadaDaOrg(db, org),
+      comprovantes: [],
+      temCompromissoFuturo: p.contactId
+        ? await compromissosDoContato(db, org, p.contactId, now).then(
+            (linhas) => linhas.length > 0,
+            () => false,
+          )
+        : false,
+    },
   };
 }
 export const SCENARIO_READS = new Set([

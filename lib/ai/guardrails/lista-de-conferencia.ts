@@ -206,6 +206,21 @@ export const CONFERENCIAS_DE_SAIDA: readonly ConferenciaDeSaida[] = [
     camada: null,
   },
   {
+    nome: "acao_nao_executada",
+    rotulo: "Não dizer que fez o que não foi feito",
+    oQueProtege:
+      'Pega o "e-mail registrado", "agendei", "cancelei", "convite enviado" ou "passei para a equipe" ' +
+      "quando nenhuma ferramenta fez isso de verdade nesta resposta.",
+    escolha: null,
+    // Não há interruptor nesta tela: o modo mora na configuração da organização
+    // (`organizations.settings.agente.acao_afirmada_modo`). Dizer "não se desliga"
+    // seria mentira — ela nasce só anotando e pode passar a barrar.
+    escolhaEmOutraTela: "Nesta versão ela só anota; barrar se liga na configuração da organização.",
+    porQueNaoSeDesliga:
+      "Sem custo. Anotando, nenhuma mensagem é barrada; barrando, o assistente refaz a resposta, e se insistir a equipe é chamada.",
+    camada: null,
+  },
+  {
     nome: "disclosure",
     rotulo: "Dizer que é um assistente quando perguntam",
     oQueProtege: "Se o cliente pergunta se está falando com um robô, a resposta não pode enganar.",

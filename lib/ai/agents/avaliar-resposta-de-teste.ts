@@ -70,6 +70,11 @@ const NAO_AVALIAVEIS_SEM_TURNO: ReadonlyArray<{ gate: string; porque: string }> 
     gate: "agenda_stall",
     porque: "depende de a ferramenta de agenda ter sido chamada neste turno — não há turno real no teste",
   },
+  {
+    gate: "acao_nao_executada",
+    porque:
+      "depende do que as ferramentas devolveram neste turno — esta checagem textual não vê as ferramentas; a prévia do motor aplica",
+  },
   { gate: "disclosure", porque: "depende de esta ser a primeira mensagem ao contato" },
   {
     gate: "clinical_claim",

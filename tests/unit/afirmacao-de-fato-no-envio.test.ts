@@ -508,7 +508,8 @@ describe("a forma da cadeia", () => {
     const nomes = BEFORE_SEND_GATES.map((g) => g.name);
     expect(nomes.indexOf("factual_claim")).toBe(nomes.indexOf("semantic_promise") + 1);
     expect(nomes.indexOf("factual_claim")).toBeGreaterThan(nomes.indexOf("promise"));
-    expect(BEFORE_SEND_CHAIN_VERSION).toBe(9);
+    // 10: a v10 acrescentou `acao_nao_executada` depois do `agenda_stall`.
+    expect(BEFORE_SEND_CHAIN_VERSION).toBe(10);
   });
 });
 

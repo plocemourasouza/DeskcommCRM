@@ -36,6 +36,7 @@ const ORDEM_ESPERADA = [
   "internal_vocabulary",
   "clinical_claim",
   "agenda_stall",
+  "acao_nao_executada",
   "disclosure",
 ] as const;
 
@@ -67,8 +68,8 @@ describe("forma da cadeia before_send", () => {
     // O par (tamanho, versão) é o que amarra os dois. Acrescentar um gate sem
     // bumpar deixa o trace de auditoria mentindo sobre qual cadeia rodou — e o
     // trace é justamente a prova que as Fases 0–2 usam para dizer "não regrediu".
-    expect(BEFORE_SEND_GATES).toHaveLength(13);
-    expect(BEFORE_SEND_CHAIN_VERSION).toBe(9);
+    expect(BEFORE_SEND_GATES).toHaveLength(14);
+    expect(BEFORE_SEND_CHAIN_VERSION).toBe(10);
   });
 
   it("internal_vocabulary roda ANTES do disclosure — inspeciona o texto do modelo, não o emendado", () => {
@@ -92,6 +93,16 @@ describe("forma da cadeia before_send", () => {
     const nomes = BEFORE_SEND_GATES.map((g) => g.name);
     expect(nomes.indexOf("clinical_claim")).toBe(nomes.indexOf("internal_vocabulary") + 1);
     expect(nomes.indexOf("agenda_stall")).toBe(nomes.indexOf("clinical_claim") + 1);
+  });
+
+  it("acao_nao_executada fica logo depois do agenda_stall e antes do disclosure — o agenda_stall veta primeiro o que é dele", () => {
+    // Uma tentativa nunca leva dois vetos: o primeiro interrompe a cadeia. Com o
+    // agenda_stall antes, o "está confirmado" sem ferramenta de agenda chamada
+    // continua com o veto (e o ensino) dele; este pega o que sobra — ferramenta
+    // chamada que FALHOU, ou ferramenta de outra natureza.
+    const nomes = BEFORE_SEND_GATES.map((g) => g.name);
+    expect(nomes.indexOf("acao_nao_executada")).toBe(nomes.indexOf("agenda_stall") + 1);
+    expect(nomes.indexOf("disclosure")).toBe(nomes.indexOf("acao_nao_executada") + 1);
   });
 
   it("nenhum gate repetido — nome duplicado quebraria a leitura do trace", () => {

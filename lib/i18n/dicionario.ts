@@ -12806,6 +12806,18 @@ export const DICIONARIO: Traducoes = {
   "Não prometer checar a agenda sem checar de verdade": {
     es: "No prometer revisar la agenda sin hacerlo de verdad",
   },
+  "Não dizer que fez o que não foi feito": {
+    es: "No decir que se hizo lo que no se hizo",
+  },
+  'Pega o "e-mail registrado", "agendei", "cancelei", "convite enviado" ou "passei para a equipe" quando nenhuma ferramenta fez isso de verdade nesta resposta.': {
+    es: 'Detecta el "correo registrado", "agendé", "cancelé", "invitación enviada" o "se lo pasé al equipo" cuando ninguna herramienta lo hizo de verdad en esta respuesta.',
+  },
+  "Nesta versão ela só anota; barrar se liga na configuração da organização.": {
+    es: "En esta versión solo toma nota; bloquear se activa en la configuración de la organización.",
+  },
+  "Sem custo. Anotando, nenhuma mensagem é barrada; barrando, o assistente refaz a resposta, e se insistir a equipe é chamada.": {
+    es: "Sin costo. Tomando nota, no se bloquea ningún mensaje; bloqueando, el asistente rehace la respuesta y, si insiste, se llama al equipo.",
+  },
   "Se a pessoa respondeu STOP, SAIR ou pediu para não receber mais, nada é enviado a ela.": {
     es: "Si la persona respondió STOP, SALIR o pidió no recibir más, no se le envía nada.",
   },

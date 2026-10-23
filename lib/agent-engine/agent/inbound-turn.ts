@@ -188,6 +188,14 @@ import {
   runBeforeSend,
   tipoDeEnvio,
 } from '../guardrails/before-send';
+import {
+  CODIGO_ACAO_NAO_EXECUTADA,
+  ENSINO_SEM_AFIRMAR,
+  RESPOSTA_HONESTA_DA_ACAO,
+  decidirFailSafeDaAcaoAfirmada,
+  lerModoDaAcaoAfirmadaDaOrg,
+  registrarComprovantes,
+} from '../guardrails/acao-afirmada';
 import { isStatusSendable } from '../../channels/meta/template-binding';
 import { capabilitiesOf } from '@/lib/channels/capabilities';
 import { renderTemplateBody } from '@/lib/channels/meta/render-template';
@@ -2055,6 +2063,10 @@ async function executarTurnoDoAgente(
   // linhas de distância um do outro, e duas queries para a mesma pergunta viram,
   // com o tempo, duas respostas.
   const camadas = await lerCamadasDaOrg(pool, tenantId);
+  // Modo do `acaoNaoExecutadaGate` (`organizations.settings.agente.acao_afirmada_modo`,
+  // padrão `observar`). Uma query por turno, pela razão da linha acima; falha ABERTA
+  // para `observar`.
+  const modoDaAcaoAfirmada = await lerModoDaAcaoAfirmadaDaOrg(pool, tenantId);
   // O fuso da ORGANIZAÇÃO — o que o bloco `## Agora` usa lá embaixo, na montagem
   // da abertura. Lido aqui pela mesma razão da linha acima: uma query por turno,
   // longe do ponto de uso, para não virar duas respostas para a mesma pergunta.
@@ -3039,6 +3051,13 @@ async function executarTurnoDoAgente(
   // Lido pelo `casePromiseGate` (#1873): true só depois de `schedule_followup` AGENDAR com
   // sucesso neste turno. Libera apenas a promessa de retorno do próprio assistente.
   let followupAgendadoNesteTurno = false;
+  // Lido pelo `acaoNaoExecutadaGate`: o que as ferramentas deste turno COMPROVARAM pelo
+  // retorno (`comprovantesDoResultado`) — preenchido pelo `registrarComprovantes` que
+  // envolve as tools por fora do disjuntor, mais abaixo. Chamar e falhar não entra.
+  const comprovantesDoTurno: string[] = [];
+  // Contador do fail-safe do `acao_nao_executada` (modo `bloquear`): 1º veto ensina;
+  // persistir abre caso e responde com honestidade. Por turno (closure).
+  let acaoNaoExecutadaVetoCount = 0;
   const outcomes: ChannelSendResult[] = [];
   // Citações acumuladas por buscas de conhecimento DESTE turno — anexadas à
   // próxima outbound enviada (shape de lib/ai/citations/types, que a UI já lê).
@@ -3642,6 +3661,15 @@ async function executarTurnoDoAgente(
               disponivel: rawTools.schedule_followup !== undefined,
               agendadoNesteTurno: followupAgendadoNesteTurno,
             },
+            // Ação afirmada sem ferramenta ("e-mail registrado", "agendei", "passei
+            // para a equipe"): só o `send_message` arma — único corpo do modelo. O modo
+            // é da organização; os comprovantes são o que as ferramentas DESTE turno
+            // devolveram com sucesso, copiados no momento do envio.
+            acaoAfirmada: {
+              modo: modoDaAcaoAfirmada,
+              comprovantes: [...comprovantesDoTurno],
+              temCompromissoFuturo: compromissosBlock.trim() !== '',
+            },
             ...(deps.knobs.disclosureMode !== undefined
               ? { disclosureMode: deps.knobs.disclosureMode }
               : {}),
@@ -3856,6 +3884,62 @@ async function executarTurnoDoAgente(
               }
             }
             return { ok: false, error: { code: chain.code, message: chain.message } };
+          }
+          if (chain.status === 'vetoed' && chain.code === CODIGO_ACAO_NAO_EXECUTADA) {
+            // Fail-safe do gate de ação afirmada (só existe veto no modo `bloquear`).
+            // Como o clínico, NUNCA solta a frase: afirmar ao cliente um efeito que não
+            // aconteceu não é "melhor que o silêncio". Na insistência, com casos ligados,
+            // o sistema abre o caso com o pedido do cliente e responde, pela cadeia
+            // normal, só o que passa a ser verdade (`RESPOSTA_HONESTA_DA_ACAO`). Sem
+            // casos — ou com um caso já aberto, que não diz o que ESTE pedido é — a
+            // frase segue barrada com um ensino que proíbe a afirmação.
+            acaoNaoExecutadaVetoCount += 1;
+            const passo = decidirFailSafeDaAcaoAfirmada({
+              vetos: acaoNaoExecutadaVetoCount,
+              casosLigados: agentConfig?.casesEnabled === true,
+              casoAberto: openedCaseThisTurn || hasOpenCase,
+            });
+            if (passo === 'ensinar') {
+              return { ok: false, error: { code: chain.code, message: chain.message } };
+            }
+            if (passo === 'ensinar_sem_afirmar') {
+              return { ok: false, error: { code: chain.code, message: ENSINO_SEM_AFIRMAR } };
+            }
+            const pedido = textoDoClienteNaUltimaMensagem(effectiveContext.messages);
+            const auto = await openCase(
+              pool,
+              {
+                tenantId,
+                conversationId: input.conversationId,
+                agentId: agentConfig?.agentId ?? null,
+              },
+              {
+                title: 'Pedido do cliente que o assistente não concluiu',
+                summary:
+                  (pedido !== '' ? `Pedido do cliente: ${pedido}\n` : '') +
+                  `O assistente tentou responder: ${body}`,
+                blocker:
+                  'Aberto automaticamente: o assistente insistiu em dizer ao cliente que fez algo ' +
+                  '(registrar, agendar, cancelar, enviar convite, acionar a equipe) que nenhuma ' +
+                  'ferramenta fez neste atendimento. Confira o pedido e responda ao cliente.',
+                source: 'guardrail_autofallback',
+                contextSnapshot: buildCaseContextSnapshot(),
+              },
+            );
+            if (!auto.ok) {
+              return { ok: false, error: { code: chain.code, message: ENSINO_SEM_AFIRMAR } };
+            }
+            openedCaseThisTurn = true;
+            moverParaHandoffBestEffort('acao_nao_executada_autofallback');
+            runLog.warn('fail-safe da ação afirmada: caso aberto e resposta honesta no lugar', {
+              vetos: acaoNaoExecutadaVetoCount,
+            });
+            chain = await runBeforeSend({
+              ...beforeSendArgs,
+              body: RESPOSTA_HONESTA_DA_ACAO,
+              hasOpenCase: true,
+              openedCaseThisTurn: true,
+            });
           }
           if (chain.status === 'vetoed' && chain.code === 'internal_vocabulary_leak') {
             // Fail-safe do gate de vazamento — O CLIENTE NUNCA FICA SEM RESPOSTA.
@@ -4594,6 +4678,17 @@ async function executarTurnoDoAgente(
                 ferramentas: previewContext.agenda?.ferramentas ?? [],
                 toolCalledThisTurn: agendaToolCalledThisTurn,
               },
+              // Os MESMOS comprovantes do turno real. Na prévia a escrita vira
+              // `proposal_only`, que conta como comprovante: a prévia mostra o que a
+              // produção faria (ver `comprovantesDoResultado`).
+              ...(previewContext.acaoAfirmada !== undefined
+                ? {
+                    acaoAfirmada: {
+                      ...previewContext.acaoAfirmada,
+                      comprovantes: [...comprovantesDoTurno],
+                    },
+                  }
+                : {}),
             }),
             // #2490 — a MESMA `prepararFotosDoProduto` do caminho de produção,
             // com a MESMA cópia por service role e a MESMA query no catálogo:
@@ -4617,11 +4712,16 @@ async function executarTurnoDoAgente(
             conferirAfirmacoes,
           )
         : rawTools;
-    const tools = wrapToolsWithBreaker(previewTools, {
-      thresholds: deps.knobs.breaker,
-      readOnlyTools: READ_ONLY_TOOLS,
-      log: runLog, // os warns dos gates do breaker saem carimbados com o run
-    });
+    // `registrarComprovantes` POR FORA do disjuntor: chamada que ele barra volta
+    // `ok: false` e não comprova nada para o `acaoNaoExecutadaGate`.
+    const tools = registrarComprovantes(
+      wrapToolsWithBreaker(previewTools, {
+        thresholds: deps.knobs.breaker,
+        readOnlyTools: READ_ONLY_TOOLS,
+        log: runLog, // os warns dos gates do breaker saem carimbados com o run
+      }),
+      comprovantesDoTurno,
+    );
 
     // F3-11: stage-classifier auxiliar. Roda ANTES do turno (modelo BARATO pelo seam
     // agnóstico) e sugere o estágio; a sugestão entra como HINT no SUFIXO por-lead — o modelo
