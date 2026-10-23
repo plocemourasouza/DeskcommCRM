@@ -1056,6 +1056,7 @@ export const AUDIT_ACTIONS = [
   // A assinatura do emissor (#2066, PR #2079): quem ligou ou desligou o nome de
   // quem fala nas mensagens ao cliente, e com que nome a IA passou a assinar.
   "settings.message_signature_updated",
+  "settings.acao_afirmada_updated",
 
   // A identidade da Página/WABA que a Meta exige no Purchase de clique-para-WhatsApp
   // (#2098): gravada pela tela de Conversões, em `organizations.settings.conversions`.

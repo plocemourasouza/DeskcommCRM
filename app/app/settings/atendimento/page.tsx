@@ -24,6 +24,8 @@ import { routingConfigSchema } from "@/lib/schemas";
 import { createClient } from "@/lib/supabase/server";
 import { loadChannelRoutingSettings } from "@/lib/routing/channel-policies";
 import { configAssinatura } from "@/lib/messaging/assinatura";
+import { lerModoDaAcaoAfirmada } from "@/lib/agent-engine/guardrails/acao-afirmada";
+import { AcaoAfirmadaForm } from "./_acao-afirmada-form";
 import { AssinaturaForm } from "./_assinatura-form";
 import { ChannelRoutingForm } from "./_channels-form";
 import { AtendimentoForm } from "./_form";
@@ -77,6 +79,7 @@ export default async function AtendimentoSettingsPage() {
       />
       <ChannelRoutingForm initial={channels} />
       <AssinaturaForm initial={assinaturaInicial} />
+      <AcaoAfirmadaForm initial={lerModoDaAcaoAfirmada(settings)} />
     </div>
   );
 }
